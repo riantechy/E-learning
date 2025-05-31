@@ -1,0 +1,21 @@
+/* Sidebar transitions */
+.sidebar {
+  position: fixed;
+  height: 100vh;
+  transition: transform 0.3s ease;
+  z-index: 1050;
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-100%);
+  }
+  
+  .sidebar.open {
+    transform: translateX(0);
+  }
+  
+  .sidebar.closed {
+    transform: translateX(-100%);
+  }
+}
