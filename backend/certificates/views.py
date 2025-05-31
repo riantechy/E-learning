@@ -2,6 +2,10 @@ from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework import status
 from reportlab.lib.pagesizes import letter
+from rest_framework import generics
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from .models import Certificate, CertificateTemplate
+from .serializers import CertificateTemplateSerializer, CertificateSerializer
 from reportlab.pdfgen import canvas
 from io import BytesIO
 from django.core.files.base import ContentFile
@@ -65,4 +69,29 @@ class GenerateCertificateView(generics.GenericAPIView):
         return Response({
             "certificate_id": certificate.id,
             "download_url": certificate.pdf_file.url
+        })
+
+class CertificateTemplateListCreateView(generics.ListCreateAPIView):
+    queryset = CertificateTemplate.objects.all()
+    serializer_class = CertificateTemplateSerializer
+    permission_classes = [IsAdminUser]  
+
+class UserCertificateListView(generics.ListAPIView):
+    serializer_class = CertificateSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Certificate.objects.filter(user=self.request.user)
+
+class VerifyCertificateView(generics.RetrieveAPIView):
+    queryset = Certificate.objects.all()
+    serializer_class = CertificateSerializer
+    lookup_field = 'certificate_number'
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response({
+            **serializer.data,
+            "valid": True
         })

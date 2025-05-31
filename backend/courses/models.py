@@ -136,3 +136,11 @@ class UserProgress(models.Model):
             'total': total_lessons,
             'percentage': round((completed_lessons / total_lessons) * 100, 2) if total_lessons > 0 else 0
         }
+
+class Enrollment(models.Model):
+    user = models.ForeignKey('users.User', on_delete=models.CASCADE)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    enrolled_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        unique_together = ('user', 'course')
