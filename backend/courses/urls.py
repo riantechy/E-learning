@@ -32,4 +32,10 @@ urlpatterns = [
     path('<uuid:pk>/enrollments/', 
         views.CourseViewSet.as_view({'get': 'enrollment_count'}), 
         name='course-enrollments'),
+     path('user/enrollments/', 
+        views.CourseViewSet.as_view({'get': 'user_enrollments'}), 
+        name='user-enrollments'),
+    path('<uuid:pk>/progress/', 
+        views.CourseViewSet.as_view({'get': 'progress'}), 
+        name='course-progress'),
 ]

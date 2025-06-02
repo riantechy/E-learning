@@ -3,7 +3,23 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
 import { useEffect, useState } from 'react'
-import { coursesApi } from '@/lib/api'
+import { certificatesApi, coursesApi } from '@/lib/api'
+
+interface UserProgressData {
+  completed: number;
+  total: number;
+  percentage: number;
+}
+
+interface User {
+  id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  role: string;
+  enrolled_courses_count?: number;
+  avatar?: string; // Making avatar optional
+}
 
 export default function LearnerSidebar() {
   const pathname = usePathname()
@@ -14,18 +30,24 @@ export default function LearnerSidebar() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const progressRes = await coursesApi.getOverallProgress()
-        const certsRes = await coursesApi.getCertificates()
+        // Update to use the correct endpoint for course progress
+        const progressRes = await coursesApi.getCourseProgress(user?.id || '')
+        const certsRes = await certificatesApi.getUserCertificates()
         
-        if (progressRes.data) setProgress(progressRes.data.percentage)
-        if (certsRes.data) setCertCount(certsRes.data.length)
+        if (progressRes.data) {
+          // Assuming progressRes.data has percentage property
+          setProgress(progressRes.data.percentage || 0)
+        }
+        if (certsRes.data) setCertCount(certsRes.data.length || 0)
       } catch (error) {
         console.error('Error fetching sidebar data:', error)
       }
     }
-
-    fetchData()
-  }, [])
+  
+    if (user?.id) {
+      fetchData()
+    }
+  }, [user?.id]) 
 
   const isActive = (path: string) => pathname.startsWith(path)
 
@@ -36,7 +58,7 @@ export default function LearnerSidebar() {
           {user?.avatar ? (
             <img 
               src={user.avatar} 
-              alt={user.first_name} 
+              alt={`${user.first_name} ${user.last_name}`} 
               className="rounded-full w-20 h-20 object-cover" 
             />
           ) : (
@@ -96,10 +118,19 @@ export default function LearnerSidebar() {
             Browse Courses
           </Link>
         </li>
-        <li>
+        {/* <li>
           <Link 
             href="/dashboard/my-courses" 
             className={`flex items-center p-2 rounded-md ${isActive('/my-courses') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100'}`}
+          >
+            <i className="bi bi-collection mr-3"></i>
+            My Courses
+          </Link>
+        </li> */}
+        <li>
+          <Link 
+            href="/dashboard/learn" 
+            className={`flex items-center p-2 rounded-md ${isActive('/learn') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100'}`}
           >
             <i className="bi bi-collection mr-3"></i>
             My Courses

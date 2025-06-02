@@ -9,21 +9,61 @@ import { useEffect, useState } from 'react'
 import { coursesApi, certificatesApi } from '@/lib/api'
 import { Menu } from 'lucide-react'
 
+interface CourseProgress {
+  course_id: string;
+  course_title: string;
+  percentage: number;
+}
+
 export default function DashboardPage() {
   const { user, logout } = useAuth()
-  const [progress, setProgress] = useState<any[]>([])
-  const [certificates, setCertificates] = useState<any[]>([])
+  const [stats, setStats] = useState({
+    enrolledCourses: 0,
+    completedCourses: 0,
+    certificatesCount: 0,
+  })
+  const [courseProgress, setCourseProgress] = useState<CourseProgress[]>([])
   const [loading, setLoading] = useState(true)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const progressRes = await coursesApi.getUserProgress()
-        const certsRes = await certificatesApi.getUserCertificates()
+        setLoading(true)
         
-        if (progressRes.data) setProgress(progressRes.data)
-        if (certsRes.data) setCertificates(certsRes.data)
+        // Fetch all data in parallel
+        const [enrollmentsRes, certificatesRes] = await Promise.all([
+          coursesApi.getUserEnrollments(),
+          certificatesApi.getUserCertificates(),
+        ])
+
+        // Initialize progress data
+        let completedCourses = 0
+        const progressData: CourseProgress[] = []
+
+        // Process enrollments to get progress for each course
+        if (enrollmentsRes.data) {
+          for (const enrollment of enrollmentsRes.data) {
+            const progressRes = await coursesApi.getCourseProgress(enrollment.course_id)
+            if (progressRes.data) {
+              progressData.push({
+                course_id: enrollment.course_id,
+                course_title: enrollment.course_title,
+                percentage: progressRes.data.percentage || 0
+              })
+              if (progressRes.data.percentage === 100) {
+                completedCourses++
+              }
+            }
+          }
+        }
+
+        setStats({
+          enrolledCourses: enrollmentsRes.data?.length || 0,
+          completedCourses,
+          certificatesCount: certificatesRes.data?.length || 0
+        })
+        setCourseProgress(progressData)
       } catch (error) {
         console.error('Error fetching dashboard data:', error)
       } finally {
@@ -31,9 +71,21 @@ export default function DashboardPage() {
       }
     }
 
-    fetchData()
-  }, [])
+    if (user?.id) {
+      fetchData()
+    }
+  }, [user?.id])
 
+  // Fix hydration error by using span instead of div inside p
+  const renderStatValue = (value: number) => (
+    loading ? (
+      <span className="spinner-border spinner-border-sm" role="status">
+        <span className="visually-hidden">Loading...</span>
+      </span>
+    ) : (
+      value
+    )
+  )
   return (
     <ProtectedRoute>
       <div className="d-flex vh-100 bg-light position-relative">
@@ -90,33 +142,37 @@ export default function DashboardPage() {
 
           {/* Stats Cards */}
           <div className="row g-4 mb-4">
-            <div className="col-12 col-md-4">
-              <div className="card bg-primary text-white">
-                <div className="card-body">
-                  <h5 className="card-title">Enrolled Courses</h5>
-                  <p className="card-text display-4">{progress.length}</p>
-                </div>
-              </div>
-            </div>
-            <div className="col-12 col-md-4">
-              <div className="card bg-success text-white">
-                <div className="card-body">
-                  <h5 className="card-title">Completed Courses</h5>
-                  <p className="card-text display-4">
-                    {progress.filter(p => p.percentage === 100).length}
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="col-12 col-md-4">
-              <div className="card bg-info text-white">
-                <div className="card-body">
-                  <h5 className="card-title">Certificates Earned</h5>
-                  <p className="card-text display-4">{certificates.length}</p>
-                </div>
-              </div>
+        <div className="col-12 col-md-4">
+          <div className="card bg-primary text-white">
+            <div className="card-body">
+              <h5 className="card-title">Enrolled Courses</h5>
+              <p className="card-text display-4">
+                {renderStatValue(stats.enrolledCourses)}
+              </p>
             </div>
           </div>
+        </div>
+        <div className="col-12 col-md-4">
+          <div className="card bg-success text-white">
+            <div className="card-body">
+              <h5 className="card-title">Completed Courses</h5>
+              <p className="card-text display-4">
+                {renderStatValue(stats.completedCourses)}
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="col-12 col-md-4">
+          <div className="card bg-info text-white">
+            <div className="card-body">
+              <h5 className="card-title">Certificates Earned</h5>
+              <p className="card-text display-4">
+                {renderStatValue(stats.certificatesCount)}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
 
           {/* Progress Section */}
           <div className="row g-4">
@@ -132,12 +188,12 @@ export default function DashboardPage() {
                         <span className="visually-hidden">Loading...</span>
                       </div>
                     </div>
-                  ) : progress.length > 0 ? (
+                  ) : courseProgress.length > 0 ? (
                     <div className="list-group list-group-flush">
-                      {progress.map((course) => (
-                        <div key={course.id} className="list-group-item">
+                      {courseProgress.map((course) => (
+                        <div key={course.course_id} className="list-group-item">
                           <div className="d-flex justify-content-between mb-2">
-                            <h6 className="mb-0">{course.title}</h6>
+                            <h6 className="mb-0">{course.course_title}</h6>
                             <small>{course.percentage}%</small>
                           </div>
                           <Progress value={course.percentage} className="h-10px" />
@@ -163,34 +219,21 @@ export default function DashboardPage() {
                   <h5 className="mb-0">Recent Certificates</h5>
                 </div>
                 <div className="card-body">
-                  {loading ? (
-                    <div className="text-center py-4">
-                      <div className="spinner-border" role="status">
-                        <span className="visually-hidden">Loading...</span>
-                      </div>
+                {loading ? (
+                  <div className="text-center py-4">
+                    <div className="spinner-border" role="status">
+                      <span className="visually-hidden">Loading...</span>
                     </div>
-                  ) : certificates.length > 0 ? (
+                  </div>
+                ) : stats.certificatesCount > 0 ? (
                     <div className="list-group list-group-flush">
-                      {certificates.slice(0, 3).map((cert) => (
-                        <a 
-                          key={cert.id} 
-                          href={cert.pdf_file} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="list-group-item list-group-item-action"
-                        >
-                          <div className="d-flex justify-content-between">
-                            <h6 className="mb-1">{cert.course.title}</h6>
-                            <small>{new Date(cert.issued_date).toLocaleDateString()}</small>
-                          </div>
-                          <small className="text-muted">Certificate #{cert.certificate_number}</small>
+                      {/* Certificate items would be rendered here */}
+                      <div className="text-center py-4">
+                        <p>View all certificates to see details</p>
+                        <a href="/dashboard/certificates" className="btn btn-outline-primary">
+                          View Certificates
                         </a>
-                      ))}
-                      {certificates.length > 3 && (
-                        <a href="/certificates" className="list-group-item list-group-item-action text-center">
-                          View all certificates
-                        </a>
-                      )}
+                      </div>
                     </div>
                   ) : (
                     <div className="text-center py-4">

@@ -1,4 +1,3 @@
-// dashboard/learn/[courseId]/[moduleId]/[lessonId]/page.tsx
 'use client'
 
 import { useParams, useRouter } from 'next/navigation'
@@ -31,25 +30,22 @@ export default function LessonPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch lesson, module, and course data
         const [lessonRes, moduleRes, courseRes, progressRes] = await Promise.all([
           coursesApi.getLesson(courseId, moduleId, lessonId),
           coursesApi.getModule(courseId, moduleId),
           coursesApi.getCourse(courseId),
           coursesApi.getUserProgress()
-        ]);
+        ])
 
         if (lessonRes.data) setLesson(lessonRes.data)
         if (moduleRes.data) setModule(moduleRes.data)
         if (courseRes.data) setCourse(courseRes.data)
         
-        // Check if lesson is completed
         if (progressRes.data) {
           const lessonProgress = progressRes.data.find((p: any) => p.lesson.id === lessonId)
           if (lessonProgress) setCompleted(lessonProgress.is_completed)
         }
         
-        // For quiz lessons, load questions
         if (lessonRes.data?.content_type === 'QUIZ') {
           const questionsRes = await assessmentsApi.getQuestions(lessonId)
           if (questionsRes.data) setQuestions(questionsRes.data)
@@ -69,8 +65,7 @@ export default function LessonPage() {
       const res = await coursesApi.updateProgress(lessonId, true)
       if (res.data) {
         setCompleted(true)
-        // Redirect to next lesson or back to course
-        router.push(`/courses/${courseId}`)
+        router.refresh() // Refresh to update module progress
       }
     } catch (error) {
       console.error('Error completing lesson:', error)
@@ -96,14 +91,24 @@ export default function LessonPage() {
       if (res.data) {
         setQuizSubmitted(true)
         setQuizScore(res.data.score)
-        // Automatically mark as completed if passed
+        
         if (res.data.passed) {
           await coursesApi.updateProgress(lessonId, true)
           setCompleted(true)
+          router.refresh() // Refresh to update module progress
         }
       }
     } catch (error) {
       console.error('Error submitting quiz:', error)
+    }
+  }
+
+  const handleNextLesson = () => {
+    const currentIndex = module.lessons?.findIndex((l: any) => l.id === lessonId)
+    if (currentIndex !== undefined && currentIndex < module.lessons.length - 1) {
+      router.push(`/dashboard/learn/${courseId}/${moduleId}/${module.lessons[currentIndex + 1].id}`)
+    } else {
+      router.push(`/dashboard/learn/${courseId}/${moduleId}`)
     }
   }
 
@@ -147,7 +152,7 @@ export default function LessonPage() {
           <Menu className="bi bi-list" />
         </button>
 
-        {/* Sidebar - Fixed width */}
+        {/* Sidebar */}
         <div 
           className={`d-flex flex-column flex-shrink-0 p-3 bg-white shadow-sm h-100 
             ${mobileSidebarOpen ? 'd-block position-fixed' : 'd-none d-lg-block'}`}
@@ -185,10 +190,13 @@ export default function LessonPage() {
                   <Link href="/dashboard">Dashboard</Link>
                 </li>
                 <li className="breadcrumb-item">
-                  <Link href={`/courses/${courseId}`}>{course.title}</Link>
+                  <Link href="/dashboard/learn">My Courses</Link>
                 </li>
                 <li className="breadcrumb-item">
-                  <Link href={`/courses/${courseId}`}>{module.title}</Link>
+                  <Link href={`/dashboard/learn/${courseId}`}>{course.title}</Link>
+                </li>
+                <li className="breadcrumb-item">
+                  <Link href={`/dashboard/learn/${courseId}/${moduleId}`}>{module.title}</Link>
                 </li>
                 <li className="breadcrumb-item active" aria-current="page">
                   {lesson.title}
@@ -212,6 +220,7 @@ export default function LessonPage() {
                           <div className="text-center py-4">
                             <h4>Quiz: {lesson.title}</h4>
                             <p>This quiz contains {questions.length} questions.</p>
+                            <p>You need to score at least 70% to pass.</p>
                             <button 
                               onClick={handleStartQuiz} 
                               className="btn btn-primary btn-lg"
@@ -261,14 +270,20 @@ export default function LessonPage() {
                             </div>
                             {quizScore && quizScore >= 70 ? (
                               <button
-                                onClick={() => router.push(`/courses/${courseId}`)}
+                                onClick={handleNextLesson}
                                 className="btn btn-primary"
                               >
-                                Continue to Next Lesson
+                                {module.lessons?.findIndex((l: any) => l.id === lessonId) < module.lessons.length - 1
+                                  ? 'Continue to Next Lesson'
+                                  : 'Back to Module'}
                               </button>
                             ) : (
                               <button
-                                onClick={() => setQuizStarted(false)}
+                                onClick={() => {
+                                  setQuizStarted(false)
+                                  setQuizSubmitted(false)
+                                  setUserAnswers({})
+                                }}
                                 className="btn btn-primary"
                               >
                                 Retake Quiz
@@ -317,6 +332,14 @@ export default function LessonPage() {
                         {completed && (
                           <div className="alert alert-success mt-4">
                             ✓ You've completed this lesson
+                            <button
+                              onClick={handleNextLesson}
+                              className="btn btn-primary ms-3"
+                            >
+                              {module.lessons?.findIndex((l: any) => l.id === lessonId) < module.lessons.length - 1
+                                ? 'Continue to Next Lesson'
+                                : 'Back to Module'}
+                            </button>
                           </div>
                         )}
                       </>
@@ -352,7 +375,7 @@ export default function LessonPage() {
                           {mod.lessons?.map((les: any) => (
                             <Link
                               key={les.id}
-                              href={`/learn/${courseId}/${mod.id}/${les.id}`}
+                              href={`/dashboard/learn/${courseId}/${mod.id}/${les.id}`}
                               className={`list-group-item list-group-item-action ${
                                 les.id === lessonId ? 'active' : ''
                               }`}

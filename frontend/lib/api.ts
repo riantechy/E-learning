@@ -94,17 +94,26 @@ export const coursesApi = {
   getUserProgress: () => apiRequest<UserProgress[]>('/courses/user/progress/'),
   updateProgress: (lessonId: string, isCompleted: boolean) => 
     apiRequest<UserProgress>('/courses/user/progress/', 'POST', { lesson: lessonId, is_completed: isCompleted }),
+  // getCourseProgress: (courseId: string) => 
+  //   apiRequest<{ completed: number; total: number; percentage: number }>(`/courses/user/progress/course/?course_id=${courseId}`),
   getCourseProgress: (courseId: string) => 
-    apiRequest<{ completed: number; total: number; percentage: number }>(`/courses/user/progress/course/?course_id=${courseId}`),
+    apiRequest<{ completed: number; total: number; percentage: number }>(
+      `/courses/${courseId}/progress/`
+    ),
 
   // Enrollment
-  checkEnrollment: (courseId: string) => 
-    apiRequest<{ enrolled: boolean }>(`/courses/${courseId}/enrollment/`),
+  checkEnrollment: (courseId?: string) => 
+    courseId 
+      ? apiRequest<{ enrolled: boolean }>(`/courses/${courseId}/enrollment/`)
+      : apiRequest<{ enrolled: boolean }[]>('/courses/user/enrollments/'),
+  // checkEnrollment: (courseId: string) => 
+  //   apiRequest<{ enrolled: boolean }>(`/courses/${courseId}/enrollment/`),
   
   enroll: (courseId: string) => 
     apiRequest<{ success: boolean }>(`/courses/${courseId}/enroll/`, 'POST'),
 
   getTotalEnrollments: () => apiRequest<{ total_enrollments: number }>('/courses/enrollments/total/'),
+  getUserEnrollments: () => apiRequest<{course_id: string}[]>('/courses/user/enrollments/'),
   getCourseEnrollments: (courseId: string) => 
     apiRequest<{ course_id: string; course_title: string; enrollment_count: number }>(
       `/courses/${courseId}/enrollments/`

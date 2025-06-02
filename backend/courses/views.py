@@ -80,6 +80,29 @@ class CourseViewSet(viewsets.ModelViewSet):
             'course_title': course.title,
             'enrollment_count': count
         })
+    
+    @action(detail=False, methods=['get'])
+    def user_enrollments(self, request):
+        """Get all courses the user is enrolled in"""
+        enrollments = Enrollment.objects.filter(user=request.user).select_related('course')
+        data = [{
+            'course_id': str(enrollment.course.id),
+            'course_title': enrollment.course.title
+        } for enrollment in enrollments]
+        return Response(data)
+
+    @action(detail=True, methods=['get'])
+    def progress(self, request, pk=None):
+        """Get progress for a specific course"""
+        course = self.get_object()
+        try:
+            progress = UserProgress.get_course_progress(request.user, course)
+            return Response(progress)
+        except Exception as e:
+            return Response(
+                {'error': str(e)}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
 
 class ModuleViewSet(viewsets.ModelViewSet):
@@ -107,31 +130,23 @@ class LessonViewSet(viewsets.ModelViewSet):
 
 class UserProgressViewSet(viewsets.ModelViewSet):
     serializer_class = UserProgressSerializer
-    permission_classes = [permissions.IsAuthenticated] 
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         return UserProgress.objects.filter(user=self.request.user)
-    
-    def perform_create(self, serializer):
-        lesson_id = self.request.data.get('lesson')
-        lesson = get_object_or_404(Lesson, pk=lesson_id)
-        serializer.save(user=self.request.user, lesson=lesson)
 
-    @action(detail=False, methods=['get'], url_path='course')
-    def course_progress(self, request):
-        course_id = request.query_params.get('course_id')
-        if not course_id:
-            return Response(
-                {'error': 'course_id parameter is required'}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
+    @action(detail=False, methods=['get'])
+    def all_progress(self, request):
+        """Get progress for all enrolled courses"""
+        enrollments = Enrollment.objects.filter(user=request.user).select_related('course')
+        progress_data = []
         
-        try:
-            course = get_object_or_404(Course, pk=course_id)
-            progress = UserProgress.get_course_progress(request.user, course)
-            return Response(progress)
-        except Exception as e:
-            return Response(
-                {'error': str(e)}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        for enrollment in enrollments:
+            progress = UserProgress.get_course_progress(request.user, enrollment.course)
+            progress_data.append({
+                'course_id': str(enrollment.course.id),
+                'course_title': enrollment.course.title,
+                'percentage': progress['percentage']
+            })
+        
+        return Response(progress_data)
