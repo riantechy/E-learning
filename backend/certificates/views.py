@@ -13,11 +13,20 @@ from .models import Certificate, CertificateTemplate
 from courses.models import Course
 from users.models import User
 import uuid
-
+from django.urls import reverse
+from django.conf import settings
 class GenerateCertificateView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+    
     def post(self, request, course_id):
         user = request.user
-        course = Course.objects.get(id=course_id)
+        try:
+            course = Course.objects.get(id=course_id)
+        except Course.DoesNotExist:
+            return Response(
+                {"detail": "Course not found"}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
         
         # Check if user has completed course requirements
         from courses.models import UserProgress
@@ -31,25 +40,49 @@ class GenerateCertificateView(generics.GenericAPIView):
         
         # Check if certificate already exists
         if Certificate.objects.filter(user=user, course=course).exists():
-            return Response(
-                {"detail": "Certificate already issued"}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            certificate = Certificate.objects.get(user=user, course=course)
+            serializer = CertificateSerializer(certificate)
+            return Response(serializer.data)
+        
+        # Get default template or first available template
+        template = CertificateTemplate.objects.first()
         
         # Generate certificate
         buffer = BytesIO()
         c = canvas.Canvas(buffer, pagesize=letter)
         
-        # Customize this with your certificate design
+        # Certificate design (improved from your current version)
+        c.setFont("Helvetica-Bold", 28)
+        c.drawCentredString(300, 700, "CERTIFICATE OF ACHIEVEMENT")
+        
+        c.setFont("Helvetica", 16)
+        c.drawCentredString(300, 650, "This is to certify that")
+        
         c.setFont("Helvetica-Bold", 24)
-        c.drawCentredString(300, 650, "Certificate of Completion")
-        c.setFont("Helvetica", 18)
-        c.drawCentredString(300, 600, f"This certifies that {user.get_full_name()}")
-        c.drawCentredString(300, 570, f"has successfully completed the course")
-        c.setFont("Helvetica-Bold", 20)
-        c.drawCentredString(300, 530, course.title)
+        c.drawCentredString(300, 620, user.get_full_name())
+        
+        c.setFont("Helvetica", 16)
+        c.drawCentredString(300, 580, "has successfully completed the course")
+        
+        c.setFont("Helvetica-Bold", 22)
+        c.drawCentredString(300, 540, f'"{course.title}"')
+        
         c.setFont("Helvetica", 14)
         c.drawCentredString(300, 500, f"on {timezone.now().strftime('%B %d, %Y')}")
+        
+        # Add certificate number
+        cert_number = str(uuid.uuid4())[:8].upper()
+        c.setFont("Helvetica", 12)
+        c.drawString(50, 100, f"Certificate ID: {cert_number}")
+        
+        # Add verification URL
+        verification_url = request.build_absolute_uri(
+            reverse('verify-certificate', kwargs={'certificate_number': cert_number})
+        )
+        c.drawString(50, 80, f"Verify at: {verification_url}")
+        
+        # Add decorative border
+        c.rect(20, 20, 550, 750)
         
         c.save()
         
@@ -57,19 +90,21 @@ class GenerateCertificateView(generics.GenericAPIView):
         certificate = Certificate.objects.create(
             user=user,
             course=course,
-            certificate_number=str(uuid.uuid4())[:8].upper(),
-            verification_url=f"https://yourplatform.com/verify/{uuid.uuid4()}"
+            template=template,
+            certificate_number=cert_number,
+            verification_url=verification_url
         )
         
         # Save PDF
         pdf = buffer.getvalue()
-        certificate.pdf_file.save(f"certificate_{certificate.certificate_number}.pdf", ContentFile(pdf))
+        certificate.pdf_file.save(
+            f"certificate_{certificate.certificate_number}.pdf", 
+            ContentFile(pdf)
+        )
         certificate.save()
         
-        return Response({
-            "certificate_id": certificate.id,
-            "download_url": certificate.pdf_file.url
-        })
+        serializer = CertificateSerializer(certificate)
+        return Response(serializer.data)
 
 class CertificateTemplateListCreateView(generics.ListCreateAPIView):
     queryset = CertificateTemplate.objects.all()

@@ -91,11 +91,18 @@ class CourseViewSet(viewsets.ModelViewSet):
         } for enrollment in enrollments]
         return Response(data)
 
-    @action(detail=True, methods=['get'])
+    @action(detail=True, methods=['get'], permission_classes=[permissions.IsAuthenticated])
     def progress(self, request, pk=None):
         """Get progress for a specific course"""
         course = self.get_object()
         try:
+            # Check if user is enrolled
+            if not Enrollment.objects.filter(user=request.user, course=course).exists():
+                return Response(
+                    {'error': 'You are not enrolled in this course'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+                
             progress = UserProgress.get_course_progress(request.user, course)
             return Response(progress)
         except Exception as e:
@@ -135,6 +142,31 @@ class UserProgressViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return UserProgress.objects.filter(user=self.request.user)
 
+    def perform_create(self, serializer):
+        lesson_id = self.request.data.get('lesson')
+        lesson = get_object_or_404(Lesson, id=lesson_id)
+        serializer.save(user=self.request.user, lesson=lesson)
+
+    @action(detail=True, methods=['get'])
+    def course_progress(self, request, course_id=None):
+        """Get progress for a specific course"""
+        course = get_object_or_404(Course, id=course_id)
+        try:
+            # Check if user is enrolled
+            if not Enrollment.objects.filter(user=request.user, course=course).exists():
+                return Response(
+                    {'error': 'You are not enrolled in this course'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+                
+            progress = UserProgress.get_course_progress(request.user, course)
+            return Response(progress)
+        except Exception as e:
+            return Response(
+                {'error': str(e)}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
     @action(detail=False, methods=['get'])
     def all_progress(self, request):
         """Get progress for all enrolled courses"""
@@ -150,3 +182,10 @@ class UserProgressViewSet(viewsets.ModelViewSet):
             })
         
         return Response(progress_data)
+
+    @action(detail=False, methods=['post'])
+    def toggle_lesson_completion(self, request):
+        lesson_id = request.data.get('lesson')
+        lesson = get_object_or_404(Lesson, id=lesson_id)
+        progress = UserProgress.toggle_completion(request.user, lesson)
+        return Response(UserProgressSerializer(progress).data)

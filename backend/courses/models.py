@@ -137,6 +137,18 @@ class UserProgress(models.Model):
             'percentage': round((completed_lessons / total_lessons) * 100, 2) if total_lessons > 0 else 0
         }
 
+    @classmethod
+    def toggle_completion(cls, user, lesson):
+        progress, created = cls.objects.get_or_create(
+            user=user,
+            lesson=lesson,
+            defaults={'is_completed': True}
+        )
+        if not created:
+            progress.is_completed = not progress.is_completed
+            progress.save()
+        return progress
+
 class Enrollment(models.Model):
     user = models.ForeignKey('users.User', on_delete=models.CASCADE)
     course = models.ForeignKey(Course, on_delete=models.CASCADE)

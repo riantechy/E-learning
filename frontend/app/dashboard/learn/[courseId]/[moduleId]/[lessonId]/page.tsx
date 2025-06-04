@@ -60,21 +60,24 @@ export default function LessonPage() {
     fetchData()
   }, [courseId, moduleId, lessonId])
 
+ // In page.tsx (lesson page)
   const handleCompleteLesson = async () => {
     try {
-      const res = await coursesApi.updateProgress(lessonId, true)
+      const res = await coursesApi.updateProgress(lessonId, true);
       if (res.data) {
-        setCompleted(true)
-        router.refresh() // Refresh to update module progress
+        setCompleted(true);
+        router.refresh();
+        
+        // Check if course is now complete and generate certificate
+        const courseProgress = await coursesApi.getCourseProgress(courseId);
+        if (courseProgress.data.percentage === 100) {
+          await certificatesApi.generateCertificate(courseId);
+        }
       }
     } catch (error) {
-      console.error('Error completing lesson:', error)
+      console.error('Error completing lesson:', error);
     }
-  }
-
-  const handleStartQuiz = () => {
-    setQuizStarted(true)
-  }
+  };
 
   const handleAnswerSelect = (questionId: string, answerId: string) => {
     setUserAnswers(prev => ({

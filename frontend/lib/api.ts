@@ -91,14 +91,17 @@ export const coursesApi = {
   deleteLesson: (courseId: string, moduleId: string, lessonId: string) => apiRequest(`/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}/`, 'DELETE'),
 
   // User progress
-  getUserProgress: () => apiRequest<UserProgress[]>('/courses/user/progress/'),
+  getUserProgress: () => apiRequest<UserProgress[]>('/courses/user/progres/'),
   updateProgress: (lessonId: string, isCompleted: boolean) => 
-    apiRequest<UserProgress>('/courses/user/progress/', 'POST', { lesson: lessonId, is_completed: isCompleted }),
-  // getCourseProgress: (courseId: string) => 
-  //   apiRequest<{ completed: number; total: number; percentage: number }>(`/courses/user/progress/course/?course_id=${courseId}`),
+    apiRequest<UserProgress>('/courses/user/progres/', 'POST', { 
+      lesson: lessonId, 
+      is_completed: isCompleted 
+    }),
+  getLessonProgress: (lessonId: string) => 
+    apiRequest<UserProgress>(`/courses/user/progress/lesson/${lessonId}/`),
   getCourseProgress: (courseId: string) => 
     apiRequest<{ completed: number; total: number; percentage: number }>(
-      `/courses/${courseId}/progress/`
+      `/courses/user/progress/course/${courseId}/`
     ),
 
   // Enrollment
@@ -157,7 +160,7 @@ export const assessmentsApi = {
 
 // Certificates API
 export const certificatesApi = {
-  getUserCertificates: () => apiRequest<Certificate[]>('/certificates/'),
+  getUserCertificates: () => apiRequest<Certificate[]>('/certificates/user/'),
   getCourseCertificate: (courseId: string) => apiRequest<Certificate>(`/certificates/${courseId}/`),
   downloadCertificate: (certificateId: string) => 
     apiRequest<{ download_url: string }>(`/certificates/${certificateId}/download/`),
