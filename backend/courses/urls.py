@@ -14,6 +14,12 @@ router.register(r'(?P<course_pk>[^/.]+)/modules/(?P<module_pk>[^/.]+)/lessons', 
 
 # User progress endpoints
 router.register(r'user/progress', views.UserProgressViewSet, basename='userprogress')
+# urls.py
+router.register(
+    r'(?P<course_pk>[^/.]+)/modules/(?P<module_pk>[^/.]+)/lessons/(?P<lesson_pk>[^/.]+)/sections',
+    views.LessonSectionViewSet,
+    basename='lessonsection'
+)
 
 urlpatterns = [
     path('', include(router.urls)),
@@ -30,7 +36,7 @@ urlpatterns = [
     #     views.CourseViewSet.as_view({'get': 'progress'}), 
     #     name='course-progress'),
 
-    path('user/progres/', 
+    path('user/progress/', 
         views.UserProgressViewSet.as_view({'get': 'list', 'post': 'create'}), 
         name='user-progress'),
     path('user/progress/lesson/<uuid:lesson_id>/', 

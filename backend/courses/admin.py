@@ -4,6 +4,7 @@ from .models import (
     Course,
     Module,
     Lesson,
+    LessonSection,
     UserProgress
 )
 

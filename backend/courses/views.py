@@ -2,10 +2,11 @@ from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
-from .models import CourseCategory, Course, Module, Lesson, UserProgress, Enrollment
+from .models import CourseCategory, Course, Module, Lesson, UserProgress, Enrollment, LessonSection
 from .serializers import (
     CourseCategorySerializer, CourseSerializer, 
-    ModuleSerializer, LessonSerializer, UserProgressSerializer
+    ModuleSerializer, LessonSerializer, LessonSectionSerializer,
+    UserProgressSerializer
 )
 from users.models import User
 
@@ -134,6 +135,19 @@ class LessonViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         module = get_object_or_404(Module, pk=self.kwargs['module_pk'])
         serializer.save(module=module)
+
+class LessonSectionViewSet(viewsets.ModelViewSet):
+    serializer_class = LessonSectionSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        lesson_id = self.kwargs.get('lesson_pk')
+        return LessonSection.objects.filter(lesson_id=lesson_id).order_by('order')
+
+    def perform_create(self, serializer):
+        lesson = get_object_or_404(Lesson, id=self.kwargs.get('lesson_pk'))
+        # lesson = get_object_or_404(Lesson, id=self.kwargs.get('lesson_id'))
+        serializer.save(lesson=lesson)
 
 class UserProgressViewSet(viewsets.ModelViewSet):
     serializer_class = UserProgressSerializer

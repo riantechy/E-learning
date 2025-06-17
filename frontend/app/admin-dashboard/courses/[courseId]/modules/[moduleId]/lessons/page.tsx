@@ -210,12 +210,23 @@ export default function LessonsPage() {
                   <td>{lesson.duration_minutes} min</td>
                   <td>{lesson.is_required ? '✅' : '❌'}</td>
                   <td>
+                    <Badge bg="info" pill>
+                      {lesson.sections_count || 0}
+                    </Badge>
+                  </td>
+                  <td>
                     <Button variant="info" size="sm" className="me-2" onClick={() => handleEdit(lesson)}>
                       Edit
                     </Button>
                     <Button variant="danger" size="sm" className="me-2" onClick={() => handleDelete(lesson.id)}>
                       Delete
                     </Button>
+                    <Link
+                      href={`/admin-dashboard/courses/${courseId}/modules/${moduleId}/lessons/${lesson.id}/sections`}
+                      className="btn btn-secondary btn-sm me-2"
+                    >
+                      Manage Sections
+                    </Link>
                     {lesson.content_type === 'QUIZ' && (
                       <Link
                         href={`/admin-dashboard/courses/${courseId}/modules/${moduleId}/lessons/${lesson.id}/quiz`}

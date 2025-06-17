@@ -96,7 +96,7 @@ class Lesson(models.Model):
     module = models.ForeignKey(Module, on_delete=models.CASCADE, related_name='lessons')
     title = models.CharField(max_length=200)
     content_type = models.CharField(max_length=10, choices=CONTENT_TYPES)
-    content = models.TextField(blank=True)  # Can be text content or URL to media
+    content = models.TextField(blank=True)
     duration_minutes = models.PositiveIntegerField(default=0)
     order = models.PositiveIntegerField(default=0)
     is_required = models.BooleanField(default=True)
@@ -107,6 +107,22 @@ class Lesson(models.Model):
     
     def __str__(self):
         return f"{self.module.title} - {self.title}"
+
+class LessonSection(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, related_name='sections')
+    title = models.CharField(max_length=200)
+    content = models.TextField(blank=True)
+    order = models.PositiveIntegerField(default=0)
+    is_subsection = models.BooleanField(default=False)
+    parent_section = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='subsections')
+    created_at = models.DateTimeField(default=timezone.now)
+    
+    class Meta:
+        ordering = ['order']
+    
+    def __str__(self):
+        return f"{self.lesson.title} - {self.title}"
 
 class UserProgress(models.Model):
     user = models.ForeignKey('users.User', on_delete=models.CASCADE)

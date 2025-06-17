@@ -33,6 +33,7 @@ export default function AdminSidebar() {
     { href: '/admin-dashboard/users', label: 'Learners', icon: '👥' },
     { href: '/admin-dashboard/instructors', label: 'Instructors', icon: '👨‍🏫' },
     { href: '/admin-dashboard/enrollments', label: 'Enrollments', icon: '🎓' },
+    { href: '/admin-dashboard/analytics', label: 'Analytics', icon: '📈' },
     { href: '/admin-dashboard/settings', label: 'Settings', icon: '⚙️' },
   ];
 

@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react'
 import { coursesApi, assessmentsApi } from '@/lib/api'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import LearnerSidebar from '@/components/LearnerSidebar'
-import { Menu } from 'lucide-react'
+import { Menu, ChevronDown, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
 
 export default function LessonPage() {
@@ -26,20 +26,25 @@ export default function LessonPage() {
   const [quizSubmitted, setQuizSubmitted] = useState(false)
   const [quizScore, setQuizScore] = useState<number | null>(null)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
+  const [sections, setSections] = useState<any[]>([])
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [lessonRes, moduleRes, courseRes, progressRes] = await Promise.all([
+        setLoading(true)
+        const [lessonRes, moduleRes, courseRes, progressRes, sectionsRes] = await Promise.all([
           coursesApi.getLesson(courseId, moduleId, lessonId),
           coursesApi.getModule(courseId, moduleId),
           coursesApi.getCourse(courseId),
-          coursesApi.getUserProgress()
+          coursesApi.getUserProgress(),
+          coursesApi.getLessonSections(courseId, moduleId, lessonId)
         ])
 
         if (lessonRes.data) setLesson(lessonRes.data)
         if (moduleRes.data) setModule(moduleRes.data)
         if (courseRes.data) setCourse(courseRes.data)
+        if (sectionsRes.data) setSections(sectionsRes.data)
         
         if (progressRes.data) {
           const lessonProgress = progressRes.data.find((p: any) => p.lesson.id === lessonId)
@@ -60,24 +65,70 @@ export default function LessonPage() {
     fetchData()
   }, [courseId, moduleId, lessonId])
 
- // In page.tsx (lesson page)
+  const toggleSection = (sectionId: string) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [sectionId]: !prev[sectionId]
+    }))
+  }
+
+  const renderSections = (sections: any[]) => {
+    return sections.map((section) => {
+      const hasSubsections = section.subsections && section.subsections.length > 0
+      const isExpanded = expandedSections[section.id] || false
+
+      return (
+        <div key={section.id} className="mb-4">
+          <div 
+            className={`d-flex align-items-center ${hasSubsections ? 'cursor-pointer' : ''}`}
+            onClick={() => hasSubsections && toggleSection(section.id)}
+          >
+            {hasSubsections && (
+              <span className="me-2">
+                {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+              </span>
+            )}
+            <h4 className={`mb-2 ${section.is_subsection ? 'h5 ms-3' : 'h4'}`}>
+              {section.title}
+            </h4>
+          </div>
+          
+          {isExpanded && hasSubsections && (
+            <div className="ms-4">
+              {renderSections(section.subsections || [])}
+            </div>
+          )}
+          
+          <div 
+            className={`lesson-content ${section.is_subsection ? 'ms-4' : ''}`}
+            dangerouslySetInnerHTML={{ __html: section.content }}
+          />
+        </div>
+      )
+    })
+  }
+
   const handleCompleteLesson = async () => {
     try {
-      const res = await coursesApi.updateProgress(lessonId, true);
+      const res = await coursesApi.updateProgress(lessonId, true)
       if (res.data) {
-        setCompleted(true);
-        router.refresh();
+        setCompleted(true)
+        router.refresh()
         
         // Check if course is now complete and generate certificate
-        const courseProgress = await coursesApi.getCourseProgress(courseId);
+        const courseProgress = await coursesApi.getCourseProgress(courseId)
         if (courseProgress.data.percentage === 100) {
-          await certificatesApi.generateCertificate(courseId);
+          await certificatesApi.generateCertificate(courseId)
         }
       }
     } catch (error) {
-      console.error('Error completing lesson:', error);
+      console.error('Error completing lesson:', error)
     }
-  };
+  }
+
+  const handleStartQuiz = () => {
+    setQuizStarted(true)
+  }
 
   const handleAnswerSelect = (questionId: string, answerId: string) => {
     setUserAnswers(prev => ({
@@ -98,7 +149,7 @@ export default function LessonPage() {
         if (res.data.passed) {
           await coursesApi.updateProgress(lessonId, true)
           setCompleted(true)
-          router.refresh() // Refresh to update module progress
+          router.refresh()
         }
       }
     } catch (error) {
@@ -317,10 +368,15 @@ export default function LessonPage() {
                           </div>
                         )}
                         {lesson.content_type === 'TEXT' && (
-                          <div 
-                            className="lesson-content mb-4" 
-                            dangerouslySetInnerHTML={{ __html: lesson.content }}
-                          />
+                          <div className="lesson-content">
+                            {sections.length > 0 ? (
+                              <div className="sections-container">
+                                {renderSections(sections.filter((s: any) => !s.parent_section))}
+                              </div>
+                            ) : (
+                              <div dangerouslySetInnerHTML={{ __html: lesson.content }} />
+                            )}
+                          </div>
                         )}
                         {!completed && lesson.content_type !== 'QUIZ' && (
                           <div className="text-center mt-4">

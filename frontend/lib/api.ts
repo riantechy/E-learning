@@ -90,10 +90,20 @@ export const coursesApi = {
   updateLesson: (courseId: string, moduleId: string, lessonId: string, lesson: Partial<Lesson>) => apiRequest<Lesson>(`/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}/`, 'PUT', lesson),
   deleteLesson: (courseId: string, moduleId: string, lessonId: string) => apiRequest(`/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}/`, 'DELETE'),
 
+   // Lesson sections
+  getLessonSections: (courseId: string, moduleId: string, lessonId: string) => 
+      apiRequest<LessonSection[]>(`/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}/sections/`),
+  createLessonSection: (courseId: string, moduleId: string, lessonId: string, section: Partial<LessonSection>) => 
+      apiRequest<LessonSection>(`/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}/sections/`, 'POST', section),
+  updateLessonSection: (courseId: string, moduleId: string, lessonId: string, sectionId: string, section: Partial<LessonSection>) => 
+      apiRequest<LessonSection>(`/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}/sections/${sectionId}/`, 'PUT', section),
+  deleteLessonSection: (courseId: string, moduleId: string, lessonId: string, sectionId: string) => 
+      apiRequest(`/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}/sections/${sectionId}/`, 'DELETE'),
+
   // User progress
-  getUserProgress: () => apiRequest<UserProgress[]>('/courses/user/progres/'),
+  getUserProgress: () => apiRequest<UserProgress[]>('/courses/user/progress/'),
   updateProgress: (lessonId: string, isCompleted: boolean) => 
-    apiRequest<UserProgress>('/courses/user/progres/', 'POST', { 
+    apiRequest<UserProgress>('/courses/user/progress/', 'POST', { 
       lesson: lessonId, 
       is_completed: isCompleted 
     }),
@@ -168,6 +178,31 @@ export const certificatesApi = {
     apiRequest<{ valid: boolean; certificate: Certificate }>(`/certificates/verify/${certificateNumber}/`),
 };
 
+// Analytics API
+export const analyticsApi = {
+  getUserActivity: (timeFilter: string = '7d') => 
+    apiRequest<any>(`/analytics/user-activity/?time_filter=${timeFilter}`),
+  
+  getCourseProgress: (courseId?: string) => 
+    courseId 
+      ? apiRequest<any>(`/analytics/course-progress/?course_id=${courseId}`)
+      : apiRequest<any>('/analytics/course-progress/'),
+  
+  getEnrollmentStats: (timeRange: string = 'monthly') => 
+    apiRequest<any>(`/analytics/enrollment-stats/?time_range=${timeRange}`),
+  
+  getCompletionRates: () => 
+    apiRequest<any>('/analytics/completion-rates/'),
+  
+  getQuizPerformance: (courseId?: string) => 
+    courseId 
+      ? apiRequest<any>(`/analytics/quiz-performance/?course_id=${courseId}`)
+      : apiRequest<any>('/analytics/quiz-performance/'),
+  
+  exportReport: (type: string, timeFilter: string, format: string) => 
+    apiRequest<any>(`/analytics/export-report/?type=${type}&time_filter=${timeFilter}&format=${format}`),
+};
+
 // Types
 export interface User {
   id: string;
@@ -222,6 +257,18 @@ export interface Lesson {
   is_required: boolean;
   created_at: string;
   questions?: Question[];
+}
+
+export interface LessonSection {
+  id: string;
+  lesson: string | Lesson;
+  title: string;
+  content: string;
+  order: number;
+  is_subsection: boolean;
+  parent_section: string | LessonSection | null;
+  created_at: string;
+  subsections?: LessonSection[];
 }
 
 export interface Question {
