@@ -84,6 +84,32 @@ class Module(models.Model):
     def __str__(self):
         return f"{self.course.title} - {self.title}"
 
+class ModuleProgress(models.Model):
+    user = models.ForeignKey('users.User', on_delete=models.CASCADE)
+    module = models.ForeignKey(Module, on_delete=models.CASCADE)
+    is_completed = models.BooleanField(default=False)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        unique_together = ('user', 'module')
+    
+    def save(self, *args, **kwargs):
+        if self.is_completed and not self.completed_at:
+            self.completed_at = timezone.now()
+        super().save(*args, **kwargs)
+
+@classmethod
+def mark_module_completed(cls, user, module):
+    progress, created = cls.objects.get_or_create(
+        user=user,
+        module=module,
+        defaults={'is_completed': True}
+    )
+    if not created and not progress.is_completed:
+        progress.is_completed = True
+        progress.save()
+    return progress
+
 class Lesson(models.Model):
     CONTENT_TYPES = (
         ('VIDEO', 'Video'),
@@ -147,10 +173,24 @@ class UserProgress(models.Model):
             lesson__module__course=course,
             is_completed=True
         ).count()
+        # return {
+        #     'completed': completed_lessons,
+        #     'total': total_lessons,
+        #     'percentage': round((completed_lessons / total_lessons) * 100, 2) if total_lessons > 0 else 0
+        # }
+
+        # Get completed modules
+        completed_modules = ModuleProgress.objects.filter(
+            user=user,
+            module__course=course,
+            is_completed=True
+        ).values_list('module_id', flat=True)
+        
         return {
             'completed': completed_lessons,
             'total': total_lessons,
-            'percentage': round((completed_lessons / total_lessons) * 100, 2) if total_lessons > 0 else 0
+            'percentage': round((completed_lessons / total_lessons) * 100, 2) if total_lessons > 0 else 0,
+            'completed_modules': list(completed_modules)
         }
 
     @classmethod

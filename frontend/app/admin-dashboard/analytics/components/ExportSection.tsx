@@ -49,6 +49,7 @@ export default function ExportSection({
               >
                 <option value="user_activity">User Activity</option>
                 <option value="course_progress">Course Progress</option>
+                <option value="module_coverage">Module Coverage</option>
                 <option value="enrollment_stats">Enrollment Stats</option>
                 <option value="completion_rates">Completion Rates</option>
                 <option value="quiz_performance">Quiz Performance</option>

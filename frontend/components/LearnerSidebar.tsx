@@ -5,10 +5,13 @@ import { useAuth } from '@/context/AuthContext'
 import { useEffect, useState } from 'react'
 import { certificatesApi, coursesApi } from '@/lib/api'
 
-interface UserProgressData {
-  completed: number;
-  total: number;
-  percentage: number;
+interface UserProgressItem {
+  id: number;
+  is_completed: boolean;
+  completed_at: string | null;
+  last_accessed: string;
+  user: string;
+  lesson: string;
 }
 
 interface User {
@@ -18,7 +21,7 @@ interface User {
   last_name: string;
   role: string;
   enrolled_courses_count?: number;
-  avatar?: string; // Making avatar optional
+  avatar?: string;
 }
 
 export default function LearnerSidebar() {
@@ -26,19 +29,38 @@ export default function LearnerSidebar() {
   const { user } = useAuth()
   const [progress, setProgress] = useState<number>(0)
   const [certCount, setCertCount] = useState<number>(0)
+  const [enrolledCoursesCount, setEnrolledCoursesCount] = useState<number>(0)
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Update to use the correct endpoint for course progress
-        const progressRes = await coursesApi.getCourseProgress(user?.id || '')
+        // Fetch all progress data
+        const progressRes = await coursesApi.getAllProgress()
         const certsRes = await certificatesApi.getUserCertificates()
-        
-        if (progressRes.data) {
-          // Assuming progressRes.data has percentage property
-          setProgress(progressRes.data.percentage || 0)
+        const enrollmentsRes = await coursesApi.getUserEnrollments()
+
+        // Calculate progress percentage
+        if (progressRes.data && Array.isArray(progressRes.data)) {
+          const completedLessons = progressRes.data.filter(
+            (item: UserProgressItem) => item.is_completed
+          ).length
+          const totalLessons = progressRes.data.length
+          const calculatedProgress = totalLessons > 0 
+            ? Math.round((completedLessons / totalLessons) * 100) 
+            : 0
+          setProgress(calculatedProgress)
         }
-        if (certsRes.data) setCertCount(certsRes.data.length || 0)
+
+        // Set certificates count
+        if (certsRes.data) {
+          setCertCount(certsRes.data.length || 0)
+        }
+
+        // Set enrolled courses count
+        if (enrollmentsRes.data) {
+          setEnrolledCoursesCount(enrollmentsRes.data.length || 0)
+        }
+
       } catch (error) {
         console.error('Error fetching sidebar data:', error)
       }
@@ -91,7 +113,7 @@ export default function LearnerSidebar() {
         </div>
         <div className="flex justify-between">
           <span className="badge bg-blue-100 text-blue-800 text-xs">
-            Courses: {user?.enrolled_courses_count || 0}
+            Courses: {enrolledCoursesCount}
           </span>
           <span className="badge bg-green-100 text-green-800 text-xs">
             Certs: {certCount}
@@ -118,15 +140,6 @@ export default function LearnerSidebar() {
             Browse Courses
           </Link>
         </li>
-        {/* <li>
-          <Link 
-            href="/dashboard/my-courses" 
-            className={`flex items-center p-2 rounded-md ${isActive('/my-courses') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100'}`}
-          >
-            <i className="bi bi-collection mr-3"></i>
-            My Courses
-          </Link>
-        </li> */}
         <li>
           <Link 
             href="/dashboard/learn" 

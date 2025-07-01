@@ -1,12 +1,14 @@
 from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from django.utils import timezone
+from rest_framework import status
 from django.shortcuts import get_object_or_404
-from .models import CourseCategory, Course, Module, Lesson, UserProgress, Enrollment, LessonSection
+from .models import CourseCategory, Course, Module, Lesson, UserProgress, Enrollment, LessonSection, ModuleProgress
 from .serializers import (
     CourseCategorySerializer, CourseSerializer, 
     ModuleSerializer, LessonSerializer, LessonSectionSerializer,
-    UserProgressSerializer
+    UserProgressSerializer, ModuleProgressSerializer
 )
 from users.models import User
 
@@ -124,7 +126,57 @@ class ModuleViewSet(viewsets.ModelViewSet):
         course = get_object_or_404(Course, pk=self.kwargs['course_pk'])
         serializer.save(course=course)
 
+class ModuleProgressViewSet(viewsets.ViewSet):
+    permission_classes = [permissions.IsAuthenticated]
 
+    def list(self, request):
+        # Handle GET /module-progress/ (get all module progress for user)
+        progress = ModuleProgress.objects.filter(user=request.user)
+        serializer = ModuleProgressSerializer(progress, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
+    def get_progress(self, request):
+        # Handle GET /module-progress/get_progress/?module_id=<id>
+        module_id = request.query_params.get('module_id')
+        if not module_id:
+            return Response({'error': 'module_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        module = get_object_or_404(Module, id=module_id)
+        progress, created = ModuleProgress.objects.get_or_create(
+            user=request.user,
+            module=module,
+            defaults={'is_completed': False}
+        )
+        serializer = ModuleProgressSerializer(progress)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'])
+    def complete_module(self, request, pk=None):
+        module = self.get_object()
+        ModuleProgress.mark_module_completed(request.user, module)
+        return Response({'status': 'module completed'})
+
+    @action(detail=False, methods=['post'])
+    def mark_completed(self, request):
+        # Handle POST /module-progress/mark_completed/
+        module_id = request.data.get('module_id')
+        if not module_id:
+            return Response({'error': 'module_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        module = get_object_or_404(Module, id=module_id)
+        progress, created = ModuleProgress.objects.get_or_create(
+            user=request.user,
+            module=module,
+            defaults={'is_completed': True}
+        )
+        
+        if not created:
+            progress.is_completed = True
+            progress.save()
+            
+        serializer = ModuleProgressSerializer(progress)
+        return Response(serializer.data)
 class LessonViewSet(viewsets.ModelViewSet):
     serializer_class = LessonSerializer
     permission_classes = [permissions.IsAuthenticated]  # ⬅️ Only authenticated users
@@ -136,6 +188,20 @@ class LessonViewSet(viewsets.ModelViewSet):
         module = get_object_or_404(Module, pk=self.kwargs['module_pk'])
         serializer.save(module=module)
 
+    @action(detail=False, methods=['get'])
+    def with_sections(self, request, course_pk=None, module_pk=None):
+        """Get all lessons with their sections for a module"""
+        lessons = Lesson.objects.filter(module_id=module_pk).order_by('order')
+        
+        # Prefetch related sections to optimize queries
+        lessons = lessons.prefetch_related(
+            'sections',
+            'sections__subsections'
+        )
+        
+        serializer = self.get_serializer(lessons, many=True)
+        return Response(serializer.data)
+
 class LessonSectionViewSet(viewsets.ModelViewSet):
     serializer_class = LessonSectionSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -146,20 +212,93 @@ class LessonSectionViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         lesson = get_object_or_404(Lesson, id=self.kwargs.get('lesson_pk'))
-        # lesson = get_object_or_404(Lesson, id=self.kwargs.get('lesson_id'))
-        serializer.save(lesson=lesson)
+        parent_section_id = self.request.data.get('parent_section')
+        parent_section = None
+        
+        if parent_section_id:
+            parent_section = get_object_or_404(LessonSection, id=parent_section_id)
+        
+        serializer.save(lesson=lesson, parent_section=parent_section)
+
+    def destroy(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            self.perform_destroy(instance)
+            return Response(
+                {
+                    'status': 'success',
+                    'message': 'Section deleted successfully',
+                    'section_id': str(instance.id),
+                    'lesson_id': str(instance.lesson.id)
+                },
+                status=status.HTTP_200_OK
+            )
+        except Exception as e:
+            return Response(
+                {'status': 'error', 'message': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
 class UserProgressViewSet(viewsets.ModelViewSet):
     serializer_class = UserProgressSerializer
     permission_classes = [permissions.IsAuthenticated]
+    lookup_field = 'lesson_id'
+    lookup_url_kwarg = 'lesson_id'
 
     def get_queryset(self):
-        return UserProgress.objects.filter(user=self.request.user)
+        queryset = UserProgress.objects.filter(user=self.request.user)
+        
+        # Add lesson filter if provided
+        lesson_id = self.request.query_params.get('lesson_id')
+        if lesson_id:
+            queryset = queryset.filter(lesson_id=lesson_id)
+            
+        return queryset
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        
+        # If filtering by lesson and only one record expected
+        if request.query_params.get('lesson_id') and queryset.exists():
+            serializer = self.get_serializer(queryset.first())
+            return Response(serializer.data)
+            
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+    def get_object(self):
+        lesson_id = self.kwargs.get('lesson_id')
+        lesson = get_object_or_404(Lesson, id=lesson_id)
+        
+        progress, created = UserProgress.objects.get_or_create(
+            user=self.request.user,
+            lesson=lesson,
+            defaults={'is_completed': False}
+        )
+        return progress
 
     def perform_create(self, serializer):
         lesson_id = self.request.data.get('lesson')
         lesson = get_object_or_404(Lesson, id=lesson_id)
         serializer.save(user=self.request.user, lesson=lesson)
+
+    def update(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            serializer = self.get_serializer(instance, data=request.data, partial=True)
+            serializer.is_valid(raise_exception=True)
+            self.perform_update(serializer)
+            return Response(serializer.data)
+        except Http404:
+            # Create new progress record if not found
+            lesson_id = kwargs.get('lesson_id')
+            lesson = get_object_or_404(Lesson, id=lesson_id)
+            serializer = self.get_serializer(data={
+                'lesson': lesson_id,
+                'is_completed': request.data.get('is_completed', False)
+            })
+            serializer.is_valid(raise_exception=True)
+            serializer.save(user=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=['get'])
     def course_progress(self, request, course_id=None):

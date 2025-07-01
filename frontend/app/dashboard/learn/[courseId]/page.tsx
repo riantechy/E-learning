@@ -1,3 +1,4 @@
+// /dashboard/learn/[courseId]/page.tsx
 'use client'
 
 import { useParams, useRouter } from 'next/navigation'
@@ -30,7 +31,13 @@ export default function CourseOverviewPage() {
         
         if (courseRes.data) setCourse(courseRes.data)
         if (modulesRes.data) setModules(modulesRes.data)
-        if (progressRes.data) setProgress(progressRes.data)
+        if (progressRes.data) {
+          setProgress(progressRes.data)
+          // Check if we need to refresh (e.g., after module completion)
+          if (progressRes.data.percentage === 100) {
+            router.refresh()
+          }
+        }
       } catch (error) {
         console.error('Error fetching course data:', error)
       } finally {
@@ -41,7 +48,7 @@ export default function CourseOverviewPage() {
     if (courseId) {
       fetchData()
     }
-  }, [courseId])
+  }, [courseId, router])
 
   const handleStartCourse = async () => {
     // Find first incomplete module or first module if none are completed
@@ -60,7 +67,16 @@ export default function CourseOverviewPage() {
     const prevModule = modules.find(m => m.order === module.order - 1)
     if (!prevModule) return false
     
+    // Check if previous module is completed
     return !progress?.completed_modules?.includes(prevModule.id)
+  }
+
+  const getModuleStatus = (module: any) => {
+    const isCompleted = progress?.completed_modules?.includes(module.id)
+    const isLocked = isModuleLocked(module)
+    const isStarted = progress?.started_modules?.includes(module.id) || isCompleted
+
+    return { isCompleted, isLocked, isStarted }
   }
 
   if (loading) {
@@ -151,8 +167,8 @@ export default function CourseOverviewPage() {
               <div className="col-md-8">
                 <div className="card mb-4">
                   <div className="card-body">
-                    <h1 className="mb-3">{course.title}</h1>
-                    <p className="lead">{course.description}</p>
+                    <h5 className="mb-3">{course.title}</h5>
+                    <p className="text-sm">{course.description}</p>
                     
                     <div className="d-flex justify-content-between align-items-center mb-4">
                       <div>
@@ -187,12 +203,11 @@ export default function CourseOverviewPage() {
 
                 <div className="card">
                   <div className="card-header">
-                    <h3>Course Modules</h3>
+                    <h5>Course Modules</h5>
                   </div>
                   <div className="list-group list-group-flush">
                     {modules.map((module) => {
-                      const isCompleted = progress?.completed_modules?.includes(module.id)
-                      const isLocked = isModuleLocked(module)
+                      const { isCompleted, isLocked, isStarted } = getModuleStatus(module)
                       
                       return (
                         <div 
@@ -201,8 +216,8 @@ export default function CourseOverviewPage() {
                         >
                           <div className="d-flex justify-content-between align-items-center">
                             <div>
-                              <h4 className="mb-1">{module.title}</h4>
-                              <p className="mb-1 text-muted">{module.description}</p>
+                              <h6 className="mb-1">{module.title}</h6>
+                              <p className="text-sm text-muted">{module.description}</p>
                               <small>
                                 {module.completed_lessons || 0}/{module.total_lessons} lessons
                               </small>
@@ -217,7 +232,7 @@ export default function CourseOverviewPage() {
                                   href={`/dashboard/learn/${courseId}/${module.id}`}
                                   className="btn btn-primary btn-sm"
                                 >
-                                  {module.started ? 'Continue' : 'Start'}
+                                  {isStarted ? 'Continue' : 'Start'}
                                 </Link>
                               )}
                             </div>
@@ -232,7 +247,7 @@ export default function CourseOverviewPage() {
               <div className="col-md-4">
                 <div className="card mb-4">
                   <div className="card-header">
-                    <h4>Course Details</h4>
+                    <h6>Course Details</h6>
                   </div>
                   <div className="card-body">
                     <ul className="list-group list-group-flush">
@@ -262,7 +277,7 @@ export default function CourseOverviewPage() {
 
                 <div className="card">
                   <div className="card-header">
-                    <h4>Quick Actions</h4>
+                    <h6>Quick Actions</h6>
                   </div>
                   <div className="card-body">
                     <div className="d-grid gap-2">

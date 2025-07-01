@@ -13,7 +13,8 @@ router.register(r'(?P<course_pk>[^/.]+)/modules', views.ModuleViewSet, basename=
 router.register(r'(?P<course_pk>[^/.]+)/modules/(?P<module_pk>[^/.]+)/lessons', views.LessonViewSet, basename='lesson')
 
 # User progress endpoints
-router.register(r'user/progress', views.UserProgressViewSet, basename='userprogress')
+# router.register(r'user/progress', views.UserProgressViewSet, basename='userprogress')
+
 # urls.py
 router.register(
     r'(?P<course_pk>[^/.]+)/modules/(?P<module_pk>[^/.]+)/lessons/(?P<lesson_pk>[^/.]+)/sections',
@@ -29,25 +30,52 @@ urlpatterns = [
     path('reject/<uuid:pk>/', views.CourseViewSet.as_view({'post': 'reject'}), name='course-reject'),
     path('publish/<uuid:pk>/', views.CourseViewSet.as_view({'post': 'publish'}), name='course-publish'),
     
-    # path('user/progress/course/', 
-    #     views.UserProgressViewSet.as_view({'get': 'course_progress'}), 
-    #     name='user-course-progress'),
-    # path('<uuid:course_id>/', 
-    #     views.CourseViewSet.as_view({'get': 'progress'}), 
-    #     name='course-progress'),
+    path('user/progress/all/', views.UserProgressViewSet.as_view({
+        'get': 'list',
+        'post': 'create'
+    }), name='user-progress-list'),
+    path('user/progress/lesson/<uuid:lesson_id>/', views.UserProgressViewSet.as_view({
+        'get': 'retrieve',
+        'put': 'update',
+        'patch': 'partial_update'
+    }), name='lesson-progress'),
+    path('user/progress/course/<uuid:course_id>/', views.UserProgressViewSet.as_view({
+        'get': 'course_progress'
+    }), name='course-progress'),
+    path('user/progress/toggle/', views.UserProgressViewSet.as_view({
+        'post': 'toggle_lesson_completion'
+    }), name='toggle-lesson-completion'),
+    path('user/progress/all/', views.UserProgressViewSet.as_view({
+        'get': 'all_progress'
+    }), name='all-progress'),
 
-    path('user/progress/', 
-        views.UserProgressViewSet.as_view({'get': 'list', 'post': 'create'}), 
-        name='user-progress'),
-    path('user/progress/lesson/<uuid:lesson_id>/', 
-        views.UserProgressViewSet.as_view({'get': 'retrieve', 'put': 'update'}), 
-        name='lesson-progress'),
-    path('user/progress/course/<uuid:course_id>/', 
-        views.UserProgressViewSet.as_view({'get': 'course_progress'}), 
-        name='course-progress'),
-    path('user/progress/toggle/', 
-        views.UserProgressViewSet.as_view({'post': 'toggle_lesson_completion'}), 
-        name='toggle-lesson-completion'),
+    path('module-progress/', views.ModuleProgressViewSet.as_view({
+        'get': 'list',
+        'post': 'mark_completed'
+    }), name='module-progress'),
+    
+    path('module-progress/get_progress/', views.ModuleProgressViewSet.as_view({
+        'get': 'get_progress'
+    }), name='module-progress-detail'),
+
+    # path('user/progress/', 
+    #     views.UserProgressViewSet.as_view({'get': 'list', 'post': 'create'}), 
+    #     name='user-progress'),
+    # path('user/progress/lesson/<uuid:lesson_id>/', 
+    #     views.UserProgressViewSet.as_view({'get': 'retrieve', 'put': 'update'}), 
+    #     name='lesson-progress'),
+    # path('user/progress/course/<uuid:course_id>/', 
+    #     views.UserProgressViewSet.as_view({'get': 'course_progress'}), 
+    #     name='course-progress'),
+    # path('user/progress/toggle/', 
+    #     views.UserProgressViewSet.as_view({'post': 'toggle_lesson_completion'}), 
+    #     name='toggle-lesson-completion'),
+
+
+    path(
+        '<uuid:course_pk>/modules/<uuid:module_pk>/lessons-with-sections/',
+        views.LessonViewSet.as_view({'get': 'with_sections'}),
+        name='lessons-with-sections'),
 
     path('enrollments/total/', 
         views.CourseViewSet.as_view({'get': 'total_enrollments'}), 

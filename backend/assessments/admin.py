@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Question, Answer, UserAttempt, UserResponse
+from .models import Question, Answer, UserAttempt, UserResponse, Survey, SurveyQuestion, SurveyChoice, SurveyResponse, SurveyAnswer
 
 class AnswerInline(admin.TabularInline):
     model = Answer
@@ -29,3 +29,9 @@ class UserAttemptAdmin(admin.ModelAdmin):
 class UserResponseAdmin(admin.ModelAdmin):
     list_display = ('attempt', 'question', 'selected_answer', 'is_correct')
     search_fields = ('attempt__user__email', 'question__question_text')
+
+admin.site.register(Survey)
+admin.site.register(SurveyQuestion)
+admin.site.register(SurveyChoice)
+admin.site.register(SurveyResponse)
+admin.site.register(SurveyAnswer)

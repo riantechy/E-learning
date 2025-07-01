@@ -2,10 +2,10 @@
 
 import { useParams, useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
-import { coursesApi, assessmentsApi } from '@/lib/api'
+import { coursesApi, assessmentsApi, certificatesApi } from '@/lib/api'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import LearnerSidebar from '@/components/LearnerSidebar'
-import { Menu, ChevronDown, ChevronRight } from 'lucide-react'
+import { Menu, ChevronDown, ChevronRight, ChevronLeft } from 'lucide-react'
 import Link from 'next/link'
 
 export default function LessonPage() {
@@ -110,21 +110,30 @@ export default function LessonPage() {
 
   const handleCompleteLesson = async () => {
     try {
-      const res = await coursesApi.updateProgress(lessonId, true)
+      const res = await coursesApi.updateProgress(lessonId, true);
       if (res.data) {
-        setCompleted(true)
-        router.refresh()
+        setCompleted(true);
+        // Refresh both local data and router state
+        const [progressRes] = await Promise.all([
+          coursesApi.getUserProgress(),
+          router.refresh()
+        ]);
         
-        // Check if course is now complete and generate certificate
-        const courseProgress = await coursesApi.getCourseProgress(courseId)
-        if (courseProgress.data.percentage === 100) {
-          await certificatesApi.generateCertificate(courseId)
+        if (progressRes.data) {
+          const lessonProgress = progressRes.data.find((p: any) => p.lesson.id === lessonId);
+          if (lessonProgress) setCompleted(lessonProgress.is_completed);
+        }
+  
+        // Check if course is complete for certificate
+        const courseProgress = await coursesApi.getCourseProgress(courseId);
+        if (courseProgress.data?.percentage === 100) {
+          await certificatesApi.getCourseCertificate(courseId);
         }
       }
     } catch (error) {
-      console.error('Error completing lesson:', error)
+      console.error('Error completing lesson:', error);
     }
-  }
+  };
 
   const handleStartQuiz = () => {
     setQuizStarted(true)
@@ -157,14 +166,47 @@ export default function LessonPage() {
     }
   }
 
-  const handleNextLesson = () => {
-    const currentIndex = module.lessons?.findIndex((l: any) => l.id === lessonId)
-    if (currentIndex !== undefined && currentIndex < module.lessons.length - 1) {
-      router.push(`/dashboard/learn/${courseId}/${moduleId}/${module.lessons[currentIndex + 1].id}`)
-    } else {
-      router.push(`/dashboard/learn/${courseId}/${moduleId}`)
+  const getCurrentLessonIndex = () => {
+    return module.lessons?.findIndex((l: any) => l.id === lessonId) || 0;
+  };
+  
+  const hasPreviousLesson = () => {
+    return getCurrentLessonIndex() > 0;
+  };
+  
+  const hasNextLesson = () => {
+    return getCurrentLessonIndex() < (module.lessons?.length || 0) - 1;
+  };
+  
+  const handlePreviousLesson = () => {
+    const prevIndex = getCurrentLessonIndex() - 1;
+    if (prevIndex >= 0) {
+      router.push(`/dashboard/learn/${courseId}/${moduleId}/${module.lessons[prevIndex].id}`);
     }
-  }
+  };
+  
+  // const handleNextLesson = () => {
+  //   const nextIndex = getCurrentLessonIndex() + 1;
+  //   if (nextIndex < module.lessons?.length) {
+  //     router.push(`/dashboard/learn/${courseId}/${moduleId}/${module.lessons[nextIndex].id}`);
+  //   } else {
+  //     router.push(`/dashboard/learn/${courseId}/${moduleId}`);
+  //   }
+  // };
+
+  const handleNextLesson = () => {
+    if (!module?.lessons) {
+      router.push(`/dashboard/learn/${courseId}/${moduleId}`);
+      return;
+    }
+  
+    const currentIndex = module.lessons.findIndex((l: any) => l.id === lessonId);
+      if (currentIndex !== undefined && currentIndex < module.lessons.length - 1) {
+        router.push(`/dashboard/learn/${courseId}/${moduleId}/${module.lessons[currentIndex + 1].id}`);
+      } else {
+        router.push(`/dashboard/learn/${courseId}/${moduleId}`);
+      }
+    };
 
   if (loading) {
     return (
@@ -262,17 +304,17 @@ export default function LessonPage() {
               <div className="col-md-8">
                 <div className="card mb-4">
                   <div className="card-header">
-                    <h2>{lesson.title}</h2>
                     <small className="text-muted">
                       Module: {module.title} • {lesson.duration_minutes} min
                     </small>
+                    <h5>{lesson.title}</h5>
                   </div>
                   <div className="card-body">
                     {lesson.content_type === 'QUIZ' ? (
                       <div className="quiz-container">
                         {!quizStarted ? (
                           <div className="text-center py-4">
-                            <h4>Quiz: {lesson.title}</h4>
+                            <h5>Quiz: {lesson.title}</h5>
                             <p>This quiz contains {questions.length} questions.</p>
                             <p>You need to score at least 70% to pass.</p>
                             <button 
@@ -284,23 +326,54 @@ export default function LessonPage() {
                           </div>
                         ) : !quizSubmitted ? (
                           <div>
-                            <h4 className="mb-4">Quiz Questions</h4>
+                            <h5 className="mb-4">Quiz Questions</h5>
                             {questions.map((question, index) => (
                               <div key={question.id} className="mb-4">
-                                <h5>Question {index + 1}: {question.question_text}</h5>
-                                <div className="list-group">
-                                  {question.answers.map((answer: any) => (
-                                    <button
-                                      key={answer.id}
-                                      className={`list-group-item list-group-item-action text-start ${
-                                        userAnswers[question.id] === answer.id ? 'active' : ''
-                                      }`}
-                                      onClick={() => handleAnswerSelect(question.id, answer.id)}
-                                    >
-                                      {answer.answer_text}
-                                    </button>
-                                  ))}
-                                </div>
+                                <h6>Question {index + 1}: {question.question_text}</h6>
+                                {question.question_type === 'MCQ' ? (
+                                  <div className="list-group">
+                                    {question.answers.map((answer: any) => (
+                                      <div key={answer.id} className="list-group-item">
+                                        <div className="form-check">
+                                          <input
+                                            className="form-check-input"
+                                            type="radio"
+                                            name={`question-${question.id}`}
+                                            id={`answer-${answer.id}`}
+                                            checked={userAnswers[question.id] === answer.id}
+                                            onChange={() => handleAnswerSelect(question.id, answer.id)}
+                                          />
+                                          <label 
+                                            className="form-check-label w-100" 
+                                            htmlFor={`answer-${answer.id}`}
+                                          >
+                                            {answer.answer_text}
+                                          </label>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : question.question_type === 'TF' ? (
+                                  <div className="btn-group" role="group">
+                                    {question.answers.map((answer: any) => (
+                                      <button
+                                        key={answer.id}
+                                        type="button"
+                                        className={`btn ${userAnswers[question.id] === answer.id ? 'btn-primary' : 'btn-outline-primary'}`}
+                                        onClick={() => handleAnswerSelect(question.id, answer.id)}
+                                      >
+                                        {answer.answer_text}
+                                      </button>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <input
+                                    type="text"
+                                    className="form-control"
+                                    value={userAnswers[question.id] || ''}
+                                    onChange={(e) => handleAnswerSelect(question.id, e.target.value)}
+                                  />
+                                )}
                               </div>
                             ))}
                             <button
@@ -313,7 +386,7 @@ export default function LessonPage() {
                           </div>
                         ) : (
                           <div className="text-center py-4">
-                            <h4>Quiz Results</h4>
+                            <h6>Quiz Results</h6>
                             <div className={`alert ${quizScore && quizScore >= 70 ? 'alert-success' : 'alert-danger'}`}>
                               <h5>Your Score: {quizScore}%</h5>
                               <p>
@@ -327,7 +400,7 @@ export default function LessonPage() {
                                 onClick={handleNextLesson}
                                 className="btn btn-primary"
                               >
-                                {module.lessons?.findIndex((l: any) => l.id === lessonId) < module.lessons.length - 1
+                                {module?.lessons && module.lessons.findIndex((l: any) => l.id === lessonId) < module.lessons.length - 1
                                   ? 'Continue to Next Lesson'
                                   : 'Back to Module'}
                               </button>
@@ -382,7 +455,7 @@ export default function LessonPage() {
                           <div className="text-center mt-4">
                             <button 
                               onClick={handleCompleteLesson} 
-                              className="btn btn-success btn-lg"
+                              className="btn btn-success btn-sm"
                             >
                               Mark as Completed
                             </button>
@@ -390,15 +463,32 @@ export default function LessonPage() {
                         )}
                         {completed && (
                           <div className="alert alert-success mt-4">
-                            ✓ You've completed this lesson
-                            <button
-                              onClick={handleNextLesson}
-                              className="btn btn-primary ms-3"
-                            >
-                              {module.lessons?.findIndex((l: any) => l.id === lessonId) < module.lessons.length - 1
-                                ? 'Continue to Next Lesson'
-                                : 'Back to Module'}
-                            </button>
+                            <div className="d-flex justify-content-between align-items-center">
+                              <div>
+                                <span>✓ You've completed this lesson</span>
+                                {quizSubmitted && quizScore && (
+                                  <div className="mt-2">
+                                    <strong>Quiz Score:</strong> {quizScore}%
+                                  </div>
+                                )}
+                              </div>
+                              <div className="d-flex justify-content-between mt-2">
+                              <button
+                                onClick={() => handlePreviousLesson(lesson.id)}
+                                disabled={index === 0}
+                                className="btn btn-sm btn-outline-secondary"
+                              >
+                                <ChevronLeft size={16} /> Previous
+                              </button>
+                              <button
+                                onClick={() => handleNextLesson(lesson.id)}
+                                disabled={index === lessons.length - 1}
+                                className="btn btn-sm btn-outline-secondary"
+                              >
+                                Next <ChevronRight size={16} />
+                              </button>
+                              </div>
+                            </div>
                           </div>
                         )}
                       </>
@@ -409,7 +499,7 @@ export default function LessonPage() {
               <div className="col-md-4">
                 <div className="card mb-4">
                   <div className="card-header">
-                    <h5>Course Progress</h5>
+                    <h6>Course Progress</h6>
                   </div>
                   <div className="card-body">
                     <div className="progress mb-3">
@@ -424,7 +514,7 @@ export default function LessonPage() {
                 </div>
                 <div className="card">
                   <div className="card-header">
-                    <h5>Course Modules</h5>
+                    <h6>Course Modules</h6>
                   </div>
                   <div className="list-group list-group-flush">
                     {course.modules?.map((mod: any) => (

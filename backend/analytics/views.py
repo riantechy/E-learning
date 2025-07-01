@@ -5,7 +5,7 @@ from django.db.models import Count, Avg, Q, F
 from django.utils import timezone
 from datetime import timedelta
 from users.models import User
-from courses.models import Course, Enrollment, UserProgress
+from courses.models import Course, Enrollment, UserProgress, Module, ModuleProgress
 from assessments.models import UserAttempt
 from .models import UserActivity
 from .serializers import (
@@ -343,6 +343,42 @@ class ExportAnalyticsReportView(APIView):
             
             df = pd.DataFrame(data)
             df.columns = ['User Email', 'Course', 'Enrollment Date']
+
+        elif report_type == 'module_coverage':
+            if not course_id:
+                return Response(
+                    {"error": "course_id is required for module coverage export"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            try:
+                course = Course.objects.get(id=course_id)
+            except Course.DoesNotExist:
+                return Response(
+                    {"error": "Course not found"},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+            # Get module coverage data
+            response = ModuleCoverageAnalyticsView().get(request, course_id)
+            if response.status_code != 200:
+                return response
+            
+            data = response.data
+            rows = []
+            
+            for learner in data['learners']:
+                row = {
+                    'Learner ID': learner['user_id'],
+                    'Learner Name': learner['name'],
+                }
+                
+                for i, module in enumerate(data['modules']):
+                    row[module] = 'Completed' if learner['module_progress'][i]['completed'] else 'Not Completed'
+                
+                rows.append(row)
+            
+            df = pd.DataFrame(rows)
         
         # Export to requested format
         if format == 'excel':
@@ -363,3 +399,62 @@ class ExportAnalyticsReportView(APIView):
             response['Content-Disposition'] = f'attachment; filename={report_type}_report.csv'
             df.to_csv(response, index=False)
             return response
+
+class ModuleCoverageAnalyticsView(APIView):
+    def get(self, request, course_id=None):
+        if not course_id:
+            return Response(
+                {"error": "course_id is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            course = Course.objects.get(id=course_id)
+        except Course.DoesNotExist:
+            return Response(
+                {"error": "Course not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Get all modules for the course
+        modules = Module.objects.filter(course=course).order_by('order')
+        module_names = [module.title for module in modules]
+        
+        # Get all enrollments for the course
+        enrollments = Enrollment.objects.filter(course=course).select_related('user')
+        
+        # Prepare the response data
+        data = {
+            "course_id": str(course.id),
+            "course_title": course.title,
+            "modules": module_names,
+            "learners": []
+        }
+        
+        for enrollment in enrollments:
+            user = enrollment.user
+            user_data = {
+                "user_id": str(user.id),
+                "name": f"{user.first_name} {user.last_name}",
+                "module_progress": []
+            }
+            
+            # Check progress for each module
+            for module in modules:
+                try:
+                    progress = ModuleProgress.objects.get(user=user, module=module)
+                    user_data["module_progress"].append({
+                        "module_id": str(module.id),
+                        "completed": progress.is_completed,
+                        "completed_at": progress.completed_at
+                    })
+                except ModuleProgress.DoesNotExist:
+                    user_data["module_progress"].append({
+                        "module_id": str(module.id),
+                        "completed": False,
+                        "completed_at": None
+                    })
+            
+            data["learners"].append(user_data)
+        
+        return Response(data)

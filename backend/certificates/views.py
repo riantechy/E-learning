@@ -1,16 +1,13 @@
-from rest_framework import generics
+from rest_framework import generics, status
 from rest_framework.response import Response
-from rest_framework import status
 from reportlab.lib.pagesizes import letter
-from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from .models import Certificate, CertificateTemplate
 from .serializers import CertificateTemplateSerializer, CertificateSerializer
 from reportlab.pdfgen import canvas
 from io import BytesIO
 from django.core.files.base import ContentFile
-from .models import Certificate, CertificateTemplate
-from courses.models import Course
+from courses.models import Course, ModuleProgress, Module
 from users.models import User
 import uuid
 from django.urls import reverse
@@ -31,6 +28,18 @@ class GenerateCertificateView(generics.GenericAPIView):
         # Check if user has completed course requirements
         from courses.models import UserProgress
         progress = UserProgress.get_course_progress(user, course)
+        module_progress = ModuleProgress.objects.filter(
+            user=user,
+            module__course=course,
+            is_completed=True
+        ).count()
+        total_modules = Module.objects.filter(course=course).count()
+
+        if progress['percentage'] < 100 or module_progress < total_modules:
+            return Response(
+                {"detail": "Course not completed"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
         
         if progress['percentage'] < 100:
             return Response(
@@ -46,6 +55,11 @@ class GenerateCertificateView(generics.GenericAPIView):
         
         # Get default template or first available template
         template = CertificateTemplate.objects.first()
+        if not template:
+            return Response(
+                {"detail": "No certificate templates available"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
         
         # Generate certificate
         buffer = BytesIO()
@@ -87,13 +101,26 @@ class GenerateCertificateView(generics.GenericAPIView):
         c.save()
         
         # Create certificate record
-        certificate = Certificate.objects.create(
+        certificate, created = Certificate.objects.get_or_create(
             user=user,
             course=course,
-            template=template,
-            certificate_number=cert_number,
-            verification_url=verification_url
+            defaults={
+                'template': template,
+                'certificate_number': cert_number,
+                'verification_url': verification_url
+            }
         )
+        if not created:
+            serializer = CertificateSerializer(certificate)
+            return Response(serializer.data)
+    
+        # certificate = Certificate.objects.create(
+        #     user=user,
+        #     course=course,
+        #     template=template,
+        #     certificate_number=cert_number,
+        #     verification_url=verification_url
+        # )
         
         # Save PDF
         pdf = buffer.getvalue()
@@ -111,12 +138,17 @@ class CertificateTemplateListCreateView(generics.ListCreateAPIView):
     serializer_class = CertificateTemplateSerializer
     permission_classes = [IsAdminUser]  
 
+
 class UserCertificateListView(generics.ListAPIView):
     serializer_class = CertificateSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Certificate.objects.filter(user=self.request.user)
+        queryset = Certificate.objects.filter(user=self.request.user)
+        course_id = self.request.query_params.get('course_id')
+        if course_id:
+            queryset = queryset.filter(course_id=course_id)
+        return queryset
 
 class VerifyCertificateView(generics.RetrieveAPIView):
     queryset = Certificate.objects.all()

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import CourseCategory, Course, Module, Lesson, UserProgress, Enrollment, LessonSection
+from .models import CourseCategory, Course, Module, Lesson, UserProgress, Enrollment, LessonSection, ModuleProgress
 from users.models import User
 
 class CourseCategorySerializer(serializers.ModelSerializer):
@@ -18,48 +18,66 @@ class ModuleSerializer(serializers.ModelSerializer):
         model = Module
         fields = '__all__'
 
+class ModuleProgressSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ModuleProgress
+        fields = ['id', 'user', 'module', 'is_completed', 'completed_at']
+        read_only_fields = ['user', 'completed_at']
 class LessonSectionSerializer(serializers.ModelSerializer):
     subsections = serializers.SerializerMethodField()
 
     class Meta:
         model = LessonSection
         fields = '__all__'
+        extra_kwargs = {
+            'parent_section': {'required': False, 'allow_null': True}
+        }
     
     def get_subsections(self, obj):
-        # Get the current depth from context or default to 0
-        current_depth = self.context.get('current_depth', 0)
-        max_depth = self.context.get('max_depth', 2)  # Limit recursion depth to 2 levels
-        
-        if current_depth >= max_depth:
-            return []
-            
-        # Get immediate children only
         subsections = obj.subsections.all().order_by('order')
-        serializer = LessonSectionSerializer(
-            subsections, 
+        return LessonSectionSerializer(
+            subsections,
             many=True,
-            context={
-                **self.context,
-                'current_depth': current_depth + 1  
-            }
-        )
-        return serializer.data
+            context=self.context
+        ).data
+
+# class LessonSerializer(serializers.ModelSerializer):
+#     sections = serializers.SerializerMethodField()
+
+#     class Meta:
+#         model = Lesson
+#         fields = '__all__'
+    
+#     def get_sections(self, obj):
+#         sections = obj.sections.filter(parent_section__isnull=True).order_by('order')
+#         serializer = LessonSectionSerializer(
+#             sections,
+#             many=True,
+#             context=self.context  # Pass along the context
+#         )
+#         return serializer.data
 
 class LessonSerializer(serializers.ModelSerializer):
     sections = serializers.SerializerMethodField()
+    has_quiz = serializers.SerializerMethodField()
 
     class Meta:
         model = Lesson
         fields = '__all__'
     
     def get_sections(self, obj):
+        # Get top-level sections (those without parents)
         sections = obj.sections.filter(parent_section__isnull=True).order_by('order')
         serializer = LessonSectionSerializer(
             sections,
             many=True,
-            context=self.context  # Pass along the context
+            context=self.context
         )
         return serializer.data
+    
+    def get_has_quiz(self, obj):
+        # Determine if this lesson has a quiz
+        return obj.content_type == 'QUIZ'
 
 class UserProgressSerializer(serializers.ModelSerializer):
     class Meta:

@@ -91,6 +91,10 @@ export const coursesApi = {
   deleteLesson: (courseId: string, moduleId: string, lessonId: string) => apiRequest(`/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}/`, 'DELETE'),
 
    // Lesson sections
+  getLessonsWithSections: (courseId: string, moduleId: string) => 
+    apiRequest<Array<Lesson & { sections: LessonSection[]; has_quiz: boolean }>>(
+      `/courses/${courseId}/modules/${moduleId}/lessons-with-sections/`
+    ),
   getLessonSections: (courseId: string, moduleId: string, lessonId: string) => 
       apiRequest<LessonSection[]>(`/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}/sections/`),
   createLessonSection: (courseId: string, moduleId: string, lessonId: string, section: Partial<LessonSection>) => 
@@ -100,19 +104,34 @@ export const coursesApi = {
   deleteLessonSection: (courseId: string, moduleId: string, lessonId: string, sectionId: string) => 
       apiRequest(`/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}/sections/${sectionId}/`, 'DELETE'),
 
-  // User progress
-  getUserProgress: () => apiRequest<UserProgress[]>('/courses/user/progress/'),
-  updateProgress: (lessonId: string, isCompleted: boolean) => 
-    apiRequest<UserProgress>('/courses/user/progress/', 'POST', { 
-      lesson: lessonId, 
-      is_completed: isCompleted 
-    }),
-  getLessonProgress: (lessonId: string) => 
-    apiRequest<UserProgress>(`/courses/user/progress/lesson/${lessonId}/`),
-  getCourseProgress: (courseId: string) => 
-    apiRequest<{ completed: number; total: number; percentage: number }>(
-      `/courses/user/progress/course/${courseId}/`
-    ),
+ // User progress
+ getModuleProgress: (moduleId: string) => 
+  apiRequest<{ is_completed: boolean }>(`/courses/module-progress/get_progress/?module_id=${moduleId}`),
+
+markModuleCompleted: (moduleId: string) => 
+  apiRequest<{ is_completed: boolean }>(`/courses/module-progress/`, 'POST', { module_id: moduleId }),
+
+ getUserProgress: () => apiRequest<UserProgress[]>('/courses/user/progress/all/'),
+ createProgress: (progress: Partial<UserProgress>) => 
+   apiRequest<UserProgress>('/courses/user/progress/all/', 'POST', progress),
+ updateProgress: (lessonId: string, isCompleted: boolean) => 
+  apiRequest<UserProgress>(`/courses/user/progress/lesson/${lessonId}/`, 'PUT', { 
+    is_completed: isCompleted 
+  }),
+ getLessonProgress: (lessonId: string) => 
+   apiRequest<UserProgress>(`/courses/user/progress/lesson/${lessonId}/`),
+ getCourseProgress: (courseId: string) => 
+   apiRequest<{ completed: number; total: number; percentage: number }>(
+     `/courses/user/progress/course/${courseId}/`
+   ),
+ getAllProgress: () => 
+   apiRequest<Array<{
+     course_id: string;
+     course_title: string;
+     percentage: number;
+   }>>('/courses/user/progress/all/'),
+ toggleLessonCompletion: (lessonId: string) => 
+   apiRequest<UserProgress>('/courses/user/progress/toggle/', 'POST', { lesson: lessonId }),
 
   // Enrollment
   checkEnrollment: (courseId?: string) => 
@@ -163,19 +182,71 @@ export const assessmentsApi = {
     apiRequest(`/assessments/questions/${questionId}/answers/${answerId}/`, 'DELETE'),
 
   // Quiz
+  // getQuiz: (lessonId: string) => apiRequest<{ lesson: Lesson; questions: Question[] }>(`/assessments/lessons/${lessonId}/quiz/`),
+  // submitQuiz: (lessonId: string, answers: { answers: Record<string, string> }) =>
+  //   apiRequest<{ score: number; passed: boolean }>(`/assessments/lessons/${lessonId}/quiz/`, 'POST', answers),
+
   getQuiz: (lessonId: string) => apiRequest<{ lesson: Lesson; questions: Question[] }>(`/assessments/lessons/${lessonId}/quiz/`),
   submitQuiz: (lessonId: string, answers: { answers: Record<string, string> }) =>
-    apiRequest<{ score: number; passed: boolean }>(`/assessments/lessons/${lessonId}/submit/`, 'POST', answers),
-};
+    apiRequest<{ score: number; passed: boolean; correct_answers: number; total_questions: number }>(
+      `/assessments/lessons/${lessonId}/quiz/`, 
+      'POST', 
+      { answers }
+    ),
+
+    // Module Surveys
+    getModuleSurveys: (courseId: string, moduleId: string) => 
+      apiRequest<any[]>(`/assessments/courses/${courseId}/modules/${moduleId}/survey/`),
+
+    createModuleSurvey: (courseId: string, moduleId: string, data: any) =>
+      apiRequest<any>(`/assessments/courses/${courseId}/modules/${moduleId}/survey/`, 'POST', data),
+
+    getModuleSurvey: (courseId: string, moduleId: string, surveyId: string) =>
+      apiRequest<any>(`/assessments/courses/${courseId}/modules/${moduleId}/survey/${surveyId}/`),
+
+    updateModuleSurvey: (courseId: string, moduleId: string, surveyId: string, data: any) =>
+      apiRequest<any>(`/assessments/courses/${courseId}/modules/${moduleId}/survey/${surveyId}/`, 'PUT', data),
+
+    patchModuleSurvey: (courseId: string, moduleId: string, surveyId: string, data: any) =>
+      apiRequest<any>(`/assessments/courses/${courseId}/modules/${moduleId}/survey/${surveyId}/`, 'PATCH', data),
+
+    deleteModuleSurvey: (courseId: string, moduleId: string, surveyId: string) =>
+      apiRequest(`/assessments/courses/${courseId}/modules/${moduleId}/survey/${surveyId}/`, 'DELETE'),
+
+    getModuleSurveyQuestions: (courseId: string, moduleId: string, surveyId: string) =>
+      apiRequest<any[]>(`/assessments/courses/${courseId}/modules/${moduleId}/survey/${surveyId}/questions/`),
+
+    // General Surveys (from router)
+    getSurveys: () => apiRequest<any[]>(`/assessments/surveys/`),
+    createSurvey: (data: any) => apiRequest<any>(`/assessments/surveys/`, 'POST', data),
+    getSurvey: (surveyId: string) => apiRequest<any>(`/assessments/surveys/${surveyId}/`),
+    updateSurvey: (surveyId: string, data: any) => apiRequest<any>(`/assessments/surveys/${surveyId}/`, 'PUT', data),
+    patchSurvey: (surveyId: string, data: any) => apiRequest<any>(`/assessments/surveys/${surveyId}/`, 'PATCH', data),
+    deleteSurvey: (surveyId: string) => apiRequest(`/assessments/surveys/${surveyId}/`, 'DELETE'),
+    getSurveyQuestions: (surveyId: string) => apiRequest<any[]>(`/assessments/surveys/${surveyId}/questions/`),
+
+    // Survey Responses
+    getSurveyResponses: () => apiRequest<any[]>(`/assessments/survey-responses/`),
+    createSurveyResponse: (data: any) => apiRequest<any>(`/assessments/survey-responses/`, 'POST', data),
+    getSurveyResponse: (responseId: string) => apiRequest<any>(`/assessments/survey-responses/${responseId}/`),
+    updateSurveyResponse: (responseId: string, data: any) => apiRequest<any>(`/assessments/survey-responses/${responseId}/`, 'PUT', data),
+    patchSurveyResponse: (responseId: string, data: any) => apiRequest<any>(`/assessments/survey-responses/${responseId}/`, 'PATCH', data),
+    deleteSurveyResponse: (responseId: string) => apiRequest(`/assessments/survey-responses/${responseId}/`, 'DELETE')
+        };
 
 // Certificates API
 export const certificatesApi = {
   getUserCertificates: () => apiRequest<Certificate[]>('/certificates/user/'),
-  getCourseCertificate: (courseId: string) => apiRequest<Certificate>(`/certificates/${courseId}/`),
-  downloadCertificate: (certificateId: string) => 
-    apiRequest<{ download_url: string }>(`/certificates/${certificateId}/download/`),
+  getCourseCertificate: (courseId: string) => 
+    apiRequest<Certificate[]>(`/certificates/user/?course_id=${courseId}`),
+  generateCertificate: (courseId: string) => 
+    apiRequest<Certificate>(`/certificates/generate/${courseId}/`, 'POST'),
   verifyCertificate: (certificateNumber: string) => 
     apiRequest<{ valid: boolean; certificate: Certificate }>(`/certificates/verify/${certificateNumber}/`),
+  downloadCertificate: (certificateId: string) => 
+    apiRequest<Blob>(`/certificates/download/${certificateId}/`, 'GET', undefined, {
+      'Accept': 'application/pdf'
+    }),
 };
 
 // Analytics API
@@ -201,7 +272,24 @@ export const analyticsApi = {
   
   exportReport: (type: string, timeFilter: string, format: string) => 
     apiRequest<any>(`/analytics/export-report/?type=${type}&time_filter=${timeFilter}&format=${format}`),
+
+  getModuleCoverage: (courseId: string) => 
+    apiRequest<{
+      course_id: string;
+      course_title: string;
+      modules: string[];
+      learners: {
+        user_id: string;
+        name: string;
+        module_progress: {
+          module_id: string;
+          completed: boolean;
+          completed_at: string | null;
+        }[];
+      }[];
+    }>(`/analytics/module-coverage/${courseId}/`),
 };
+
 
 // Types
 export interface User {

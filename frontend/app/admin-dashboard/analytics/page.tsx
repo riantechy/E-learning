@@ -1,3 +1,4 @@
+// Update page.tsx
 'use client'
 
 import { useState } from 'react';
@@ -10,6 +11,7 @@ import CourseProgressTab from './components/CourseProgressTab';
 import EnrollmentsTab from './components/EnrollmentsTab';
 import CompletionRatesTab from './components/CompletionRatesTab';
 import QuizPerformanceTab from './components/QuizPerformanceTab';
+import ModuleCoverageTab from './components/ModuleCoverageTab'; // Add this import
 import ExportSection from './components/ExportSection';
 
 export default function AnalyticsDashboard() {
@@ -43,6 +45,9 @@ export default function AnalyticsDashboard() {
           </Tab>
           <Tab eventKey="course-progress" title="Course Progress">
             <CourseProgressTab />
+          </Tab>
+          <Tab eventKey="module-coverage" title="Module Coverage"> 
+            <ModuleCoverageTab />
           </Tab>
           <Tab eventKey="enrollments" title="Enrollments">
             <EnrollmentsTab 

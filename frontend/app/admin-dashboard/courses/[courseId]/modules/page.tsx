@@ -221,7 +221,14 @@ export default function ModulesPage() {
                       >
                         📚
                       </Link>
-                      {module.order > 0 && (
+                      <Link
+                        href={`/admin-dashboard/courses/${courseId}/modules/${module.id}/survey`}
+                        className="btn btn-warning btn-sm"
+                        title="Manage Survey"
+                      >
+                        📝 Survey
+                      </Link>
+                      {/* {module.order > 0 && (
                         <Button
                           variant="secondary"
                           size="sm"
@@ -240,7 +247,7 @@ export default function ModulesPage() {
                         >
                           ⬇️
                         </Button>
-                      )}
+                      )} */}
                     </div>
                   </td>
                 </tr>

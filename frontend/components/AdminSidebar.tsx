@@ -125,7 +125,7 @@ export default function AdminSidebar() {
               </li>
             )}
 
-            {courseId && moduleId && lessonId && isQuizPath && (
+            {/* {courseId && moduleId && lessonId && isQuizPath && (
               <li className={`nav-item ${styles.navItem}`}>
                 <Link
                   href={`/admin-dashboard/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}/quiz`}
@@ -137,12 +137,12 @@ export default function AdminSidebar() {
                   <span className={styles.label}>Quiz</span>
                 </Link>
               </li>
-            )}
+            )} */}
           </>
         )}
 
         <li className={`nav-item mt-auto ${styles.navItem}`}>
-          <Link href="/logout" className={`nav-link ${styles.navLink} ${styles.logoutLink}`}>
+          <Link href="/login" className={`nav-link ${styles.navLink} ${styles.logoutLink}`}>
             <span className={styles.icon}>🚪</span>
             <span className={styles.label}>Logout</span>
           </Link>
