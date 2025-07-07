@@ -30,10 +30,25 @@ export default function CourseOverviewPage() {
         ])
         
         if (courseRes.data) setCourse(courseRes.data)
-        if (modulesRes.data) setModules(modulesRes.data)
+        if (modulesRes.data) {
+          // Fetch progress for each module
+          const modulesWithProgress = await Promise.all(
+            modulesRes.data.map(async (module: any) => {
+              const moduleProgressRes = await coursesApi.getModuleProgress(module.id)
+              const lessonsRes = await coursesApi.getLessons(courseId, module.id)
+              return {
+                ...module,
+                is_completed: moduleProgressRes.data?.is_completed || false,
+                lessons: lessonsRes.data || [],
+                total_lessons: lessonsRes.data?.length || 0
+              }
+            })
+          )
+          setModules(modulesWithProgress)
+        }
+        
         if (progressRes.data) {
           setProgress(progressRes.data)
-          // Check if we need to refresh (e.g., after module completion)
           if (progressRes.data.percentage === 100) {
             router.refresh()
           }
@@ -50,10 +65,48 @@ export default function CourseOverviewPage() {
     }
   }, [courseId, router])
 
+  // Refresh data when page becomes visible again
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        const refreshData = async () => {
+          try {
+            const [progressRes] = await Promise.all([
+              coursesApi.getCourseProgress(courseId)
+            ])
+            
+            if (progressRes.data) setProgress(progressRes.data)
+            
+            if (modules.length > 0) {
+              const updatedModules = await Promise.all(
+                modules.map(async (module) => {
+                  const moduleProgressRes = await coursesApi.getModuleProgress(module.id)
+                  return {
+                    ...module,
+                    is_completed: moduleProgressRes.data?.is_completed || false
+                  }
+                })
+              )
+              setModules(updatedModules)
+            }
+          } catch (error) {
+            console.error('Error refreshing data:', error)
+          }
+        }
+        refreshData()
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [courseId, modules])
+
   const handleStartCourse = async () => {
     // Find first incomplete module or first module if none are completed
     const firstIncompleteModule = modules.find(module => 
-      !progress?.completed_modules?.includes(module.id)
+      !module.is_completed
     ) || modules[0]
     
     if (firstIncompleteModule) {
@@ -68,15 +121,24 @@ export default function CourseOverviewPage() {
     if (!prevModule) return false
     
     // Check if previous module is completed
-    return !progress?.completed_modules?.includes(prevModule.id)
+    return !prevModule.is_completed
   }
 
   const getModuleStatus = (module: any) => {
-    const isCompleted = progress?.completed_modules?.includes(module.id)
-    const isLocked = isModuleLocked(module)
-    const isStarted = progress?.started_modules?.includes(module.id) || isCompleted
+    const isCompleted = progress?.completed_modules?.includes(module.id);
+    const isLocked = module.order > 1 && 
+      !progress?.completed_modules?.includes(
+        modules.find(m => m.order === module.order - 1)?.id
+      );
+    
+    return { isCompleted, isLocked };
+  }
 
-    return { isCompleted, isLocked, isStarted }
+  const getCompletedLessonsCount = (module: any) => {
+    if (!progress?.completed_lessons || !module.lessons) return 0
+    return progress.completed_lessons.filter((l: any) => 
+      module.lessons.some((les: any) => les.id === l.lesson_id)
+    ).length
   }
 
   if (loading) {
@@ -205,9 +267,10 @@ export default function CourseOverviewPage() {
                   <div className="card-header">
                     <h5>Course Modules</h5>
                   </div>
-                  <div className="list-group list-group-flush">
+                  <div className="list-group list-group-flush"> 
                     {modules.map((module) => {
-                      const { isCompleted, isLocked, isStarted } = getModuleStatus(module)
+                      const { isCompleted, isLocked } = getModuleStatus(module)
+                      const completedLessons = getCompletedLessonsCount(module)
                       
                       return (
                         <div 
@@ -219,20 +282,28 @@ export default function CourseOverviewPage() {
                               <h6 className="mb-1">{module.title}</h6>
                               <p className="text-sm text-muted">{module.description}</p>
                               <small>
-                                {module.completed_lessons || 0}/{module.total_lessons} lessons
+                                {completedLessons}/{module.lessons?.length || 0} lessons
                               </small>
                             </div>
                             <div>
                               {isLocked ? (
                                 <span className="badge bg-secondary">Locked</span>
                               ) : isCompleted ? (
-                                <span className="badge bg-success">Completed</span>
+                                <div className="d-flex gap-2">
+                                  <Link
+                                    href={`/dashboard/learn/${courseId}/${module.id}`}
+                                    className="btn btn-outline-primary btn-sm"
+                                  >
+                                    Review
+                                  </Link>
+                                  <span className="badge bg-success">Completed</span>
+                                </div>
                               ) : (
                                 <Link
                                   href={`/dashboard/learn/${courseId}/${module.id}`}
                                   className="btn btn-primary btn-sm"
                                 >
-                                  {isStarted ? 'Continue' : 'Start'}
+                                  {completedLessons > 0 ? 'Continue' : 'Start'}
                                 </Link>
                               )}
                             </div>

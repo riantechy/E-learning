@@ -6,6 +6,11 @@ router = DefaultRouter()
 router.register(r'lessons/(?P<lesson_pk>[^/.]+)/questions', views.QuestionViewSet, basename='question')
 router.register(r'questions/(?P<question_pk>[^/.]+)/answers', views.AnswerViewSet, basename='answer')
 router.register(r'surveys', views.SurveyViewSet, basename='survey')
+router.register(
+    r'surveys/(?P<survey_pk>[^/.]+)/questions',
+    views.SurveyQuestionViewSet,
+    basename='survey-questions'
+)
 router.register(r'survey-responses', views.SurveyResponseViewSet, basename='survey-response')
 
 urlpatterns = [
@@ -17,7 +22,7 @@ urlpatterns = [
     
     # Module survey endpoints
     path(
-        'courses/<uuid:course_id>/modules/<uuid:module_id>/survey/',
+        '<uuid:course_id>/modules/<uuid:module_id>/survey/',
         views.SurveyViewSet.as_view({
             'get': 'list',
             'post': 'create'
@@ -25,7 +30,7 @@ urlpatterns = [
         name='module-survey-list'
     ),
     path(
-        'courses/<uuid:course_id>/modules/<uuid:module_id>/survey/<uuid:pk>/',
+        '<uuid:course_id>/modules/<uuid:module_id>/survey/<uuid:pk>/',
         views.SurveyViewSet.as_view({
             'get': 'retrieve',
             'put': 'update',
@@ -35,8 +40,19 @@ urlpatterns = [
         name='module-survey-detail'
     ),
     path(
-        'courses/<uuid:course_id>/modules/<uuid:module_id>/survey/<uuid:pk>/questions/',
-        views.SurveyViewSet.as_view({'get': 'questions'}),
+        '<uuid:course_id>/modules/<uuid:module_id>/survey/<uuid:pk>/questions/',
+        views.SurveyViewSet.as_view({'get': 'questions', 'post': 'questions'}),
         name='module-survey-questions'
+    ),
+    path(
+        '<uuid:course_id>/modules/<uuid:module_id>/survey/<uuid:pk>/responses/',
+        views.SurveyViewSet.as_view({'get': 'responses'}),
+        name='module-survey-responses'
+    ),
+    # Add these new endpoints for general survey responses
+    path(
+        'surveys/<uuid:survey_pk>/responses/',
+        views.SurveyViewSet.as_view({'get': 'responses'}),
+        name='survey-responses'
     ),
 ]

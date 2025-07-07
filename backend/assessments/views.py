@@ -9,9 +9,10 @@ from .models import Question, Answer, UserAttempt, UserResponse,  Survey, Survey
 from .serializers import (
     QuestionSerializer, 
     AnswerSerializer,
-    QuizSerializer,  SurveySerializer, SurveyResponseSerializer
+    QuizSerializer,  SurveySerializer, 
+    SurveyResponseSerializer,  SurveyQuestionSerializer 
 )
-from courses.models import Lesson
+from courses.models import Lesson, Module
 
 class QuestionViewSet(viewsets.ModelViewSet):
     serializer_class = QuestionSerializer
@@ -170,19 +171,17 @@ class QuizDeleteView(APIView):
             }, status=status.HTTP_400_BAD_REQUEST)
 
 class ModuleSurveyViewSet(viewsets.ModelViewSet):
-    """
-    Handles surveys for specific modules
-    """
     serializer_class = SurveySerializer
     permission_classes = [IsAuthenticated]
-    lookup_url_kwarg = 'pk'
 
     def get_queryset(self):
         module_id = self.kwargs.get('module_id')
         return Survey.objects.filter(module_id=module_id)
 
     def perform_create(self, serializer):
-        serializer.save(module_id=self.kwargs.get('module_id'))
+        module_id = self.kwargs.get('module_id')
+        module = get_object_or_404(Module, pk=module_id)
+        serializer.save(module=module)
 
     @action(detail=True, methods=['get'])
     def questions(self, request, pk=None, course_id=None, module_id=None):
@@ -191,23 +190,127 @@ class ModuleSurveyViewSet(viewsets.ModelViewSet):
         serializer = SurveyQuestionSerializer(questions, many=True)
         return Response(serializer.data)
 
+    @action(detail=True, methods=['get'])
+    def responses(self, request, pk=None, course_id=None, module_id=None):
+        survey = self.get_object()
+        responses = survey.responses.all().prefetch_related('answers')
+        
+        # Add pagination if needed
+        page = self.paginate_queryset(responses)
+        if page is not None:
+            serializer = SurveyResponseSerializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+            
+        serializer = SurveyResponseSerializer(responses, many=True)
+        return Response(serializer.data)
+
+class SurveyQuestionViewSet(viewsets.ModelViewSet):
+    serializer_class = SurveyQuestionSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        survey_id = self.kwargs['survey_pk']
+        return SurveyQuestion.objects.filter(survey_id=survey_id).order_by('order').prefetch_related('choices')
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = self.get_serializer(queryset, many=True)
+        return Response({
+            'status': 'success',
+            'message': 'Survey questions retrieved successfully',
+            'data': serializer.data,
+            'count': queryset.count()
+        })
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response({
+            'status': 'success',
+            'message': 'Survey question retrieved successfully',
+            'data': serializer.data
+        })
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            self.perform_create(serializer)
+            return Response({
+                'status': 'success',
+                'message': 'Survey question created successfully',
+                'data': serializer.data
+            }, status=status.HTTP_201_CREATED)
+        return Response({
+            'status': 'error',
+            'message': 'Survey question creation failed',
+            'errors': serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        if serializer.is_valid():
+            self.perform_update(serializer)
+            return Response({
+                'status': 'success',
+                'message': 'Survey question updated successfully',
+                'data': serializer.data
+            })
+        return Response({
+            'status': 'error',
+            'message': 'Survey question update failed',
+            'errors': serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return Response({
+            'status': 'success',
+            'message': 'Survey question deleted successfully',
+            'data': {'id': str(instance.id)}
+        }, status=status.HTTP_200_OK)
+
+    def perform_create(self, serializer):
+        survey = get_object_or_404(Survey, pk=self.kwargs['survey_pk'])
+        serializer.save(survey=survey)
 class SurveyViewSet(viewsets.ModelViewSet):
     queryset = Survey.objects.all()
     serializer_class = SurveySerializer
     permission_classes = [IsAuthenticated]
 
-    def get_queryset(self):
-        module_id = self.request.query_params.get('module_id')
-        if module_id:
-            return Survey.objects.filter(module_id=module_id)
-        return Survey.objects.all()
-
-    @action(detail=True, methods=['get'])
+    @action(detail=True, methods=['get', 'post'])
     def questions(self, request, pk=None):
         survey = self.get_object()
-        questions = survey.questions.all()
-        serializer = SurveyQuestionSerializer(questions, many=True)
-        return Response(serializer.data)
+        if request.method == 'POST':
+            serializer = SurveyQuestionSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save(survey=survey)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            questions = survey.questions.all().prefetch_related('choices')
+            serializer = SurveyQuestionSerializer(questions, many=True)
+            return Response(serializer.data)
+
+    @action(detail=True, methods=['get'])
+    def responses(self, request, pk=None):
+        survey = self.get_object()
+        responses = survey.responses.all().prefetch_related('answers', 'user')
+        
+        # Add pagination
+        page = self.paginate_queryset(responses)
+        if page is not None:
+            serializer = SurveyResponseSerializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+            
+        serializer = SurveyResponseSerializer(responses, many=True)
+        return Response({
+            'status': 'success',
+            'count': responses.count(),
+            'data': serializer.data
+        })
 
 class SurveyResponseViewSet(viewsets.ModelViewSet):
     queryset = SurveyResponse.objects.all()

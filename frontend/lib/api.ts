@@ -196,44 +196,84 @@ export const assessmentsApi = {
 
     // Module Surveys
     getModuleSurveys: (courseId: string, moduleId: string) => 
-      apiRequest<any[]>(`/assessments/courses/${courseId}/modules/${moduleId}/survey/`),
-
-    createModuleSurvey: (courseId: string, moduleId: string, data: any) =>
-      apiRequest<any>(`/assessments/courses/${courseId}/modules/${moduleId}/survey/`, 'POST', data),
-
+      apiRequest<Survey[]>(`/assessments/${courseId}/modules/${moduleId}/survey/`),
+  
+    createModuleSurvey: (courseId: string, moduleId: string, data: Omit<Survey, 'module'>) =>
+      apiRequest<Survey>(`/assessments/${courseId}/modules/${moduleId}/survey/`, 'POST', data),
+  
     getModuleSurvey: (courseId: string, moduleId: string, surveyId: string) =>
-      apiRequest<any>(`/assessments/courses/${courseId}/modules/${moduleId}/survey/${surveyId}/`),
-
-    updateModuleSurvey: (courseId: string, moduleId: string, surveyId: string, data: any) =>
-      apiRequest<any>(`/assessments/courses/${courseId}/modules/${moduleId}/survey/${surveyId}/`, 'PUT', data),
-
-    patchModuleSurvey: (courseId: string, moduleId: string, surveyId: string, data: any) =>
-      apiRequest<any>(`/assessments/courses/${courseId}/modules/${moduleId}/survey/${surveyId}/`, 'PATCH', data),
-
+      apiRequest<Survey>(`/assessments/${courseId}/modules/${moduleId}/survey/${surveyId}/`),
+  
+    updateModuleSurvey: (courseId: string, moduleId: string, surveyId: string, data: Partial<Survey>) =>
+      apiRequest<Survey>(`/assessments/${courseId}/modules/${moduleId}/survey/${surveyId}/`, 'PUT', data),
+  
     deleteModuleSurvey: (courseId: string, moduleId: string, surveyId: string) =>
-      apiRequest(`/assessments/courses/${courseId}/modules/${moduleId}/survey/${surveyId}/`, 'DELETE'),
+      apiRequest(`/assessments/${courseId}/modules/${moduleId}/survey/${surveyId}/`, 'DELETE'),
+  
+    // Survey Questions
+    getSurveyQuestions: (surveyId: string) =>
+      apiRequest<SurveyQuestion[]>(`/assessments/surveys/${surveyId}/questions/`),
+  
+    createSurveyQuestion: (surveyId: string, question: Omit<SurveyQuestion, 'id' | 'survey'>) =>
+      apiRequest<SurveyQuestion>(`/assessments/surveys/${surveyId}/questions/`, 'POST', question),
 
-    getModuleSurveyQuestions: (courseId: string, moduleId: string, surveyId: string) =>
-      apiRequest<any[]>(`/assessments/courses/${courseId}/modules/${moduleId}/survey/${surveyId}/questions/`),
+    submitSurveyResponse: (data: {
+      survey: string;
+      answers: Array<{
+        question: string;
+        text_answer?: string;
+        choice_answer?: string;
+        scale_answer?: number;
+      }>;
+    }) => apiRequest<SurveyResponse>('/assessments/survey-responses/', 'POST', data),
+  
+    updateSurveyQuestion: (surveyId: string, questionId: string, question: Partial<SurveyQuestion>) =>
+      apiRequest<SurveyQuestion>(`/assessments/surveys/${surveyId}/questions/${questionId}/`, 'PUT', question),
+  
+    deleteSurveyQuestion: (surveyId: string, questionId: string) =>
+      apiRequest(`/assessments/surveys/${surveyId}/questions/${questionId}/`, 'DELETE'),
+  
+    // Survey Choices
+    createSurveyChoice: (questionId: string, choice: Omit<SurveyChoice, 'id' | 'question'>) =>
+      apiRequest<SurveyChoice>(`/assessments/survey-questions/${questionId}/choices/`, 'POST', choice),
+  
+    updateSurveyChoice: (questionId: string, choiceId: string, choice: Partial<SurveyChoice>) =>
+      apiRequest<SurveyChoice>(`/assessments/survey-questions/${questionId}/choices/${choiceId}/`, 'PUT', choice),
+  
+    deleteSurveyChoice: (questionId: string, choiceId: string) =>
+      apiRequest(`/assessments/survey-questions/${questionId}/choices/${choiceId}/`, 'DELETE'),
+    // submitSurveyResponse: (data: {
+    //   survey_id: string;
+    //   answers: Array<{
+    //     question_id: string;
+    //     text_answer?: string;
+    //     choice_answer?: string;
+    //     scale_answer?: number;
+    //   }>;
+    // }) => apiRequest<SurveyResponse>('/assessments/survey-responses/', 'POST', data),
+    getSurvey: (surveyId: string) => 
+      apiRequest<Survey>(`/assessments/surveys/${surveyId}/`),
+  
+    getSurveyResponses: (surveyId: string) =>
+      apiRequest<SurveyResponse[]>(`/assessments/surveys/${surveyId}/responses/`),
+    
+    getSurveyResponse: (responseId: string) =>
+      apiRequest<SurveyResponse>(`/assessments/survey-responses/${responseId}/`),
 
-    // General Surveys (from router)
-    getSurveys: () => apiRequest<any[]>(`/assessments/surveys/`),
-    createSurvey: (data: any) => apiRequest<any>(`/assessments/surveys/`, 'POST', data),
-    getSurvey: (surveyId: string) => apiRequest<any>(`/assessments/surveys/${surveyId}/`),
-    updateSurvey: (surveyId: string, data: any) => apiRequest<any>(`/assessments/surveys/${surveyId}/`, 'PUT', data),
-    patchSurvey: (surveyId: string, data: any) => apiRequest<any>(`/assessments/surveys/${surveyId}/`, 'PATCH', data),
-    deleteSurvey: (surveyId: string) => apiRequest(`/assessments/surveys/${surveyId}/`, 'DELETE'),
-    getSurveyQuestions: (surveyId: string) => apiRequest<any[]>(`/assessments/surveys/${surveyId}/questions/`),
+    getSurveys: () => 
+      apiRequest<Survey[]>(`/assessments/surveys/`),
 
-    // Survey Responses
-    getSurveyResponses: () => apiRequest<any[]>(`/assessments/survey-responses/`),
-    createSurveyResponse: (data: any) => apiRequest<any>(`/assessments/survey-responses/`, 'POST', data),
-    getSurveyResponse: (responseId: string) => apiRequest<any>(`/assessments/survey-responses/${responseId}/`),
-    updateSurveyResponse: (responseId: string, data: any) => apiRequest<any>(`/assessments/survey-responses/${responseId}/`, 'PUT', data),
-    patchSurveyResponse: (responseId: string, data: any) => apiRequest<any>(`/assessments/survey-responses/${responseId}/`, 'PATCH', data),
-    deleteSurveyResponse: (responseId: string) => apiRequest(`/assessments/survey-responses/${responseId}/`, 'DELETE')
-        };
+  
+    // getSurveyResponses: (surveyId: string) =>
+    //   apiRequest<SurveyResponse[]>(`/assessments/survey-responses/?survey_id=${surveyId}`),
+  
+    getModuleSurveyResponses: (courseId: string, moduleId: string, surveyId: string) =>
+      apiRequest<SurveyResponse[]>(
+        `/assessments/${courseId}/modules/${moduleId}/survey/${surveyId}/responses/`
+      ),
 
+  };
+  
 // Certificates API
 export const certificatesApi = {
   getUserCertificates: () => apiRequest<Certificate[]>('/certificates/user/'),
@@ -403,4 +443,50 @@ export interface CertificateTemplate {
   template_file: string;
   created_at: string;
   updated_at: string;
+}
+
+// Add to your Types section
+export interface Survey {
+  id: string;
+  module: string | Module;
+  title: string;
+  description: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  questions?: SurveyQuestion[];
+}
+
+export interface SurveyQuestion {
+  id: string;
+  survey: string | Survey;
+  question_text: string;
+  question_type: 'MCQ' | 'TEXT' | 'SCALE';
+  is_required: boolean;
+  order: number;
+  choices?: SurveyChoice[];
+}
+
+export interface SurveyChoice {
+  id: string;
+  question: string | SurveyQuestion;
+  choice_text: string;
+  order: number;
+}
+
+export interface SurveyResponse {
+  id: string;
+  survey: string | Survey;
+  user: string | User;
+  submitted_at: string;
+  answers?: SurveyAnswer[];
+}
+
+export interface SurveyAnswer {
+  id: string;
+  response: string | SurveyResponse;
+  question: string | SurveyQuestion;
+  text_answer?: string;
+  choice_answer?: string | SurveyChoice;
+  scale_answer?: number;
 }

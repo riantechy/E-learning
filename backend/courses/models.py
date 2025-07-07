@@ -167,30 +167,45 @@ class UserProgress(models.Model):
     
     @classmethod
     def get_course_progress(cls, user, course):
-        total_lessons = Lesson.objects.filter(module__course=course).count()
+        # Get all lessons in course
+        lessons = Lesson.objects.filter(module__course=course)
+        total_lessons = lessons.count()
+        
+        # Get completed lessons
         completed_lessons = cls.objects.filter(
             user=user,
-            lesson__module__course=course,
+            lesson__in=lessons,
             is_completed=True
         ).count()
-        # return {
-        #     'completed': completed_lessons,
-        #     'total': total_lessons,
-        #     'percentage': round((completed_lessons / total_lessons) * 100, 2) if total_lessons > 0 else 0
-        # }
-
-        # Get completed modules
-        completed_modules = ModuleProgress.objects.filter(
-            user=user,
-            module__course=course,
-            is_completed=True
-        ).values_list('module_id', flat=True)
+        
+        # Get completed modules (modules where all lessons are completed)
+        completed_modules = []
+        for module in Module.objects.filter(course=course):
+            module_lessons = lessons.filter(module=module)
+            completed_module_lessons = cls.objects.filter(
+                user=user,
+                lesson__in=module_lessons,
+                is_completed=True
+            ).count()
+            
+            # Mark module as completed if all its lessons are completed
+            if module_lessons.count() > 0 and completed_module_lessons == module_lessons.count():
+                # Update ModuleProgress if not already marked
+                module_progress, created = ModuleProgress.objects.get_or_create(
+                    user=user,
+                    module=module,
+                    defaults={'is_completed': True}
+                )
+                if not created and not module_progress.is_completed:
+                    module_progress.is_completed = True
+                    module_progress.save()
+                completed_modules.append(str(module.id))
         
         return {
             'completed': completed_lessons,
             'total': total_lessons,
-            'percentage': round((completed_lessons / total_lessons) * 100, 2) if total_lessons > 0 else 0,
-            'completed_modules': list(completed_modules)
+            'percentage': round((completed_lessons / total_lessons * 100), 2) if total_lessons > 0 else 0,
+            'completed_modules': completed_modules
         }
 
     @classmethod

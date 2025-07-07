@@ -274,6 +274,5 @@ interface Course {
 
 interface Certificate {
   id: string
-  pdf_file: string
-  // Add other certificate properties as needed
+  pdf_file: string | null
 }

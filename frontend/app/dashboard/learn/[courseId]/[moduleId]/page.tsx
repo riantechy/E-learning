@@ -111,16 +111,22 @@ export default function ModulePage() {
     const markModuleComplete = async () => {
       if (allLessonsCompleted && !moduleCompleted) {
         try {
-          await coursesApi.markModuleCompleted(moduleId)
-          setModuleCompleted(true)
+          await coursesApi.markModuleCompleted(moduleId);
+          setModuleCompleted(true);
+          
+          // Refresh the progress data
+          const progressRes = await coursesApi.getCourseProgress(courseId);
+          if (progressRes.data) {
+            setProgress(progressRes.data);
+          }
         } catch (error) {
-          console.error('Error marking module as completed:', error)
+          console.error('Error marking module as completed:', error);
         }
       }
-    }
+    };
 
-    markModuleComplete()
-  }, [allLessonsCompleted, moduleCompleted, moduleId])
+    markModuleComplete();
+  }, [allLessonsCompleted, moduleCompleted, moduleId, courseId]);
 
   // Toggle lesson expansion
   const toggleLesson = (lessonId: string) => {
@@ -187,7 +193,7 @@ export default function ModulePage() {
       case 'QUIZ':
         return (
           <div className="alert alert-info">
-            <p>You have completed this quiz.</p>
+            <p>You have to completed this quiz.</p>
             {lessonProgress[lesson.id]?.is_completed ? (
               <span className="badge bg-success">Completed</span>
             ) : (
@@ -329,7 +335,7 @@ export default function ModulePage() {
                 </div>
 
                 {/* Module completion navigation */}
-                {allLessonsCompleted && moduleCompleted && (
+                {moduleCompleted && (
                   <div className="card mt-4">
                     <div className="card-body text-center">
                       <div className="d-flex justify-content-between">
@@ -361,6 +367,17 @@ export default function ModulePage() {
                             <ChevronRight className="ms-1" />
                           </Link>
                         )}
+                      </div>
+                      <div className="mt-3">
+                        <Link 
+                          href={`/dashboard/learn/${courseId}/${moduleId}/survey`} 
+                          className="btn btn-primary"
+                        >
+                          Take Module Survey
+                        </Link>
+                        <p className="text-muted mt-2 small">
+                          Help us improve by completing this short survey
+                        </p>
                       </div>
                     </div>
                   </div>

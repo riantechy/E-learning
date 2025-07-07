@@ -2,10 +2,10 @@
 
 import { useParams, useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
-import { coursesApi, assessmentsApi, certificatesApi } from '@/lib/api'
+import { coursesApi, assessmentsApi } from '@/lib/api'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import LearnerSidebar from '@/components/LearnerSidebar'
-import { Menu, ChevronDown, ChevronRight, ChevronLeft } from 'lucide-react'
+import { Menu, ChevronRight, ChevronLeft } from 'lucide-react'
 import Link from 'next/link'
 
 export default function LessonPage() {
@@ -27,7 +27,6 @@ export default function LessonPage() {
   const [quizScore, setQuizScore] = useState<number | null>(null)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const [sections, setSections] = useState<any[]>([])
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     const fetchData = async () => {
@@ -65,76 +64,6 @@ export default function LessonPage() {
     fetchData()
   }, [courseId, moduleId, lessonId])
 
-  const toggleSection = (sectionId: string) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [sectionId]: !prev[sectionId]
-    }))
-  }
-
-  const renderSections = (sections: any[]) => {
-    return sections.map((section) => {
-      const hasSubsections = section.subsections && section.subsections.length > 0
-      const isExpanded = expandedSections[section.id] || false
-
-      return (
-        <div key={section.id} className="mb-4">
-          <div 
-            className={`d-flex align-items-center ${hasSubsections ? 'cursor-pointer' : ''}`}
-            onClick={() => hasSubsections && toggleSection(section.id)}
-          >
-            {hasSubsections && (
-              <span className="me-2">
-                {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
-              </span>
-            )}
-            <h4 className={`mb-2 ${section.is_subsection ? 'h5 ms-3' : 'h4'}`}>
-              {section.title}
-            </h4>
-          </div>
-          
-          {isExpanded && hasSubsections && (
-            <div className="ms-4">
-              {renderSections(section.subsections || [])}
-            </div>
-          )}
-          
-          <div 
-            className={`lesson-content ${section.is_subsection ? 'ms-4' : ''}`}
-            dangerouslySetInnerHTML={{ __html: section.content }}
-          />
-        </div>
-      )
-    })
-  }
-
-  const handleCompleteLesson = async () => {
-    try {
-      const res = await coursesApi.updateProgress(lessonId, true);
-      if (res.data) {
-        setCompleted(true);
-        // Refresh both local data and router state
-        const [progressRes] = await Promise.all([
-          coursesApi.getUserProgress(),
-          router.refresh()
-        ]);
-        
-        if (progressRes.data) {
-          const lessonProgress = progressRes.data.find((p: any) => p.lesson.id === lessonId);
-          if (lessonProgress) setCompleted(lessonProgress.is_completed);
-        }
-  
-        // Check if course is complete for certificate
-        const courseProgress = await coursesApi.getCourseProgress(courseId);
-        if (courseProgress.data?.percentage === 100) {
-          await certificatesApi.getCourseCertificate(courseId);
-        }
-      }
-    } catch (error) {
-      console.error('Error completing lesson:', error);
-    }
-  };
-
   const handleStartQuiz = () => {
     setQuizStarted(true)
   }
@@ -165,48 +94,6 @@ export default function LessonPage() {
       console.error('Error submitting quiz:', error)
     }
   }
-
-  const getCurrentLessonIndex = () => {
-    return module.lessons?.findIndex((l: any) => l.id === lessonId) || 0;
-  };
-  
-  const hasPreviousLesson = () => {
-    return getCurrentLessonIndex() > 0;
-  };
-  
-  const hasNextLesson = () => {
-    return getCurrentLessonIndex() < (module.lessons?.length || 0) - 1;
-  };
-  
-  const handlePreviousLesson = () => {
-    const prevIndex = getCurrentLessonIndex() - 1;
-    if (prevIndex >= 0) {
-      router.push(`/dashboard/learn/${courseId}/${moduleId}/${module.lessons[prevIndex].id}`);
-    }
-  };
-  
-  // const handleNextLesson = () => {
-  //   const nextIndex = getCurrentLessonIndex() + 1;
-  //   if (nextIndex < module.lessons?.length) {
-  //     router.push(`/dashboard/learn/${courseId}/${moduleId}/${module.lessons[nextIndex].id}`);
-  //   } else {
-  //     router.push(`/dashboard/learn/${courseId}/${moduleId}`);
-  //   }
-  // };
-
-  const handleNextLesson = () => {
-    if (!module?.lessons) {
-      router.push(`/dashboard/learn/${courseId}/${moduleId}`);
-      return;
-    }
-  
-    const currentIndex = module.lessons.findIndex((l: any) => l.id === lessonId);
-      if (currentIndex !== undefined && currentIndex < module.lessons.length - 1) {
-        router.push(`/dashboard/learn/${courseId}/${moduleId}/${module.lessons[currentIndex + 1].id}`);
-      } else {
-        router.push(`/dashboard/learn/${courseId}/${moduleId}`);
-      }
-    };
 
   if (loading) {
     return (
@@ -397,12 +284,10 @@ export default function LessonPage() {
                             </div>
                             {quizScore && quizScore >= 70 ? (
                               <button
-                                onClick={handleNextLesson}
+                                onClick={() => router.push(`/dashboard/learn/${courseId}/${moduleId}`)}
                                 className="btn btn-primary"
                               >
-                                {module?.lessons && module.lessons.findIndex((l: any) => l.id === lessonId) < module.lessons.length - 1
-                                  ? 'Continue to Next Lesson'
-                                  : 'Back to Module'}
+                                Back to Module
                               </button>
                             ) : (
                               <button
@@ -442,23 +327,7 @@ export default function LessonPage() {
                         )}
                         {lesson.content_type === 'TEXT' && (
                           <div className="lesson-content">
-                            {sections.length > 0 ? (
-                              <div className="sections-container">
-                                {renderSections(sections.filter((s: any) => !s.parent_section))}
-                              </div>
-                            ) : (
-                              <div dangerouslySetInnerHTML={{ __html: lesson.content }} />
-                            )}
-                          </div>
-                        )}
-                        {!completed && lesson.content_type !== 'QUIZ' && (
-                          <div className="text-center mt-4">
-                            <button 
-                              onClick={handleCompleteLesson} 
-                              className="btn btn-success btn-sm"
-                            >
-                              Mark as Completed
-                            </button>
+                            <div dangerouslySetInnerHTML={{ __html: lesson.content }} />
                           </div>
                         )}
                         {completed && (
@@ -471,22 +340,6 @@ export default function LessonPage() {
                                     <strong>Quiz Score:</strong> {quizScore}%
                                   </div>
                                 )}
-                              </div>
-                              <div className="d-flex justify-content-between mt-2">
-                              <button
-                                onClick={() => handlePreviousLesson(lesson.id)}
-                                disabled={index === 0}
-                                className="btn btn-sm btn-outline-secondary"
-                              >
-                                <ChevronLeft size={16} /> Previous
-                              </button>
-                              <button
-                                onClick={() => handleNextLesson(lesson.id)}
-                                disabled={index === lessons.length - 1}
-                                className="btn btn-sm btn-outline-secondary"
-                              >
-                                Next <ChevronRight size={16} />
-                              </button>
                               </div>
                             </div>
                           </div>

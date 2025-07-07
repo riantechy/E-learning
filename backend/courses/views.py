@@ -114,7 +114,6 @@ class CourseViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-
 class ModuleViewSet(viewsets.ModelViewSet):
     serializer_class = ModuleSerializer
     permission_classes = [permissions.IsAuthenticated]  # ⬅️ Only authenticated users
@@ -126,55 +125,90 @@ class ModuleViewSet(viewsets.ModelViewSet):
         course = get_object_or_404(Course, pk=self.kwargs['course_pk'])
         serializer.save(course=course)
 
+# class ModuleProgressViewSet(viewsets.ViewSet):
+#     permission_classes = [permissions.IsAuthenticated]
+
+#     def list(self, request):
+#         # Handle GET /module-progress/ (get all module progress for user)
+#         progress = ModuleProgress.objects.filter(user=request.user)
+#         serializer = ModuleProgressSerializer(progress, many=True)
+#         return Response(serializer.data)
+
+#     @action(detail=False, methods=['get'])
+#     def get_progress(self, request):
+#         # Handle GET /module-progress/get_progress/?module_id=<id>
+#         module_id = request.query_params.get('module_id')
+#         if not module_id:
+#             return Response({'error': 'module_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+#         module = get_object_or_404(Module, id=module_id)
+#         progress, created = ModuleProgress.objects.get_or_create(
+#             user=request.user,
+#             module=module,
+#             defaults={'is_completed': False}
+#         )
+#         serializer = ModuleProgressSerializer(progress)
+#         return Response(serializer.data)
+
+#     @action(detail=True, methods=['post'])
+#     def complete_module(self, request, pk=None):
+#         module = self.get_object()
+#         ModuleProgress.mark_module_completed(request.user, module)
+#         return Response({'status': 'module completed'})
+
+#     @action(detail=False, methods=['post'])
+#     def mark_completed(self, request):
+#         # Handle POST /module-progress/mark_completed/
+#         module_id = request.data.get('module_id')
+#         if not module_id:
+#             return Response({'error': 'module_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+#         module = get_object_or_404(Module, id=module_id)
+#         progress, created = ModuleProgress.objects.get_or_create(
+#             user=request.user,
+#             module=module,
+#             defaults={'is_completed': True}
+#         )
+        
+#         if not created:
+#             progress.is_completed = True
+#             progress.save()
+            
+#         serializer = ModuleProgressSerializer(progress)
+#         return Response(serializer.data)
+
 class ModuleProgressViewSet(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
-    def list(self, request):
-        # Handle GET /module-progress/ (get all module progress for user)
-        progress = ModuleProgress.objects.filter(user=request.user)
-        serializer = ModuleProgressSerializer(progress, many=True)
-        return Response(serializer.data)
-
     @action(detail=False, methods=['get'])
     def get_progress(self, request):
-        # Handle GET /module-progress/get_progress/?module_id=<id>
         module_id = request.query_params.get('module_id')
         if not module_id:
             return Response({'error': 'module_id is required'}, status=status.HTTP_400_BAD_REQUEST)
         
         module = get_object_or_404(Module, id=module_id)
+        
+        # Check if all lessons are completed
+        lessons = Lesson.objects.filter(module=module)
+        completed_lessons = UserProgress.objects.filter(
+            user=request.user,
+            lesson__in=lessons,
+            is_completed=True
+        ).count()
+        
+        # Auto-complete module if all lessons are done
+        is_completed = lessons.count() > 0 and completed_lessons == lessons.count()
+        
         progress, created = ModuleProgress.objects.get_or_create(
             user=request.user,
             module=module,
-            defaults={'is_completed': False}
-        )
-        serializer = ModuleProgressSerializer(progress)
-        return Response(serializer.data)
-
-    @action(detail=True, methods=['post'])
-    def complete_module(self, request, pk=None):
-        module = self.get_object()
-        ModuleProgress.mark_module_completed(request.user, module)
-        return Response({'status': 'module completed'})
-
-    @action(detail=False, methods=['post'])
-    def mark_completed(self, request):
-        # Handle POST /module-progress/mark_completed/
-        module_id = request.data.get('module_id')
-        if not module_id:
-            return Response({'error': 'module_id is required'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        module = get_object_or_404(Module, id=module_id)
-        progress, created = ModuleProgress.objects.get_or_create(
-            user=request.user,
-            module=module,
-            defaults={'is_completed': True}
+            defaults={'is_completed': is_completed}
         )
         
-        if not created:
-            progress.is_completed = True
+        if not created and progress.is_completed != is_completed:
+            progress.is_completed = is_completed
             progress.save()
-            
+        
         serializer = ModuleProgressSerializer(progress)
         return Response(serializer.data)
 class LessonViewSet(viewsets.ModelViewSet):
