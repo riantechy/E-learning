@@ -1,8 +1,8 @@
 'use client'
 
 import { useParams, useRouter } from 'next/navigation'
-import { useState, useEffect } from 'react'
-import { coursesApi } from '@/lib/api'
+import { useState, useEffect, useRef } from 'react'
+import { coursesApi, assessmentsApi } from '@/lib/api'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import LearnerSidebar from '@/components/LearnerSidebar'
 import { Menu, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from 'lucide-react'
@@ -13,46 +13,50 @@ export default function ModulePage() {
   const courseId = params.courseId as string
   const moduleId = params.moduleId as string
   const router = useRouter()
+  const contentRefs = useRef<Record<string, HTMLDivElement | null>>({})
+  const iframeRefs = useRef<Record<string, HTMLIFrameElement | null>>({})
 
   const [module, setModule] = useState<any>(null)
   const [course, setCourse] = useState<any>(null)
   const [lessons, setLessons] = useState<any[]>([])
+  const [modules, setModules] = useState<any[]>([])
   const [lessonProgress, setLessonProgress] = useState<Record<string, any>>({})
   const [moduleCompleted, setModuleCompleted] = useState(false)
   const [loading, setLoading] = useState(true)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const [expandedLessons, setExpandedLessons] = useState<Record<string, boolean>>({})
+  const [hasSurvey, setHasSurvey] = useState(false)
+  const [surveyCompleted, setSurveyCompleted] = useState(false)
 
-  // Fetch all necessary data
+  // Track if user has interacted with the content
+  const [contentInteraction, setContentInteraction] = useState<Record<string, boolean>>({})
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true)
         
-        // Fetch module, course, and lessons in parallel
-        const [moduleRes, courseRes, lessonsRes, moduleProgressRes] = await Promise.all([
-          coursesApi.getModule(courseId, moduleId),
+        const [courseRes, moduleRes, lessonsRes, modulesRes] = await Promise.all([
           coursesApi.getCourse(courseId),
+          coursesApi.getModule(courseId, moduleId),
           coursesApi.getLessons(courseId, moduleId),
-          coursesApi.getModuleProgress(moduleId)
+          coursesApi.getModules(courseId)
         ])
 
         if (moduleRes.data) setModule(moduleRes.data)
         if (courseRes.data) setCourse(courseRes.data)
+        if (modulesRes.data) setModules(modulesRes.data)
         if (lessonsRes.data) {
           setLessons(lessonsRes.data)
           
-          // Initially expand all lessons
           const expanded: Record<string, boolean> = {}
-          lessonsRes.data.forEach(lesson => {
-            expanded[lesson.id] = true
-          })
-          setExpandedLessons(expanded)
-          
-          // Fetch progress for each lesson
           const progressData: Record<string, any> = {}
+          const interactionData: Record<string, boolean> = {}
+          
           await Promise.all(
             lessonsRes.data.map(async (lesson: any) => {
+              expanded[lesson.id] = true
+              interactionData[lesson.id] = false
               try {
                 const progressRes = await coursesApi.getLessonProgress(lesson.id)
                 if (progressRes.data) {
@@ -63,10 +67,18 @@ export default function ModulePage() {
               }
             })
           )
+          
+          setExpandedLessons(expanded)
           setLessonProgress(progressData)
+          setContentInteraction(interactionData)
         }
 
-        // Set module completion status
+        const surveyRes = await assessmentsApi.getModuleSurveys(courseId, moduleId)
+        if (surveyRes.data?.length > 0) {
+          setHasSurvey(true)
+        }
+
+        const moduleProgressRes = await coursesApi.getModuleProgress(moduleId)
         if (moduleProgressRes.data) {
           setModuleCompleted(moduleProgressRes.data.is_completed)
         }
@@ -80,63 +92,131 @@ export default function ModulePage() {
     fetchData()
   }, [courseId, moduleId])
 
-  // Navigation helpers
+  useEffect(() => {
+    const checkModuleCompletion = async () => {
+      if (lessons.length > 0) {
+        const requiredLessons = lessons.filter(lesson => lesson.is_required)
+        const allRequiredLessonsCompleted = requiredLessons.length > 0 && 
+          requiredLessons.every(lesson => lessonProgress[lesson.id]?.is_completed)
+        
+        const surveyRequired = hasSurvey && !surveyCompleted
+        const isCompleted = allRequiredLessonsCompleted && !surveyRequired
+
+        if (isCompleted !== moduleCompleted) {
+          try {
+            if (isCompleted) {
+              await coursesApi.markModuleCompleted(moduleId)
+            }
+            setModuleCompleted(isCompleted)
+          } catch (error) {
+            console.error('Error updating module completion:', error)
+          }
+        }
+      }
+    }
+
+    checkModuleCompletion()
+  }, [lessons, lessonProgress, hasSurvey, surveyCompleted, moduleId, courseId])
+
+  useEffect(() => {
+    // Setup scroll event listeners for all lesson content elements
+    const handleScroll = (lessonId: string) => {
+      return (e: Event) => {
+        const element = e.target as HTMLElement
+        const scrollPercentage = (element.scrollTop + element.clientHeight) / element.scrollHeight
+        
+        // Mark as completed if scrolled 90% and not already completed
+        if (scrollPercentage > 0.9 && !lessonProgress[lessonId]?.is_completed) {
+          handleLessonCompleted(lessonId)
+        }
+      }
+    }
+
+    // Add event listeners
+    Object.keys(contentRefs.current).forEach(lessonId => {
+      const element = contentRefs.current[lessonId]
+      if (element) {
+        element.addEventListener('scroll', handleScroll(lessonId))
+      }
+    })
+
+    // Cleanup
+    return () => {
+      Object.keys(contentRefs.current).forEach(lessonId => {
+        const element = contentRefs.current[lessonId]
+        if (element) {
+          element.removeEventListener('scroll', handleScroll(lessonId))
+        }
+      })
+    }
+  }, [lessonProgress])
+
+  // Handle page scroll for non-scrollable content
+  useEffect(() => {
+    const handlePageScroll = () => {
+      lessons.forEach(lesson => {
+        if (lesson.content_type === 'TEXT' && !lessonProgress[lesson.id]?.is_completed) {
+          const element = contentRefs.current[lesson.id]
+          if (element) {
+            const rect = element.getBoundingClientRect()
+            const isVisible = (
+              rect.top >= 0 &&
+              rect.left >= 0 &&
+              rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+              rect.right <= (window.innerWidth || document.documentElement.clientWidth)
+            )
+            
+            if (isVisible) {
+              setContentInteraction(prev => ({
+                ...prev,
+                [lesson.id]: true
+              }))
+              handleLessonCompleted(lesson.id)
+            }
+          }
+        }
+      })
+    }
+
+    window.addEventListener('scroll', handlePageScroll)
+    return () => window.removeEventListener('scroll', handlePageScroll)
+  }, [lessons, lessonProgress])
+
   const getCurrentModuleIndex = () => {
-    return course?.modules?.findIndex((m: any) => m.id === moduleId) || 0
+    return modules.findIndex((m: any) => m.id === moduleId) || 0
   }
 
   const getPreviousModule = () => {
-    if (!course?.modules) return null
     const currentIndex = getCurrentModuleIndex()
     if (currentIndex > 0) {
-      return course.modules[currentIndex - 1]
+      return modules[currentIndex - 1]
     }
     return null
   }
 
   const getNextModule = () => {
-    if (!course?.modules) return null
     const currentIndex = getCurrentModuleIndex()
-    if (currentIndex < course.modules.length - 1) {
-      return course.modules[currentIndex + 1]
+    if (currentIndex < modules.length - 1) {
+      return modules[currentIndex + 1]
     }
     return null
   }
 
-  // Check if all lessons are completed
-  const allLessonsCompleted = lessons.every(lesson => lessonProgress[lesson.id]?.is_completed)
-
-  // Mark module as completed if all lessons are done
-  useEffect(() => {
-    const markModuleComplete = async () => {
-      if (allLessonsCompleted && !moduleCompleted) {
-        try {
-          await coursesApi.markModuleCompleted(moduleId);
-          setModuleCompleted(true);
-          
-          // Refresh the progress data
-          const progressRes = await coursesApi.getCourseProgress(courseId);
-          if (progressRes.data) {
-            setProgress(progressRes.data);
-          }
-        } catch (error) {
-          console.error('Error marking module as completed:', error);
-        }
-      }
-    };
-
-    markModuleComplete();
-  }, [allLessonsCompleted, moduleCompleted, moduleId, courseId]);
-
-  // Toggle lesson expansion
   const toggleLesson = (lessonId: string) => {
     setExpandedLessons(prev => ({
       ...prev,
       [lessonId]: !prev[lessonId]
     }))
+
+    // Mark lesson as interacted with when expanded
+    if (!expandedLessons[lessonId]) {
+      setContentInteraction(prev => ({
+        ...prev,
+        [lessonId]: true
+      }))
+    }
   }
 
-  // Handle lesson completion
   const handleLessonCompleted = async (lessonId: string) => {
     try {
       const res = await coursesApi.updateProgress(lessonId, true)
@@ -145,70 +225,116 @@ export default function ModulePage() {
           ...prev,
           [lessonId]: { ...prev[lessonId], is_completed: true }
         }))
+        router.refresh()
       }
     } catch (error) {
       console.error('Error updating lesson progress:', error)
     }
   }
 
-  // Render different content types
+  const handleVideoEnded = (lessonId: string) => {
+    if (!lessonProgress[lessonId]?.is_completed) {
+      handleLessonCompleted(lessonId)
+    }
+  }
+
+  const handlePdfLoaded = (lessonId: string) => {
+    if (!lessonProgress[lessonId]?.is_completed) {
+      handleLessonCompleted(lessonId)
+    }
+  }
+
   const renderLessonContent = (lesson: any) => {
-    switch (lesson.content_type) {
-      case 'VIDEO':
-        return (
-          <div className="ratio ratio-16x9 mb-3">
-            <iframe 
-              src={lesson.content} 
-              title={lesson.title}
-              allowFullScreen
-              onEnded={() => handleLessonCompleted(lesson.id)}
-            ></iframe>
-          </div>
-        )
-      case 'PDF':
-        return (
-          <div className="mb-3">
-            <iframe 
-              src={lesson.content} 
-              className="w-100" 
-              style={{ height: '500px' }}
-              title={lesson.title}
-            ></iframe>
-          </div>
-        )
-      case 'TEXT':
-        return (
-          <div 
-            className="lesson-content" 
-            dangerouslySetInnerHTML={{ __html: lesson.content }}
-            onScroll={(e) => {
-              const element = e.target as HTMLElement
-              const scrollPercentage = (element.scrollTop + element.clientHeight) / element.scrollHeight
-              if (scrollPercentage > 0.8) {
-                handleLessonCompleted(lesson.id)
-              }
+    if (lesson.content_type === 'QUIZ') {
+      return (
+        <div className="alert alert-info">
+          <p>Complete this quiz to finish the lesson.</p>
+          {lessonProgress[lesson.id]?.is_completed ? (
+            <span className="badge bg-success">Completed</span>
+          ) : (
+            <button 
+              onClick={() => router.push(`/dashboard/learn/${courseId}/${moduleId}/${lesson.id}`)}
+              className="btn btn-sm btn-primary"
+            >
+              Take Quiz
+            </button>
+          )}
+        </div>
+      )
+    }
+
+    if (lesson.content_type === 'VIDEO') {
+      return (
+        <div className="ratio ratio-16x9 mb-3">
+          <iframe 
+            ref={(el) => iframeRefs.current[lesson.id] = el}
+            src={lesson.content} 
+            title={lesson.title}
+            allowFullScreen
+            onEnded={() => handleVideoEnded(lesson.id)}
+            onLoad={() => setContentInteraction(prev => ({...prev, [lesson.id]: true}))}
+          />
+        </div>
+      )
+    }
+
+    if (lesson.content_type === 'PDF') {
+      return (
+        <div className="mb-3">
+          <iframe 
+            ref={(el) => iframeRefs.current[lesson.id] = el}
+            src={lesson.content} 
+            className="w-100" 
+            style={{ height: '500px' }}
+            title={lesson.title}
+            onLoad={() => {
+              setContentInteraction(prev => ({...prev, [lesson.id]: true}))
+              handlePdfLoaded(lesson.id)
             }}
           />
-        )
-      case 'QUIZ':
-        return (
-          <div className="alert alert-info">
-            <p>You have to completed this quiz.</p>
-            {lessonProgress[lesson.id]?.is_completed ? (
-              <span className="badge bg-success">Completed</span>
-            ) : (
-              <button 
-                onClick={() => router.push(`/dashboard/learn/${courseId}/${moduleId}/${lesson.id}`)}
-                className="btn btn-sm btn-primary"
-              >
-                Take Quiz
-              </button>
-            )}
-          </div>
-        )
-      default:
-        return <div dangerouslySetInnerHTML={{ __html: lesson.content }} />
+        </div>
+      )
     }
+
+    // For TEXT content with sections
+    return (
+      <>
+        <div 
+          ref={(el) => contentRefs.current[lesson.id] = el}
+          className="lesson-content" 
+          dangerouslySetInnerHTML={{ __html: lesson.content }}
+          style={{ maxHeight: '500px', overflowY: 'auto' }}
+          onClick={() => setContentInteraction(prev => ({...prev, [lesson.id]: true}))}
+        />
+        {lesson.sections?.length > 0 && (
+          <div className="sections-container mt-3">
+            {lesson.sections.map((section: any) => (
+              <div key={section.id} className="section mb-4">
+                <h5>{section.title}</h5>
+                <div 
+                  dangerouslySetInnerHTML={{ __html: section.content }} 
+                  onClick={() => setContentInteraction(prev => ({...prev, [lesson.id]: true}))}
+                />
+                
+                {section.subsections?.length > 0 && (
+                  <div className="subsections ms-4">
+                    {section.subsections.map((sub: any) => (
+                      <div key={sub.id} className="subsection mb-3">
+                        <h6>{sub.title}</h6>
+                        <div 
+                          dangerouslySetInnerHTML={{ __html: sub.content }} 
+                          onClick={() => setContentInteraction(prev => ({...prev, [lesson.id]: true}))}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </>
+    )
   }
 
   if (loading) {
@@ -237,10 +363,11 @@ export default function ModulePage() {
     )
   }
 
+  const isLastModule = getCurrentModuleIndex() === modules.length - 1
+
   return (
     <ProtectedRoute>
       <div className="d-flex vh-100 bg-light position-relative">
-        {/* Mobile Sidebar Toggle Button */}
         <button 
           className="d-lg-none btn btn-light position-fixed top-2 start-2 z-3"
           onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
@@ -249,7 +376,6 @@ export default function ModulePage() {
           <Menu className="bi bi-list" />
         </button>
 
-        {/* Sidebar */}
         <div 
           className={`d-flex flex-column flex-shrink-0 p-3 bg-white shadow-sm h-100 
             ${mobileSidebarOpen ? 'd-block position-fixed' : 'd-none d-lg-block'}`}
@@ -263,7 +389,6 @@ export default function ModulePage() {
           <LearnerSidebar />
         </div>
 
-        {/* Overlay for mobile */}
         {mobileSidebarOpen && (
           <div 
             className="d-lg-none position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50"
@@ -272,7 +397,6 @@ export default function ModulePage() {
           />
         )}
 
-        {/* Main Content */}
         <main 
           className="flex-grow-1 p-4 overflow-auto"
           style={{
@@ -306,9 +430,9 @@ export default function ModulePage() {
                     <p className="mb-0">{module.description}</p>
                   </div>
                   <div className="card-body">
-                    <div className="accordion" id="lessonsAccordion">
+                    <div className="accordion" id="lessonsAccordion" style={{ maxWidth: '100%', overflowX: 'hidden' }}>
                       {lessons.map((lesson) => (
-                        <div key={lesson.id} className="lesson-section">
+                        <div key={lesson.id} className="lesson-section" style={{ wordBreak: 'break-word' }}>
                           <div 
                             className="d-flex justify-content-between align-items-center p-3 border-bottom cursor-pointer"
                             onClick={() => toggleLesson(lesson.id)}
@@ -326,6 +450,16 @@ export default function ModulePage() {
                           {expandedLessons[lesson.id] && (
                             <div className="p-3">
                               {renderLessonContent(lesson)}
+                              {contentInteraction[lesson.id] && !lessonProgress[lesson.id]?.is_completed && (
+                                <div className="mt-2 text-end">
+                                  <button 
+                                    onClick={() => handleLessonCompleted(lesson.id)}
+                                    className="btn btn-sm btn-outline-primary"
+                                  >
+                                    Mark as Completed
+                                  </button>
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
@@ -334,31 +468,46 @@ export default function ModulePage() {
                   </div>
                 </div>
 
-                {/* Module completion navigation */}
-                {moduleCompleted && (
-                  <div className="card mt-4">
-                    <div className="card-body text-center">
-                      <div className="d-flex justify-content-between">
-                        {getPreviousModule() && (
-                          <Link
-                            href={`/dashboard/learn/${courseId}/${getPreviousModule().id}`}
-                            className="btn btn-outline-primary"
-                          >
-                            <ChevronLeft className="me-1" />
-                            Previous Module: {getPreviousModule().title}
-                          </Link>
-                        )}
-                        {!getPreviousModule() && <div></div>}
-                        
-                        {getNextModule() ? (
-                          <Link
-                            href={`/dashboard/learn/${courseId}/${getNextModule().id}`}
-                            className="btn btn-primary"
-                          >
-                            Next Module: {getNextModule().title}
-                            <ChevronRight className="ms-1" />
-                          </Link>
-                        ) : (
+                <div className="card mt-4">
+                  <div className="card-body text-center">
+                    {hasSurvey && (
+                      <div className="mt-3">
+                        <Link 
+                          href={`/dashboard/learn/${courseId}/${moduleId}/survey`} 
+                          className="btn btn-primary"
+                        >
+                          {surveyCompleted ? 'Survey Completed' : 'Take Module Survey'}
+                        </Link>
+                        <p className="text-muted mt-2 small">
+                          {surveyCompleted ? 
+                            'Thank you for completing the survey' : 
+                            'Help us improve by completing this short survey'}
+                        </p>
+                      </div>
+                    )}
+                    <div className="d-flex flex-column flex-sm-row justify-content-between gap-2 mt-3">
+                      {getPreviousModule() && (
+                        <Link
+                          href={`/dashboard/learn/${courseId}/${getPreviousModule().id}`}
+                          className="btn btn-outline-primary flex-grow-1 flex-sm-grow-0"
+                        >
+                          <ChevronLeft className="me-1" />
+                          Previous Module
+                        </Link>
+                      )}
+                      {!getPreviousModule() && <div></div>}
+                      
+                      {!isLastModule ? (
+                        <Link
+                          href={`/dashboard/learn/${courseId}/${getNextModule()?.id}`}
+                          className="btn btn-outline-primary"
+                          disabled={!moduleCompleted}
+                        >
+                          Next Module
+                          <ChevronRight className="ms-1" />
+                        </Link>
+                      ) : (
+                        moduleCompleted && (
                           <Link
                             href={`/dashboard/learn/${courseId}/complete`}
                             className="btn btn-success"
@@ -366,22 +515,11 @@ export default function ModulePage() {
                             Complete Course
                             <ChevronRight className="ms-1" />
                           </Link>
-                        )}
-                      </div>
-                      <div className="mt-3">
-                        <Link 
-                          href={`/dashboard/learn/${courseId}/${moduleId}/survey`} 
-                          className="btn btn-primary"
-                        >
-                          Take Module Survey
-                        </Link>
-                        <p className="text-muted mt-2 small">
-                          Help us improve by completing this short survey
-                        </p>
-                      </div>
+                        )
+                      )}
                     </div>
                   </div>
-                )}
+                </div>
               </div>
 
               <div className="col-md-4">
@@ -415,7 +553,7 @@ export default function ModulePage() {
                     <h6>Course Navigation</h6>
                   </div>
                   <div className="list-group list-group-flush">
-                    {course.modules?.map((mod: any) => (
+                    {modules.map((mod: any) => (
                       <Link
                         key={mod.id}
                         href={`/dashboard/learn/${courseId}/${mod.id}`}
@@ -423,7 +561,7 @@ export default function ModulePage() {
                       >
                         <div className="d-flex justify-content-between">
                           <span>{mod.title}</span>
-                          {mod.completed && (
+                          {mod.is_completed && (
                             <span className="badge bg-success">✓</span>
                           )}
                         </div>

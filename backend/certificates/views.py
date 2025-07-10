@@ -1,6 +1,10 @@
 from rest_framework import generics, status
 from rest_framework.response import Response
 from reportlab.lib.pagesizes import letter
+from django.http import FileResponse
+from .models import Certificate
+from rest_framework.renderers import BaseRenderer
+from django.utils import timezone
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from .models import Certificate, CertificateTemplate
 from .serializers import CertificateTemplateSerializer, CertificateSerializer
@@ -65,25 +69,27 @@ class GenerateCertificateView(generics.GenericAPIView):
         buffer = BytesIO()
         c = canvas.Canvas(buffer, pagesize=letter)
         
-        # Certificate design (improved from your current version)
+        # Certificate design
         c.setFont("Helvetica-Bold", 28)
         c.drawCentredString(300, 700, "CERTIFICATE OF ACHIEVEMENT")
-        
+
         c.setFont("Helvetica", 16)
         c.drawCentredString(300, 650, "This is to certify that")
-        
+
         c.setFont("Helvetica-Bold", 24)
-        c.drawCentredString(300, 620, user.get_full_name())
-        
+        # Combine first and last names
+        full_name = f"{user.first_name} {user.last_name}"
+        c.drawCentredString(300, 620, full_name)  # Display full name
+
         c.setFont("Helvetica", 16)
         c.drawCentredString(300, 580, "has successfully completed the course")
-        
+
         c.setFont("Helvetica-Bold", 22)
         c.drawCentredString(300, 540, f'"{course.title}"')
-        
+
         c.setFont("Helvetica", 14)
         c.drawCentredString(300, 500, f"on {timezone.now().strftime('%B %d, %Y')}")
-        
+                
         # Add certificate number
         cert_number = str(uuid.uuid4())[:8].upper()
         c.setFont("Helvetica", 12)
@@ -162,3 +168,47 @@ class VerifyCertificateView(generics.RetrieveAPIView):
             **serializer.data,
             "valid": True
         })
+class BinaryFileRenderer(BaseRenderer):
+    media_type = 'application/pdf'
+    format = 'pdf'
+    charset = None
+    render_style = 'binary'
+
+    def render(self, data, media_type=None, renderer_context=None):
+        return data
+
+class DownloadCertificateView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+    renderer_classes = [BinaryFileRenderer]
+    
+    def get(self, request, certificate_id, *args, **kwargs):
+        try:
+            certificate = Certificate.objects.get(id=certificate_id)
+            
+            # Check if the requesting user owns the certificate or is admin
+            if certificate.user != request.user and not request.user.is_staff:
+                return Response(
+                    {"detail": "You don't have permission to download this certificate"},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+                
+            if not certificate.pdf_file:
+                return Response(
+                    {"detail": "PDF file not found for this certificate"},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+                
+            file = certificate.pdf_file.open('rb')
+            response = FileResponse(
+                file,
+                as_attachment=True,
+                filename=f"certificate_{certificate.certificate_number}.pdf",
+                content_type='application/pdf'
+            )
+            return response
+            
+        except Certificate.DoesNotExist:
+            return Response(
+                {"detail": "Certificate not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )

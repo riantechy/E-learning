@@ -8,6 +8,7 @@ import ProtectedRoute from '@/components/ProtectedRoute'
 import LearnerSidebar from '@/components/LearnerSidebar'
 import { Menu } from 'lucide-react'
 import Link from 'next/link'
+import Spinner from 'react-bootstrap/Spinner'
 
 export default function CourseOverviewPage() {
   const params = useParams()
@@ -31,7 +32,6 @@ export default function CourseOverviewPage() {
         
         if (courseRes.data) setCourse(courseRes.data)
         if (modulesRes.data) {
-          // Fetch progress for each module
           const modulesWithProgress = await Promise.all(
             modulesRes.data.map(async (module: any) => {
               const moduleProgressRes = await coursesApi.getModuleProgress(module.id)
@@ -65,7 +65,6 @@ export default function CourseOverviewPage() {
     }
   }, [courseId, router])
 
-  // Refresh data when page becomes visible again
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
@@ -104,7 +103,6 @@ export default function CourseOverviewPage() {
   }, [courseId, modules])
 
   const handleStartCourse = async () => {
-    // Find first incomplete module or first module if none are completed
     const firstIncompleteModule = modules.find(module => 
       !module.is_completed
     ) || modules[0]
@@ -115,12 +113,9 @@ export default function CourseOverviewPage() {
   }
 
   const isModuleLocked = (module: any) => {
-    if (module.order === 1) return false // First module is always unlocked
-    
+    if (module.order === 1) return false
     const prevModule = modules.find(m => m.order === module.order - 1)
     if (!prevModule) return false
-    
-    // Check if previous module is completed
     return !prevModule.is_completed
   }
 
@@ -146,9 +141,9 @@ export default function CourseOverviewPage() {
       <ProtectedRoute>
         <div className="d-flex vh-100 bg-light position-relative">
           <div className="flex-grow-1 p-4 overflow-auto d-flex justify-content-center align-items-center">
-            <div className="spinner-border" role="status">
+            <Spinner animation="border" role="status">
               <span className="visually-hidden">Loading...</span>
-            </div>
+            </Spinner>
           </div>
         </div>
       </ProtectedRoute>
@@ -169,14 +164,21 @@ export default function CourseOverviewPage() {
 
   return (
     <ProtectedRoute>
-      <div className="d-flex vh-100 bg-light position-relative">
+      <div className="d-flex vh-100 bg-light position-relative" style={{ overflowX: 'hidden' }}>
         {/* Mobile Sidebar Toggle Button */}
         <button 
-          className="d-lg-none btn btn-light position-fixed top-2 start-2 z-3"
+          className="d-lg-none btn btn-light position-fixed top-2 start-2 z-3 rounded-circle p-2"
+          style={{
+            zIndex: 1000,
+            width: '40px',
+            height: '40px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
           onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
-          style={{zIndex: 1000}}
         >
-          <Menu className="bi bi-list" />
+          <Menu size={20} />
         </button>
 
         {/* Sidebar */}
@@ -184,9 +186,10 @@ export default function CourseOverviewPage() {
           className={`d-flex flex-column flex-shrink-0 p-3 bg-white shadow-sm h-100 
             ${mobileSidebarOpen ? 'd-block position-fixed' : 'd-none d-lg-block'}`}
           style={{
-            width: '280px',
+            width: '80vw',
+            maxWidth: '280px',
             zIndex: 999,
-            left: mobileSidebarOpen ? '0' : '-280px',
+            left: mobileSidebarOpen ? '0' : '-80vw',
             transition: 'left 0.3s ease'
           }}
         >
@@ -204,15 +207,17 @@ export default function CourseOverviewPage() {
 
         {/* Main Content */}
         <main 
-          className="flex-grow-1 p-4 overflow-auto"
+          className="flex-grow-1 p-3 p-md-4 overflow-auto"
           style={{
-            width: 'calc(100%)',
-            transition: 'margin-left 0.3s ease'
+            width: mobileSidebarOpen ? 'calc(100% - 80vw)' : '100%',
+            maxWidth: mobileSidebarOpen ? 'calc(100% - 280px)' : '100%',
+            transition: 'margin-left 0.3s ease',
+            marginLeft: mobileSidebarOpen ? '80vw' : '0'
           }}
         >
-          <div className="container py-5">
-            <nav aria-label="breadcrumb">
-              <ol className="breadcrumb">
+          <div className="container py-3 py-md-5">
+            <nav aria-label="breadcrumb" style={{ overflowX: 'auto', whiteSpace: 'nowrap' }}>
+              <ol className="breadcrumb" style={{ display: 'inline-flex', minWidth: '100%' }}>
                 <li className="breadcrumb-item">
                   <Link href="/dashboard">Dashboard</Link>
                 </li>
@@ -226,15 +231,15 @@ export default function CourseOverviewPage() {
             </nav>
 
             <div className="row">
-              <div className="col-md-8">
+              <div className="col-12 col-md-8 mb-4 mb-md-0">
                 <div className="card mb-4">
                   <div className="card-body">
                     <h5 className="mb-3">{course.title}</h5>
                     <p className="text-sm">{course.description}</p>
                     
-                    <div className="d-flex justify-content-between align-items-center mb-4">
-                      <div>
-                        <span className="badge bg-primary me-2">
+                    <div className="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3 mb-4">
+                      <div className="d-flex flex-wrap gap-2">
+                        <span className="badge bg-primary">
                           {course.duration_hours} hours
                         </span>
                         <span className="badge bg-secondary">
@@ -243,10 +248,11 @@ export default function CourseOverviewPage() {
                       </div>
                       <button 
                         onClick={handleStartCourse}
-                        className="btn btn-primary btn-lg"
+                        className="btn btn-primary btn-lg flex-shrink-0"
                         disabled={!modules.length}
+                        style={{ minWidth: '180px' }}
                       >
-                        {progress?.percentage === 0 ? 'Start Course' : 'Continue Learning'}
+                        {progress?.percentage === 0 ? 'Start Course' : 'Continue'}
                       </button>
                     </div>
 
@@ -277,15 +283,15 @@ export default function CourseOverviewPage() {
                           key={module.id} 
                           className={`list-group-item ${isCompleted ? 'bg-light' : ''}`}
                         >
-                          <div className="d-flex justify-content-between align-items-center">
-                            <div>
+                          <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2">
+                            <div style={{ flex: 1 }}>
                               <h6 className="mb-1">{module.title}</h6>
-                              <p className="text-sm text-muted">{module.description}</p>
-                              <small>
+                              <p className="text-sm text-muted mb-2 mb-sm-1">{module.description}</p>
+                              <small className="text-muted">
                                 {completedLessons}/{module.lessons?.length || 0} lessons
                               </small>
                             </div>
-                            <div>
+                            <div className="d-flex flex-shrink-0">
                               {isLocked ? (
                                 <span className="badge bg-secondary">Locked</span>
                               ) : isCompleted ? (
@@ -315,7 +321,7 @@ export default function CourseOverviewPage() {
                 </div>
               </div>
 
-              <div className="col-md-4">
+              <div className="col-12 col-md-4">
                 <div className="card mb-4">
                   <div className="card-header">
                     <h6>Course Details</h6>

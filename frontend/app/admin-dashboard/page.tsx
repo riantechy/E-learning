@@ -25,14 +25,15 @@ export default function AdminDashboard() {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const [usersRes, coursesRes, enrollmentsRes] = await Promise.all([
+      const [usersRes, coursesRes, enrollmentsRes, completionRes] = await Promise.all([
         usersApi.getAllUsers(),
         coursesApi.getAllCourses(),
-        coursesApi.getTotalEnrollments(), // Using the new endpoint
+        coursesApi.getTotalEnrollments(), 
+        coursesApi.getCompletionRates(),
       ]);
 
       if (usersRes.error || coursesRes.error || enrollmentsRes.error) {
-        setError(usersRes.error || coursesRes.error || enrollmentsRes.error || 'Failed to fetch data');
+        setError(usersRes.error || coursesRes.error || enrollmentsRes.error || completionRes.error || 'Failed to fetch data');
         return;
       }
 
@@ -41,8 +42,8 @@ export default function AdminDashboard() {
       setStats({
         totalUsers: usersRes.data?.length || 0,
         activeCourses,
-        enrollments: enrollmentsRes.data?.total_enrollments || 0, // Using the enrollment count from API
-        completionRate: 0, // You'll need to implement this in your API
+        enrollments: enrollmentsRes.data?.total_enrollments || 0, 
+        completionRate: completionRes.data?.overall_completion_rate || 0,
       });
     } catch (err) {
       setError('An error occurred while fetching dashboard data');

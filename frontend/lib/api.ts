@@ -109,7 +109,7 @@ export const coursesApi = {
   apiRequest<{ is_completed: boolean }>(`/courses/module-progress/get_progress/?module_id=${moduleId}`),
 
 markModuleCompleted: (moduleId: string) => 
-  apiRequest<{ is_completed: boolean }>(`/courses/module-progress/`, 'POST', { module_id: moduleId }),
+  apiRequest<{ is_completed: boolean }>(`/courses/module-progress/mark-completed/`, 'POST', { module_id: moduleId }),
 
  getUserProgress: () => apiRequest<UserProgress[]>('/courses/user/progress/all/'),
  createProgress: (progress: Partial<UserProgress>) => 
@@ -150,6 +150,10 @@ markModuleCompleted: (moduleId: string) =>
     apiRequest<{ course_id: string; course_title: string; enrollment_count: number }>(
       `/courses/${courseId}/enrollments/`
     ),
+    getCompletionRates: () => apiRequest<{overall_completion_rate: number; courses: Array<{
+          course_id: string; course_title: string; enrollments: number; completions: number;
+          completion_rate: number;}>;
+      }>('/courses/completion-rates/'),
 };
 
 // Categories API
@@ -269,7 +273,7 @@ export const assessmentsApi = {
   
     getModuleSurveyResponses: (courseId: string, moduleId: string, surveyId: string) =>
       apiRequest<SurveyResponse[]>(
-        `/assessments/${courseId}/modules/${moduleId}/survey/${surveyId}/responses/`
+        `/assessments/modules/${moduleId}/survey/${surveyId}/responses/`
       ),
 
   };
@@ -285,7 +289,8 @@ export const certificatesApi = {
     apiRequest<{ valid: boolean; certificate: Certificate }>(`/certificates/verify/${certificateNumber}/`),
   downloadCertificate: (certificateId: string) => 
     apiRequest<Blob>(`/certificates/download/${certificateId}/`, 'GET', undefined, {
-      'Accept': 'application/pdf'
+      'Accept': 'application/pdf',
+      'Content-Type': 'application/pdf'
     }),
 };
 

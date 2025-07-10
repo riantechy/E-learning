@@ -97,7 +97,7 @@ const LessonFormModal = ({
             />
           </Form.Group>
 
-          {itemType === 'lesson' && (
+          {/* {itemType === 'lesson' && (
             <Form.Group className="mb-3">
               <Form.Label>Description</Form.Label>
               <Form.Control
@@ -108,7 +108,7 @@ const LessonFormModal = ({
                 onChange={onInputChange}
               />
             </Form.Group>
-          )}
+          )} */}
 
           {itemType === 'lesson'  && (
             <>

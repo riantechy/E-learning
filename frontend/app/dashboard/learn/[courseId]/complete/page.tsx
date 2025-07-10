@@ -18,6 +18,7 @@ export default function CourseCompletionPage() {
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api'
 
   // Fetch certificate data
   const fetchCertificate = async () => {
@@ -53,28 +54,32 @@ export default function CourseCompletionPage() {
 
   // Download certificate
   const handleDownloadCertificate = async () => {
-    if (!certificate?.id) return
+    if (!certificate?.id) return;
     
     try {
-      const { data, error } = await certificatesApi.downloadCertificate(certificate.id)
-      if (error) throw new Error(error)
+      const { data, error } = await certificatesApi.downloadCertificate(certificate.id);
       
+      if (error) {
+        throw new Error(error);
+      }
+  
       if (data instanceof Blob) {
-        const url = window.URL.createObjectURL(data)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = `certificate_${course?.title.replace(/\s+/g, '_')}.pdf` || 'certificate.pdf'
-        document.body.appendChild(a)
-        a.click()
-        window.URL.revokeObjectURL(url)
-        a.remove()
+        const url = window.URL.createObjectURL(data);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `certificate_${course?.title.replace(/\s+/g, '_')}_${certificate.certificate_number}.pdf` || 'certificate.pdf';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        a.remove();
+      } else {
+        throw new Error('Received invalid certificate data');
       }
     } catch (err) {
-      console.error('Error downloading certificate:', err)
-      setError('Failed to download certificate')
+      console.error('Error downloading certificate:', err);
+      setError(err instanceof Error ? err.message : 'Failed to download certificate. Please try again later.');
     }
-  }
-
+  };
   // Initial data loading
   useEffect(() => {
     const loadData = async () => {
@@ -269,10 +274,10 @@ interface Course {
   id: string
   title: string
   description: string
-  // Add other course properties as needed
 }
 
 interface Certificate {
   id: string
   pdf_file: string | null
+  certificate_number: string
 }

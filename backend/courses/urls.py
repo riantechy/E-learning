@@ -23,6 +23,7 @@ router.register(
 )
 
 urlpatterns = [
+    path('completion-rates/', views.CourseViewSet.as_view({'get': 'completion_rates'}), name='completion-rates'),
     path('', include(router.urls)),
     
     # Updated paths (removed 'courses/' prefix)
@@ -49,28 +50,17 @@ urlpatterns = [
         'get': 'all_progress'
     }), name='all-progress'),
 
-    path('module-progress/', views.ModuleProgressViewSet.as_view({
-        'get': 'list',
+    path('module-progress/mark-completed/', views.ModuleProgressViewSet.as_view({
         'post': 'mark_completed'
-    }), name='module-progress'),
+    }), name='module-progress-mark-completed'),
+
+    path('module-progress/', views.ModuleProgressViewSet.as_view({
+        'get': 'list'
+    }), name='module-progress-list'),
     
     path('module-progress/get_progress/', views.ModuleProgressViewSet.as_view({
         'get': 'get_progress'
     }), name='module-progress-detail'),
-
-    # path('user/progress/', 
-    #     views.UserProgressViewSet.as_view({'get': 'list', 'post': 'create'}), 
-    #     name='user-progress'),
-    # path('user/progress/lesson/<uuid:lesson_id>/', 
-    #     views.UserProgressViewSet.as_view({'get': 'retrieve', 'put': 'update'}), 
-    #     name='lesson-progress'),
-    # path('user/progress/course/<uuid:course_id>/', 
-    #     views.UserProgressViewSet.as_view({'get': 'course_progress'}), 
-    #     name='course-progress'),
-    # path('user/progress/toggle/', 
-    #     views.UserProgressViewSet.as_view({'post': 'toggle_lesson_completion'}), 
-    #     name='toggle-lesson-completion'),
-
 
     path(
         '<uuid:course_pk>/modules/<uuid:module_pk>/lessons-with-sections/',
@@ -89,4 +79,4 @@ urlpatterns = [
     path('<uuid:pk>/progress/', 
         views.CourseViewSet.as_view({'get': 'progress'}), 
         name='course-progress'),
-]
+    ]

@@ -45,7 +45,7 @@ urlpatterns = [
         name='module-survey-questions'
     ),
     path(
-        '<uuid:course_id>/modules/<uuid:module_id>/survey/<uuid:pk>/responses/',
+        'modules/<uuid:module_id>/survey/<uuid:pk>/responses/',
         views.SurveyViewSet.as_view({'get': 'responses'}),
         name='module-survey-responses'
     ),

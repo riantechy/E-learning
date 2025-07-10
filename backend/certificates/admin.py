@@ -6,6 +6,7 @@ class CertificateTemplateAdmin(admin.ModelAdmin):
     list_display = ('name', 'created_at', 'updated_at')
     search_fields = ('name',)
 
+
 @admin.register(Certificate)
 class CertificateAdmin(admin.ModelAdmin):
     list_display = ('user', 'course', 'issued_date', 'certificate_number')

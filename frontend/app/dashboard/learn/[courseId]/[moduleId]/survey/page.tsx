@@ -99,7 +99,6 @@ export default function ModuleSurveyPage() {
             question: question.id
           };
   
-          // Set the appropriate answer field based on question type
           if (question.question_type === 'TEXT') {
             answer.text_answer = String(answerValue);
           } else if (question.question_type === 'MCQ') {
@@ -109,10 +108,8 @@ export default function ModuleSurveyPage() {
           }
   
           return answer;
-        }).filter(Boolean)  // Remove null entries
+        }).filter(Boolean)
       };
-  
-      console.log('Submitting:', submissionData);  // Debug log
   
       const response = await assessmentsApi.submitSurveyResponse(submissionData);
   
@@ -120,6 +117,13 @@ export default function ModuleSurveyPage() {
         setError(response.error || 'Failed to submit survey');
       } else {
         setSuccess('Survey submitted successfully!');
+        
+        // Mark survey as completed in parent component
+        if (typeof window !== 'undefined') {
+          const event = new CustomEvent('surveyCompleted', { detail: true });
+          window.dispatchEvent(event);
+        }
+        
         setTimeout(() => {
           router.push(`/dashboard/learn/${courseId}`);
         }, 2000);
