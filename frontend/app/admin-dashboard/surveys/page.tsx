@@ -79,7 +79,12 @@ export default function AdminSurveysPage() {
                       <tr key={survey.id}>
                         <td>{index + 1}</td>
                         <td>{survey.title}</td>
-                        <td>{survey.module?.title || 'N/A'}</td>
+                        <td>
+                          {survey.module?.title || 'N/A'}
+                          {survey.module && (
+                            <small className="d-block text-muted">Course: {survey.module.course?.title}</small>
+                          )}
+                        </td>
                         <td>{survey.responses_count || 0}</td>
                         <td>
                           <span className={`badge ${survey.is_active ? 'bg-success' : 'bg-secondary'}`}>

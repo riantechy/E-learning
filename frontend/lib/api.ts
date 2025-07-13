@@ -266,10 +266,6 @@ export const assessmentsApi = {
 
     getSurveys: () => 
       apiRequest<Survey[]>(`/assessments/surveys/`),
-
-  
-    // getSurveyResponses: (surveyId: string) =>
-    //   apiRequest<SurveyResponse[]>(`/assessments/survey-responses/?survey_id=${surveyId}`),
   
     getModuleSurveyResponses: (courseId: string, moduleId: string, surveyId: string) =>
       apiRequest<SurveyResponse[]>(
@@ -314,9 +310,11 @@ export const analyticsApi = {
     courseId 
       ? apiRequest<any>(`/analytics/quiz-performance/?course_id=${courseId}`)
       : apiRequest<any>('/analytics/quiz-performance/'),
-  
+
   exportReport: (type: string, timeFilter: string, format: string) => 
-    apiRequest<any>(`/analytics/export-report/?type=${type}&time_filter=${timeFilter}&format=${format}`),
+    apiRequest<{ download_url: string }>(
+      `/analytics/export-report/?type=${type}&time_filter=${timeFilter}&format=${format}`
+    ),
 
   getModuleCoverage: (courseId: string) => 
     apiRequest<{
@@ -481,8 +479,19 @@ export interface SurveyChoice {
 
 export interface SurveyResponse {
   id: string;
-  survey: string | Survey;
-  user: string | User;
+  survey: {
+    id: string;
+    title: string;
+    module: {
+      id: string;
+      title: string;
+    };
+  };
+  user: {
+    id: string;
+    email: string;
+    name: string;
+  };
   submitted_at: string;
   answers?: SurveyAnswer[];
 }

@@ -316,12 +316,35 @@ class SurveyResponseViewSet(viewsets.ModelViewSet):
     queryset = SurveyResponse.objects.all()
     serializer_class = SurveyResponseSerializer
     permission_classes = [IsAuthenticated]
+    lookup_field = 'pk'
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
     def get_queryset(self):
-        survey_id = self.request.query_params.get('survey_id')
-        if survey_id:
-            return SurveyResponse.objects.filter(survey_id=survey_id)
-        return SurveyResponse.objects.filter(user=self.request.user)
+        # Start with the base queryset
+        queryset = SurveyResponse.objects.all()
+        
+        # For ADMIN or CONTENT_MANAGER, return all responses with related objects
+        if self.request.user.role in ['ADMIN', 'CONTENT_MANAGER']:
+            return queryset.select_related(
+                'user',
+                'survey',
+                'survey__module'
+            ).prefetch_related(
+                'answers',
+                'answers__question',
+                'answers__choice_answer'
+            )
+        
+        # For LEARNERs, return only their own responses with related objects
+        return queryset.filter(
+            user=self.request.user
+        ).select_related(
+            'survey',
+            'survey__module'
+        ).prefetch_related(
+            'answers',
+            'answers__question',
+            'answers__choice_answer'
+        )

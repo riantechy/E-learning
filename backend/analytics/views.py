@@ -46,25 +46,24 @@ class UserActivityAnalyticsView(APIView):
             count=Count('id')
         ).order_by('-count')
         
-        # Get active users
+        # Get active users (distinct users with any activity)
         active_users = query.values('user').distinct().count()
         
-        # Get popular courses
+        # Get popular courses (top 5 by activity count)
         popular_courses = query.filter(course__isnull=False).values(
+            'course__id',
             'course__title'
         ).annotate(
             count=Count('id')
         ).order_by('-count')[:5]
         
-        serializer = UserActivitySerializer(query, many=True)
-        
         return Response({
             'activity_counts': list(activity_counts),
-            'active_users': active_users,
+            'active_users': active_users or 0,
             'popular_courses': list(popular_courses),
             'time_period': {
-                'start': start_date,
-                'end': now
+                'start': start_date.isoformat() if start_date else None,
+                'end': now.isoformat()
             }
         })
 
@@ -277,7 +276,8 @@ class ExportAnalyticsReportView(APIView):
     def get(self, request):
         report_type = request.query_params.get('type', 'user_activity')
         time_filter = request.query_params.get('time_filter', '7d')
-        format = request.query_params.get('format', 'csv')
+        export_format = request.query_params.get('format', 'csv')  
+        print(f"Export format received: {export_format}")  # Debug
         
         # Calculate time range
         now = timezone.now()
@@ -290,115 +290,142 @@ class ExportAnalyticsReportView(APIView):
         else:  # all time
             start_date = None
         
-        if report_type == 'user_activity':
-            query = UserActivity.objects.all()
-            if start_date:
-                query = query.filter(timestamp__gte=start_date)
-            
-            serializer = UserActivitySerializer(query, many=True)
-            df = pd.DataFrame(serializer.data)
-            
-        elif report_type == 'course_progress':
-            courses = Course.objects.filter(status='PUBLISHED')
-            data = []
-            
-            for course in courses:
-                enrollments = Enrollment.objects.filter(course=course)
-                total_enrollments = enrollments.count()
+        try:
+            if report_type == 'user_activity':
+                query = UserActivity.objects.all()
+                if start_date:
+                    query = query.filter(timestamp__gte=start_date)
                 
-                if total_enrollments == 0:
-                    avg_progress = 0
-                    completed = 0
-                else:
-                    total_progress = 0
-                    completed = 0
-                    for enrollment in enrollments:
-                        progress = UserProgress.get_course_progress(enrollment.user, course)
-                        total_progress += progress['percentage']
-                        if progress['percentage'] >= 90:
-                            completed += 1
-                    avg_progress = total_progress / total_enrollments
+                data = list(query.values(
+                    'user__email',
+                    'activity_type',
+                    'timestamp',
+                    'course__title',
+                    'ip_address'
+                ))
+                df = pd.DataFrame(data)
                 
-                data.append({
-                    'Course ID': str(course.id),
-                    'Course Title': course.title,
-                    'Total Enrollments': total_enrollments,
-                    'Average Progress (%)': round(avg_progress, 2),
-                    'Completed Enrollments': completed,
-                    'Completion Rate (%)': round((completed / total_enrollments) * 100, 2) if total_enrollments > 0 else 0
-                })
+            elif report_type == 'course_progress':
+                courses = Course.objects.filter(status='PUBLISHED')
+                data = []
+                
+                for course in courses:
+                    enrollments = Enrollment.objects.filter(course=course)
+                    total_enrollments = enrollments.count()
+                    
+                    if total_enrollments == 0:
+                        avg_progress = 0
+                        completed = 0
+                    else:
+                        total_progress = 0
+                        completed = 0
+                        for enrollment in enrollments:
+                            progress = UserProgress.get_course_progress(enrollment.user, course)
+                            total_progress += progress['percentage']
+                            if progress['percentage'] >= 90:
+                                completed += 1
+                        avg_progress = total_progress / total_enrollments
+                    
+                    data.append({
+                        'Course ID': str(course.id),
+                        'Course Title': course.title,
+                        'Total Enrollments': total_enrollments,
+                        'Average Progress (%)': round(avg_progress, 2),
+                        'Completed Enrollments': completed,
+                        'Completion Rate (%)': round((completed / total_enrollments) * 100, 2) if total_enrollments > 0 else 0
+                    })
+                
+                df = pd.DataFrame(data)
             
-            df = pd.DataFrame(data)
-        
-        elif report_type == 'enrollment_stats':
-            enrollments = Enrollment.objects.all()
-            if start_date:
-                enrollments = enrollments.filter(enrolled_at__gte=start_date)
+            elif report_type == 'enrollment_stats':
+                enrollments = Enrollment.objects.all()
+                if start_date:
+                    enrollments = enrollments.filter(enrolled_at__gte=start_date)
+                
+                data = list(enrollments.values(
+                    'user__email',
+                    'course__title',
+                    'enrolled_at'
+                ))
+                
+                df = pd.DataFrame(data)
+                df.columns = ['User Email', 'Course', 'Enrollment Date']
             
-            data = list(enrollments.values(
-                'user__email',
-                'course__title',
-                'enrolled_at'
-            ))
-            
-            df = pd.DataFrame(data)
-            df.columns = ['User Email', 'Course', 'Enrollment Date']
+            elif report_type == 'module_coverage':
+                course_id = request.query_params.get('course_id')
+                if not course_id:
+                    return Response(
+                        {"error": "course_id is required for module coverage export"},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                
+                try:
+                    course = Course.objects.get(id=course_id)
+                except Course.DoesNotExist:
+                    return Response(
+                        {"error": "Course not found"},
+                        status=status.HTTP_404_NOT_FOUND
+                    )
+                
+                # Get module coverage data
+                response = ModuleCoverageAnalyticsView().get(request, course_id)
+                if response.status_code != 200:
+                    return response
+                
+                coverage_data = response.data
+                rows = []
+                
+                for learner in coverage_data['learners']:
+                    row = {
+                        'Learner ID': learner['user_id'],
+                        'Learner Name': learner['name'],
+                    }
+                    
+                    for i, module in enumerate(coverage_data['modules']):
+                        row[module] = 'Completed' if learner['module_progress'][i]['completed'] else 'Not Completed'
+                    
+                    rows.append(row)
+                
+                df = pd.DataFrame(data)
 
-        elif report_type == 'module_coverage':
-            if not course_id:
-                return Response(
-                    {"error": "course_id is required for module coverage export"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            
+            # Export to requested format
             try:
-                course = Course.objects.get(id=course_id)
-            except Course.DoesNotExist:
+                if export_format == 'csv':
+                    response = HttpResponse(content_type='text/csv')
+                    response['Content-Disposition'] = f'attachment; filename={report_type}_report.csv'
+                    df.to_csv(response, index=False)
+                    return response
+
+                elif export_format == 'excel':
+                    output = BytesIO()
+                    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                        df.to_excel(writer, sheet_name='Report', index=False)
+                    output.seek(0)
+                    
+                    response = HttpResponse(
+                        output.getvalue(),
+                        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                    )
+                    response['Content-Disposition'] = f'attachment; filename={report_type}_report.xlsx'
+                    return response
+
+                else:
+                    return Response(
+                        {"error": "Invalid format. Use 'csv' or 'excel'."},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+
+            except Exception as e:
                 return Response(
-                    {"error": "Course not found"},
-                    status=status.HTTP_404_NOT_FOUND
+                    {"error": str(e)},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
-            
-            # Get module coverage data
-            response = ModuleCoverageAnalyticsView().get(request, course_id)
-            if response.status_code != 200:
-                return response
-            
-            data = response.data
-            rows = []
-            
-            for learner in data['learners']:
-                row = {
-                    'Learner ID': learner['user_id'],
-                    'Learner Name': learner['name'],
-                }
-                
-                for i, module in enumerate(data['modules']):
-                    row[module] = 'Completed' if learner['module_progress'][i]['completed'] else 'Not Completed'
-                
-                rows.append(row)
-            
-            df = pd.DataFrame(rows)
-        
-        # Export to requested format
-        if format == 'excel':
-            output = BytesIO()
-            writer = pd.ExcelWriter(output, engine='xlsxwriter')
-            df.to_excel(writer, sheet_name='Report', index=False)
-            writer.close()
-            output.seek(0)
-            
-            response = HttpResponse(
-                output.getvalue(),
-                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-            response['Content-Disposition'] = f'attachment; filename={report_type}_report.xlsx'
-            return response
-        else:  # CSV
-            response = HttpResponse(content_type='text/csv')
-            response['Content-Disposition'] = f'attachment; filename={report_type}_report.csv'
-            df.to_csv(response, index=False)
-            return response
 
 class ModuleCoverageAnalyticsView(APIView):
     def get(self, request, course_id=None):

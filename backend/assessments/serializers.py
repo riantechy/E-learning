@@ -77,21 +77,27 @@ class SurveyAnswerSerializer(serializers.ModelSerializer):
 
 class SurveyResponseSerializer(serializers.ModelSerializer):
     answers = SurveyAnswerSerializer(many=True)
+    user = serializers.SerializerMethodField()
+    survey = serializers.SerializerMethodField()
     
     class Meta:
         model = SurveyResponse
-        fields = ['survey', 'user', 'submitted_at', 'answers']
+        fields = ['id', 'survey', 'user', 'submitted_at', 'answers']
         read_only_fields = ['user', 'submitted_at']
 
-    def create(self, validated_data):
-        # Extract the nested answers data
-        answers_data = validated_data.pop('answers', [])
+    def get_user(self, obj):
+        return {
+            'id': str(obj.user.id),
+            'email': obj.user.email,
+            'name': f"{obj.user.first_name} {obj.user.last_name}"
+        }
         
-        # Create the SurveyResponse instance
-        response = SurveyResponse.objects.create(**validated_data)
-        
-        # Create each SurveyAnswer instance
-        for answer_data in answers_data:
-            SurveyAnswer.objects.create(response=response, **answer_data)
-        
-        return response
+    def get_survey(self, obj):
+        return {
+            'id': str(obj.survey.id),
+            'title': obj.survey.title,
+            'module': {
+                'id': str(obj.survey.module.id),
+                'title': obj.survey.module.title
+            }
+        }

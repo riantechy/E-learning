@@ -102,6 +102,8 @@ export default function AdminSurveyResponses() {
                     <tr>
                       <th>#</th>
                       <th>Respondent</th>
+                      <th>Email</th>
+                      <th>Module</th>
                       <th>Submission Date</th>
                       <th>Actions</th>
                     </tr>
@@ -110,7 +112,9 @@ export default function AdminSurveyResponses() {
                     {responses.map((response, index) => (
                       <tr key={response.id}>
                         <td>{index + 1}</td>
-                        <td>{response.user?.email || 'Anonymous'}</td>
+                        <td>{response.user?.name || 'Anonymous'}</td>
+                        <td>{response.user?.email || 'N/A'}</td>
+                        <td>{response.survey?.module?.title || 'N/A'}</td>
                         <td>{new Date(response.submitted_at).toLocaleString()}</td>
                         <td>
                           <Link 
