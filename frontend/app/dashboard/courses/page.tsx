@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { coursesApi } from '@/lib/api';
 import Link from 'next/link';
+import TopNavbar from '@/components/TopNavbar';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import LearnerSidebar from '@/components/LearnerSidebar';
 import { Menu } from 'lucide-react';
@@ -65,6 +66,8 @@ export default function CourseListPage() {
         )}
 
         {/* Main Content */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <TopNavbar toggleSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)} />
         <main 
           className="flex-grow-1 p-4 overflow-auto"
           style={{
@@ -106,6 +109,7 @@ export default function CourseListPage() {
             )}
           </div>
         </main>
+        </div>
       </div>
     </ProtectedRoute>
   );

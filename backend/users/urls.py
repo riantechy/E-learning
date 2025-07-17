@@ -3,7 +3,7 @@ from .views import (
     RegisterView, LoginView, UserProfileView,
     UserListView, UserDetailView, UserUpdateView, UserDeleteView,
     ChangePasswordView, LogoutView, LearnerListView, NonLearnerListView, 
-    UserCreateView 
+    UserCreateView, LearnerCountView
 )
 
 urlpatterns = [
@@ -24,5 +24,6 @@ urlpatterns = [
     path('users/delete/<uuid:pk>/', UserDeleteView.as_view(), name='user-delete'),
     
     # Keep the old 'all/' endpoint for backward compatibility
+    path('learners/count/', LearnerCountView.as_view(), name='learner-count'),
     path('all/', UserListView.as_view(), name='user-list-old'),
 ]

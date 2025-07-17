@@ -10,7 +10,8 @@ import Alert from 'react-bootstrap/Alert';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState({
-    totalUsers: 0,
+    // totalUsers: 0,
+    totalLearners: 0,
     activeCourses: 0,
     enrollments: 0,
     completionRate: 0,
@@ -22,41 +23,48 @@ export default function AdminDashboard() {
     fetchDashboardData();
   }, []);
 
-  const fetchDashboardData = async () => {
-    try {
-      setLoading(true);
-      const [usersRes, coursesRes, enrollmentsRes, completionRes] = await Promise.all([
-        usersApi.getAllUsers(),
-        coursesApi.getAllCourses(),
-        coursesApi.getTotalEnrollments(), 
-        coursesApi.getCompletionRates(),
-      ]);
+  // In your fetchDashboardData function:
+const fetchDashboardData = async () => {
+  try {
+    setLoading(true);
+    const [learnersRes, coursesRes, enrollmentsRes, completionRes] = await Promise.all([
+      usersApi.getLearnersCount(),
+      coursesApi.getAllCourses(),
+      coursesApi.getTotalEnrollments(), 
+      coursesApi.getCompletionRates(),
+    ]);
 
-      if (usersRes.error || coursesRes.error || enrollmentsRes.error) {
-        setError(usersRes.error || coursesRes.error || enrollmentsRes.error || completionRes.error || 'Failed to fetch data');
-        return;
-      }
+    console.log('API Responses:', {learnersRes, coursesRes, enrollmentsRes, completionRes });
 
-      const activeCourses = coursesRes.data?.filter(c => c.status === 'PUBLISHED').length || 0;
-      
-      setStats({
-        totalUsers: usersRes.data?.length || 0,
-        activeCourses,
-        enrollments: enrollmentsRes.data?.total_enrollments || 0, 
-        completionRate: completionRes.data?.overall_completion_rate || 0,
-      });
-    } catch (err) {
-      setError('An error occurred while fetching dashboard data');
-    } finally {
-      setLoading(false);
+    if (learnersRes.error || coursesRes.error || enrollmentsRes.error || completionRes.error) {
+      const errorMsg = learnersRes.error || coursesRes.error || enrollmentsRes.error || completionRes.error || 'Failed to fetch data';
+      console.error('API Error:', errorMsg);
+      setError(errorMsg);
+      return;
     }
-  };
+
+    // Fix: Access coursesRes.data.results instead of coursesRes.data
+    const activeCourses = coursesRes.data?.results?.filter(c => c.status === 'PUBLISHED').length || 0;
+    
+    setStats({
+      totalLearners: learnersRes.data?.count || 0,
+      activeCourses,
+      enrollments: enrollmentsRes.data?.total_enrollments || 0, 
+      completionRate: completionRes.data?.overall_completion_rate || 0,
+    });
+  } catch (err) {
+    console.error('Fetch Error:', err);
+    setError(err instanceof Error ? err.message : 'An error occurred while fetching dashboard data');
+  } finally {
+    setLoading(false);
+  }
+};
 
   const statCards = [
-    { title: 'Total Users', value: stats.totalUsers, variant: 'primary', change: '+12% from last month' },
-    { title: 'Active Courses', value: stats.activeCourses, variant: 'success', change: '+5% from last month' },
-    { title: 'Enrollments', value: stats.enrollments, variant: 'info', change: '-2% from last month' },
-    { title: 'Completion Rate', value: `${stats.completionRate}%`, variant: 'warning', change: '+3% from last month' },
+    { title: 'Total Learners', value: stats.totalLearners, variant: 'success', change: '+8% from last month' },
+    { title: 'Active Courses', value: stats.activeCourses, variant: 'info', change: '+5% from last month' },
+    { title: 'Enrollments', value: stats.enrollments, variant: 'warning', change: '-2% from last month' },
+    { title: 'Completion Rate', value: `${stats.completionRate}%`, variant: 'danger', change: '+3% from last month' },
   ];
 
   return (
@@ -70,7 +78,7 @@ export default function AdminDashboard() {
         <div className="row mb-4">
           {statCards.map((card, index) => (
             <div key={index} className="col-md-3 mb-3">
-              <Card bg={card.variant} text="white">
+              <Card bg={card.variant.toLowerCase()} text="white">
                 <Card.Body>
                   <Card.Title>{card.title}</Card.Title>
                   <Card.Text className="h4">
@@ -89,7 +97,7 @@ export default function AdminDashboard() {
           ))}
         </div>
         
-        {/* Rest of your dashboard content remains the same */}
+        {/* Rest of your dashboard content */}
         <div className="card mb-4">
           <div className="card-header">
             <h5 className="mb-0">Recent Activity</h5>

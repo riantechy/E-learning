@@ -1,6 +1,7 @@
 from rest_framework import generics, permissions, viewsets, status
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
+from rest_framework.pagination import PageNumberPagination
 from rest_framework import filters
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import User
@@ -63,12 +64,27 @@ class UserDetailView(generics.RetrieveAPIView):
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated]
 
+class StandardResultsSetPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
 class LearnerListView(generics.ListAPIView):
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = StandardResultsSetPagination
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['email', 'first_name', 'last_name']
     
     def get_queryset(self):
-        return User.objects.filter(role='LEARNER')
+        return User.objects.filter(role='LEARNER').order_by('date_joined')
+
+class LearnerCountView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        count = User.objects.filter(role='LEARNER').count()
+        return Response({'count': count}, status=status.HTTP_200_OK)
 
 class NonLearnerListView(generics.ListAPIView):
     serializer_class = UserSerializer
@@ -88,6 +104,14 @@ class UserDeleteView(generics.DestroyAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated]
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return Response(
+            {"detail": "User deleted successfully."},
+            status=status.HTTP_200_OK
+        )
 
 class ChangePasswordView(generics.UpdateAPIView):
     serializer_class = ChangePasswordSerializer

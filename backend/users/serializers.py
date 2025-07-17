@@ -11,7 +11,7 @@ class UserSerializer(serializers.ModelSerializer):
             'innovation_in_whitebox', 'innovation_industry', 'training', 'training_institution',
             'status', 'date_registered', 'date_joined'
         ]
-        read_only_fields = ['id', 'role', 'date_joined']
+        read_only_fields = ['id', 'date_joined']
 
 
 class RegisterSerializer(serializers.ModelSerializer):

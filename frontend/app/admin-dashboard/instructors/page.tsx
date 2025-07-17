@@ -10,6 +10,7 @@ import Form from 'react-bootstrap/Form';
 import Table from 'react-bootstrap/Table';
 import Alert from 'react-bootstrap/Alert';
 import Badge from 'react-bootstrap/Badge';
+import Pagination from 'react-bootstrap/Pagination';
 
 const defaultForm = {
   email: '',
@@ -35,26 +36,55 @@ export default function UsersPage() {
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [formData, setFormData] = useState(defaultForm);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    pageSize: 10,
+    total: 0,
+  });
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [pagination.page]);
 
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const response = await usersApi.getNonLearners();
+      const response = await usersApi.getNonLearners(pagination.page, pagination.pageSize);
 
-      if (response.data) setUsers(response.data);
+      if (response.data) {
+        setUsers(response.data.results || response.data);
+        setPagination(prev => ({
+          ...prev,
+          total: response.data?.count || response.data?.length || 0
+        }));
+      }
       if (response.error) setError(response.error);
     } catch {
       setError('An error occurred while fetching users');
     } finally {
       setLoading(false);
     }
+  };
+
+  // Function to calculate visible page range
+  const getVisiblePages = () => {
+    const totalPages = Math.ceil(pagination.total / pagination.pageSize);
+    const currentPage = pagination.page;
+    const maxVisible = 5; // Number of visible page buttons
+    const half = Math.floor(maxVisible / 2);
+    
+    let start = Math.max(1, currentPage - half);
+    let end = Math.min(totalPages, start + maxVisible - 1);
+    
+    if (end - start + 1 < maxVisible) {
+      start = Math.max(1, end - maxVisible + 1);
+    }
+    
+    return Array.from({ length: end - start + 1 }, (_, i) => start + i);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -71,6 +101,8 @@ export default function UsersPage() {
     e.preventDefault();
     try {
       setLoading(true);
+      setError('');
+      setSuccess('');
       let response;
 
       if (currentUser) {
@@ -82,6 +114,7 @@ export default function UsersPage() {
       if (response.error) {
         setError(response.error);
       } else {
+        setSuccess(currentUser ? 'User updated successfully' : 'User created successfully');
         setShowModal(false);
         fetchUsers();
       }
@@ -113,7 +146,13 @@ export default function UsersPage() {
         if (response.error) {
           setError(response.error);
         } else {
-          fetchUsers();
+          setSuccess('User deleted successfully');
+          // If we're on a page that would become empty after deletion, go back one page
+          if (users.length === 1 && pagination.page > 1) {
+            setPagination(prev => ({ ...prev, page: prev.page - 1 }));
+          } else {
+            fetchUsers();
+          }
         }
       } catch {
         setError('Failed to delete user');
@@ -132,17 +171,22 @@ export default function UsersPage() {
     return <Badge bg={variants[role] || 'secondary'}>{role}</Badge>;
   };
 
+  const handlePageChange = (page: number) => {
+    setPagination(prev => ({ ...prev, page }));
+  };
+
   return (
     <DashboardLayout sidebar={<AdminSidebar />}>
       <div className="container-fluid">
         <div className="d-flex justify-content-between align-items-center mb-4">
-          <h1 className="h2 mb-0">Manage Adminstrators</h1>
+          <h1 className="h2 mb-0">Manage Administrators</h1>
           <Button variant="primary" onClick={handleNewUser}>
             Add New User
           </Button>
         </div>
 
-        {error && <Alert variant="danger">{error}</Alert>}
+        {error && <Alert variant="danger" onClose={() => setError('')} dismissible>{error}</Alert>}
+        {success && <Alert variant="success" onClose={() => setSuccess('')} dismissible>{success}</Alert>}
 
         {loading ? (
           <div className="text-center py-5">
@@ -151,39 +195,96 @@ export default function UsersPage() {
             </div>
           </div>
         ) : (
-          <Table striped bordered hover responsive>
-            <thead>
-              <tr>
-                <th>Email</th>
-                <th>Name</th>
-                <th>Phone</th>
-                <th>County</th>
-                <th>Role</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((user) => (
-                <tr key={user.id}>
-                  <td>{user.email}</td>
-                  <td>{user.first_name} {user.last_name}</td>
-                  <td>{user.phone}</td>
-                  <td>{user.county}</td>
-                  <td>{getRoleBadge(user.role)}</td>
-                  <td>{user.status}</td>
-                  <td>
-                    <Button variant="info" size="sm" className="me-2" onClick={() => handleEdit(user)}>
-                      Edit
-                    </Button>
-                    <Button variant="danger" size="sm" onClick={() => handleDelete(user.id)}>
-                      Delete
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </Table>
+          <>
+            <div className="table-responsive">
+              <Table striped bordered hover>
+                <thead>
+                  <tr>
+                    <th>Email</th>
+                    <th>Name</th>
+                    <th>Phone</th>
+                    <th>County</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map((user) => (
+                    <tr key={user.id}>
+                      <td>{user.email}</td>
+                      <td>{user.first_name} {user.last_name}</td>
+                      <td>{user.phone}</td>
+                      <td>{user.county}</td>
+                      <td>{getRoleBadge(user.role)}</td>
+                      <td>{user.status}</td>
+                      <td>
+                        <div className="d-flex gap-2">
+                          <Button variant="info" size="sm" onClick={() => handleEdit(user)}>
+                            Edit
+                          </Button>
+                          <Button variant="danger" size="sm" onClick={() => handleDelete(user.id)}>
+                            Delete
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            </div>
+
+            {pagination.total > pagination.pageSize && (
+              <div className="d-flex justify-content-center mt-4">
+                <Pagination>
+                  <Pagination.Prev 
+                    disabled={pagination.page === 1} 
+                    onClick={() => handlePageChange(pagination.page - 1)} 
+                  />
+                  
+                  {/* Always show first page if not in current range */}
+                  {getVisiblePages()[0] > 1 && (
+                    <>
+                      <Pagination.Item onClick={() => handlePageChange(1)}>
+                        1
+                      </Pagination.Item>
+                      {getVisiblePages()[0] > 2 && <Pagination.Ellipsis disabled />}
+                    </>
+                  )}
+                  
+                  {/* Visible page numbers */}
+                  {getVisiblePages().map(page => (
+                    <Pagination.Item
+                      key={page}
+                      active={page === pagination.page}
+                      onClick={() => handlePageChange(page)}
+                    >
+                      {page}
+                    </Pagination.Item>
+                  ))}
+                  
+                  {/* Always show last page if not in current range */}
+                  {getVisiblePages().slice(-1)[0] < Math.ceil(pagination.total / pagination.pageSize) && (
+                    <>
+                      {getVisiblePages().slice(-1)[0] < Math.ceil(pagination.total / pagination.pageSize) - 1 && (
+                        <Pagination.Ellipsis disabled />
+                      )}
+                      <Pagination.Item 
+                        onClick={() => handlePageChange(Math.ceil(pagination.total / pagination.pageSize))}
+                      >
+                        {Math.ceil(pagination.total / pagination.pageSize)}
+                      </Pagination.Item>
+                    </>
+                  )}
+                  
+                  <Pagination.Next 
+                    disabled={pagination.page * pagination.pageSize >= pagination.total}
+                    onClick={() => handlePageChange(pagination.page + 1)} 
+                  />
+                </Pagination>
+              </div>
+            )}
+          </>
         )}
 
         <Modal show={showModal} onHide={() => setShowModal(false)} size="lg">

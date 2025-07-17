@@ -55,7 +55,11 @@ export const usersApi = {
 
   // Admin endpoints
   getAllUsers: () => apiRequest<User[]>('/auth/users/'),
-  getLearners: () => apiRequest<User[]>('/auth/users/learners/'),  
+  getLearnersCount: () => apiRequest<{ count: number }>('/auth/learners/count/'),
+  getLearners: (page: number = 1, pageSize: number = 10, search: string = '') => 
+    apiRequest<{results: User[]; count: number; next: string | null; previous: string | null}>(
+      `/auth/users/learners/?page=${page}&page_size=${pageSize}&search=${search}`
+    ),
   getNonLearners: () => apiRequest<User[]>('/auth/users/non-learners/'),
   getUser: (id: string) => apiRequest<User>(`/auth/users/${id}/`),
   updateUser: (id: string, user: Partial<User>) => apiRequest<User>(`/auth/users/update/${id}/`, 'PUT', user),

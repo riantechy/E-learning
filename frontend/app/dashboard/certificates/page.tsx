@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { certificatesApi } from '@/lib/api'
 import ProtectedRoute from '@/components/ProtectedRoute'
+import TopNavbar from '@/components/TopNavbar'
 import Link from 'next/link'
 import LearnerSidebar from '@/components/LearnerSidebar'
 import { Menu } from 'lucide-react'
@@ -65,6 +66,8 @@ export default function CertificatesPage() {
         )}
 
         {/* Main Content */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <TopNavbar toggleSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)} />
         <main 
           className="flex-grow-1 p-4 overflow-auto"
           style={{
@@ -134,6 +137,7 @@ export default function CertificatesPage() {
             )}
           </div>
         </main>
+      </div>
       </div>
     </ProtectedRoute>
   )
