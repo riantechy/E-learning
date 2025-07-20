@@ -17,8 +17,8 @@ export default function CourseListPage() {
     const fetchCourses = async () => {
       try {
         const response = await coursesApi.getAllCourses();
-        if (response.data) {
-          setCourses(response.data);
+        if (response.data?.results) {
+          setCourses(response.data.results);
         }
       } catch (error) {
         console.error('Error fetching courses:', error);

@@ -35,6 +35,7 @@ export default function AdminSidebar() {
     { href: '/admin-dashboard/enrollments', label: 'Enrollments', icon: '🎓' },
     { href: '/admin-dashboard/surveys', label: 'Surveys', icon: '📝' },
     { href: '/admin-dashboard/analytics', label: 'Analytics', icon: '📈' },
+    { href: '/admin-dashboard/profile', label: 'Profile', icon: '👤' },
     { href: '/admin-dashboard/settings', label: 'Settings', icon: '⚙️' },
   ];
 

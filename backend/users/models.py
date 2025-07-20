@@ -32,6 +32,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     gender = models.CharField(max_length=10)
+    profile_image = models.ImageField(upload_to='profile_images/', null=True, blank=True)
     phone = models.CharField(max_length=20)
     date_of_birth = models.CharField(max_length=20)
     county = models.CharField(max_length=100)

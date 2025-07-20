@@ -22,7 +22,7 @@ export default function ModuleCoverageTab() {
         if (response.error) throw new Error(response.error);
         
         // The response is already the array of courses, no need for .data.course_progress
-        setCourses(response.data || []);
+        setCourses(response.data?.results || []);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch courses');
       } finally {

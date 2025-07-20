@@ -9,7 +9,7 @@ class UserSerializer(serializers.ModelSerializer):
             'id', 'email', 'first_name', 'last_name', 'role', 'gender', 'phone',
             'date_of_birth', 'county', 'education', 'innovation', 'innovation_stage',
             'innovation_in_whitebox', 'innovation_industry', 'training', 'training_institution',
-            'status', 'date_registered', 'date_joined'
+            'status', 'date_registered', 'date_joined', 'profile_image'
         ]
         read_only_fields = ['id', 'date_joined']
 

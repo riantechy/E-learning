@@ -49,26 +49,19 @@ export default function QuizPage() {
       setLoading(true);
       setError('');
       setSuccess('');
+      
       const [lessonRes, questionsRes] = await Promise.all([
-        coursesApi.getLesson(courseId as string, moduleId as string, lessonId as string),
-        assessmentsApi.getQuestions(lessonId as string),
+        coursesApi.getLesson(courseId, moduleId, lessonId),
+        coursesApi.getLessonQuestions(courseId, moduleId, lessonId)
       ]);
 
-      if (lessonRes.data) setLesson(lessonRes.data);
-      if (questionsRes.data) {
-        const questionsWithAnswers = await Promise.all(
-          questionsRes.data.map(async (question: any) => {
-            const answersRes = await assessmentsApi.getAnswers(question.id);
-            return {
-              ...question,
-              answers: answersRes.data || []
-            };
-          })
-        );
-        setQuestions(questionsWithAnswers.sort((a, b) => a.order - b.order));
+      if (lessonRes.data?.results) setLesson(lessonRes.data?.results);
+      if (questionsRes.data?.results) {
+        setQuestions(questionsRes.data.results);
       }
-      if (lessonRes.error) setError(lessonRes.error);
-      if (questionsRes.error) setError(questionsRes.error);
+      if (lessonRes.error || questionsRes.error) {
+        setError(lessonRes.error || questionsRes.error || 'Failed to fetch data');
+      }
     } catch (err) {
       setError('An error occurred while fetching data');
       console.error(err);

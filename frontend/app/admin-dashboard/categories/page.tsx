@@ -29,8 +29,16 @@ export default function CategoriesPage() {
     try {
       setLoading(true);
       const response = await categoriesApi.getAllCategories();
-
-      if (response.data) setCategories(response.data);
+  
+      // ✅ Handle paginated response (access .results)
+      if (response.data?.results) {
+        setCategories(response.data.results);
+      }
+      // Fallback for non-paginated responses
+      else if (Array.isArray(response.data)) {
+        setCategories(response.data);
+      }
+      
       if (response.error) setError(response.error);
     } catch (err) {
       setError('An error occurred while fetching categories');

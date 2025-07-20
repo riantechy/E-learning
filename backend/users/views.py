@@ -1,6 +1,10 @@
 from rest_framework import generics, permissions, viewsets, status
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
+from rest_framework.parsers import MultiPartParser, FormParser
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
+import os
 from rest_framework.pagination import PageNumberPagination
 from rest_framework import filters
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -52,6 +56,44 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
     
     def get_object(self):
         return self.request.user
+
+class ProfileImageView(APIView):
+    parser_classes = [MultiPartParser, FormParser]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        if 'profile_image' not in request.data:
+            return Response(
+                {'error': 'No image provided'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            profile_image = request.data['profile_image']
+            
+            # Delete old image if exists
+            if request.user.profile_image:
+                old_image_path = os.path.join(settings.MEDIA_ROOT, request.user.profile_image.name)
+                if os.path.exists(old_image_path):
+                    os.remove(old_image_path)
+
+            # Save new image
+            file_name = f"profile_images/user_{request.user.id}_{profile_image.name}"
+            file_path = default_storage.save(file_name, ContentFile(profile_image.read()))
+            
+            # Update user profile
+            request.user.profile_image = file_path
+            request.user.save()
+
+            return Response({
+                'profile_image_url': request.user.profile_image.url
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response(
+                {'error': str(e)}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 class UserListView(generics.ListAPIView):
     queryset = User.objects.all()

@@ -17,8 +17,8 @@ export default function CertificatesPage() {
     const fetchCertificates = async () => {
       try {
         const response = await certificatesApi.getUserCertificates()
-        if (response.data) {
-          setCertificates(response.data)
+        if (response.data?.results) {
+          setCertificates(response.data.results)
         }
       } catch (error) {
         console.error('Error fetching certificates:', error)
@@ -102,22 +102,18 @@ export default function CertificatesPage() {
                             Certificate ID: {certificate.certificate_number}
                           </small>
                         </p>
-                        <a 
-                          href={certificate.pdf_file} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
+                        <button
+                          onClick={() => window.open(certificate.pdf_file, '_blank')}
                           className="btn btn-primary"
                         >
                           Download Certificate
-                        </a>
-                        <a 
-                          href={certificate.verification_url} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
+                        </button>
+                        <Link
+                          href={`/certificates/verify/${certificate.certificate_number}`}
                           className="btn btn-outline-secondary mt-2"
                         >
                           Verify Certificate
-                        </a>
+                        </Link>
                       </div>
                     </div>
                   </div>

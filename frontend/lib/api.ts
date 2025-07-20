@@ -10,7 +10,8 @@ async function apiRequest<T>(
   endpoint: string,
   method: string = 'GET',
   body?: any,
-  headers: Record<string, string> = {}
+  headers: Record<string, string> = {},
+  isBinary: boolean = false
 ): Promise<ApiResponse<T>> {
   try {
     const url = `${API_BASE_URL}${endpoint}`;
@@ -18,12 +19,13 @@ async function apiRequest<T>(
       'Content-Type': 'application/json',
       ...(typeof window !== 'undefined' && localStorage.getItem('access_token') 
         ? { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
-        : {})
+        : {}),
+      ...headers
     };
 
     const response = await fetch(url, {
       method,
-      headers: { ...defaultHeaders, ...headers },
+      headers: defaultHeaders,
       body: body ? JSON.stringify(body) : undefined,
       credentials: 'include',
     });
@@ -33,6 +35,13 @@ async function apiRequest<T>(
       throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
     }
 
+    // Handle binary response differently
+    if (isBinary) {
+      const data = await response.blob();
+      return { data: data as unknown as T };
+    }
+
+    // Default JSON handling
     const data = await response.json();
     return { data };
   } catch (error) {
@@ -64,6 +73,15 @@ export const usersApi = {
   getUser: (id: string) => apiRequest<User>(`/auth/users/${id}/`),
   updateUser: (id: string, user: Partial<User>) => apiRequest<User>(`/auth/users/update/${id}/`, 'PUT', user),
   deleteUser: (id: string) => apiRequest(`/auth/users/delete/${id}/`, 'DELETE'),
+  changePassword: (data: { old_password: string; new_password: string }) => 
+    apiRequest('/auth/change-password/', 'POST', data),
+
+  uploadProfileImage: (formData: FormData) => {
+    return apiRequest<{ profile_image_url: string }>(
+      '/auth/profile/image/',
+      'POST', formData, false 
+    );
+  },
 };
 
 // Courses API
@@ -288,10 +306,13 @@ export const certificatesApi = {
   verifyCertificate: (certificateNumber: string) => 
     apiRequest<{ valid: boolean; certificate: Certificate }>(`/certificates/verify/${certificateNumber}/`),
   downloadCertificate: (certificateId: string) => 
-    apiRequest<Blob>(`/certificates/download/${certificateId}/`, 'GET', undefined, {
-      'Accept': 'application/pdf',
-      'Content-Type': 'application/pdf'
-    }),
+    apiRequest<Blob>(`/certificates/download/${certificateId}/`, 
+      'GET', 
+      undefined, {
+        'Accept': 'application/pdf',
+      },
+      true  
+    ),
 };
 
 // Analytics API
@@ -433,10 +454,20 @@ export interface UserProgress {
   last_accessed: string;
 }
 
+// In api.ts, update the Certificate interface
 export interface Certificate {
   id: string;
-  user: User | string;
-  course: Course | string;
+  user: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+  };
+  course: {
+    id: string;
+    title: string;
+    description: string;
+  };
   template: CertificateTemplate | string | null;
   issued_date: string;
   certificate_number: string;

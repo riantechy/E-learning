@@ -30,51 +30,55 @@ export const useLessonsManagement = () => {
   }, [courseId, moduleId]);
 
     const fetchData = async () => {
-        try {
+      try {
         setLoading(true);
         const [courseRes, moduleRes, lessonsRes] = await Promise.all([
-            coursesApi.getCourse(courseId),
-            coursesApi.getModule(courseId, moduleId),
-            coursesApi.getLessonsWithSections(courseId, moduleId),
+          coursesApi.getCourse(courseId),
+          coursesApi.getModule(courseId, moduleId),
+          coursesApi.getLessonsWithSections(courseId, moduleId),
         ]);
     
         if (courseRes.data) setCourse(courseRes.data);
         if (moduleRes.data) setModule(moduleRes.data);
-        if (lessonsRes.data) {
-            const organizedLessons = await Promise.all(
-            lessonsRes.data.map(async (lesson: any) => {
-                const sectionsRes = await coursesApi.getLessonSections(courseId, moduleId, lesson.id);
-                const sections = sectionsRes.data || [];
-                
-                // Check if lesson is a quiz
-                const isQuiz = lesson.content_type === 'QUIZ';
-                let hasQuiz = false;
-                
-                if (isQuiz) {
-                try {
-                    const quizRes = await assessmentsApi.getQuestions(lesson.id);
-                    hasQuiz = quizRes.data && quizRes.data.length > 0;
-                } catch (error) {
-                    console.error('Error checking quiz questions:', error);
-                    hasQuiz = false;
-                }
-                }
-                
-                return {
-                ...lesson,
-                sections: sections.sort((a: any, b: any) => a.order - b.order),
-                hasQuiz
-                };
-            })
-            );
-            setLessons(organizedLessons.sort((a, b) => a.order - b.order));
-        }
-        } catch (err) {
+        
+        // Handle paginated response (access .results)
+        const lessonsData = lessonsRes.data?.results || lessonsRes.data || [];
+        
+        const organizedLessons = await Promise.all(
+          lessonsData.map(async (lesson: any) => {
+            const sectionsRes = await coursesApi.getLessonSections(courseId, moduleId, lesson.id);
+            const sections = sectionsRes.data?.results || sectionsRes.data || [];
+            
+            // Check if lesson is a quiz
+            const isQuiz = lesson.content_type === 'QUIZ';
+            let hasQuiz = false;
+            
+            if (isQuiz) {
+              try {
+                const quizRes = await assessmentsApi.getQuestions(lesson.id);
+                hasQuiz = quizRes.data.results && (quizRes.data.results || quizRes.data).length > 0;
+              } catch (error) {
+                console.error('Error checking quiz questions:', error);
+                hasQuiz = false;
+              }
+            }
+            
+            return {
+              ...lesson,
+              sections: sections.sort((a: any, b: any) => a.order - b.order),
+              hasQuiz
+            };
+          })
+        );
+        
+        setLessons(organizedLessons.sort((a, b) => a.order - b.order));
+        
+      } catch (err) {
         setError('An error occurred while fetching data');
         console.error(err);
-        } finally {
+      } finally {
         setLoading(false);
-        }
+      }
     };
 
     const handleManageQuestions = (lessonId: string) => {

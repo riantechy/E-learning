@@ -31,15 +31,15 @@ export default function CourseOverviewPage() {
         ])
         
         if (courseRes.data) setCourse(courseRes.data)
-        if (modulesRes.data) {
+        if (modulesRes.data?.results) {
           const modulesWithProgress = await Promise.all(
-            modulesRes.data.map(async (module: any) => {
+            modulesRes.data?.results.map(async (module: any) => {
               const moduleProgressRes = await coursesApi.getModuleProgress(module.id)
               const lessonsRes = await coursesApi.getLessons(courseId, module.id)
               return {
                 ...module,
                 is_completed: moduleProgressRes.data?.is_completed || false,
-                lessons: lessonsRes.data || [],
+                lessons: lessonsRes.data?.results || [],
                 total_lessons: lessonsRes.data?.length || 0
               }
             })

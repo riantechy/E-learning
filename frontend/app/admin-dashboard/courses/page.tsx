@@ -38,9 +38,18 @@ export default function CoursesPage() {
         coursesApi.getAllCourses(),
         categoriesApi.getAllCategories(),
       ]);
-
-      if (coursesRes.data) setCourses(coursesRes.data);
-      if (categoriesRes.data) setCategories(categoriesRes.data);
+  
+      // ✅ Handle paginated response (results array)
+      if (coursesRes.data?.results) {
+        setCourses(coursesRes.data.results);
+      } 
+      // Fallback for non-paginated responses (if API changes later)
+      else if (Array.isArray(coursesRes.data)) {
+        setCourses(coursesRes.data);
+      }
+      
+      if (categoriesRes.data?.results) setCategories(categoriesRes.data?.results); 
+      
       if (coursesRes.error || categoriesRes.error) {
         setError(coursesRes.error || categoriesRes.error || 'Failed to fetch data');
       }

@@ -1,0 +1,43 @@
+/* app/admin-dashboard/profile/profile.module.css */
+.profileImageContainer {
+    position: relative;
+    display: inline-block;
+    margin-bottom: 1rem;
+  }
+  
+  .profileImage {
+    width: 150px;
+    height: 150px;
+    object-fit: cover;
+    border: 3px solid #f8f9fa;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  }
+  
+  .imageOverlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    border-radius: 50%;
+    transition: opacity 0.3s ease;
+    cursor: pointer;
+  }
+  
+  .profileImageContainer:hover .imageOverlay {
+    opacity: 1;
+  }
+  
+  .tabContent {
+    padding: 1.5rem;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-top: none;
+    border-radius: 0 0 0.25rem 0.25rem;
+  }

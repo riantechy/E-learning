@@ -41,29 +41,61 @@ export default function EnrollmentStats() {
   const fetchEnrollmentData = async () => {
     try {
       setLoading(true);
-      const coursesRes = await coursesApi.getAllCourses();
+      setError('');
       
+      // Fetch all courses
+      const coursesRes = await coursesApi.getAllCourses();
       if (coursesRes.error) {
-        setError(coursesRes.error);
+        setError(`Failed to fetch courses: ${coursesRes.error}`);
         return;
       }
-
+      
+      // Access the results array from the response
+      const courses = coursesRes.data?.results || [];
+      
+      if (courses.length === 0) {
+        setError('No courses found');
+        return;
+      }
+  
       // Fetch enrollment count for each course
-      const enrollmentPromises = coursesRes.data?.map(async (course) => {
-        const enrollmentRes = await coursesApi.getCourseEnrollments(course.id);
-        return {
-          course_id: course.id,
-          course_title: course.title,
-          enrollment_count: enrollmentRes.data?.enrollment_count || 0,
-          status: course.status,
-          created_at: course.created_at,
-        };
-      }) || [];
-
+      const enrollmentPromises = courses.map(async (course) => {
+        try {
+          const enrollmentRes = await coursesApi.getCourseEnrollments(course.id);
+          if (enrollmentRes.error) {
+            console.error(`Error fetching enrollments for course ${course.id}:`, enrollmentRes.error);
+            return {
+              course_id: course.id,
+              course_title: course.title,
+              enrollment_count: 0,
+              status: course.status,
+              created_at: course.created_at,
+            };
+          }
+          return {
+            course_id: course.id,
+            course_title: course.title,
+            enrollment_count: enrollmentRes.data?.enrollment_count || 0,
+            status: course.status,
+            created_at: course.created_at,
+          };
+        } catch (err) {
+          console.error(`Error processing course ${course.id}:`, err);
+          return {
+            course_id: course.id,
+            course_title: course.title,
+            enrollment_count: 0,
+            status: course.status,
+            created_at: course.created_at,
+          };
+        }
+      });
+  
       const enrollmentData = await Promise.all(enrollmentPromises);
       setEnrollments(enrollmentData);
     } catch (err) {
-      setError('An error occurred while fetching enrollment data');
+      console.error('Failed to fetch enrollment data:', err);
+      setError(`Failed to load enrollment data: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setLoading(false);
     }

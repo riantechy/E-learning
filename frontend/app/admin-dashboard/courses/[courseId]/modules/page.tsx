@@ -42,8 +42,8 @@ export default function ModulesPage() {
         coursesApi.getModules(courseId as string),
       ]);
 
-      if (courseRes.data) setCourse(courseRes.data);
-      if (modulesRes.data) setModules(modulesRes.data);
+      if (courseRes.data?.results) setCourse(courseRes.data?.results);
+      if (modulesRes.data?.results) setModules(modulesRes.data?.results);
       if (courseRes.error || modulesRes.error) {
         setError(courseRes.error || modulesRes.error || 'Failed to fetch data');
       }

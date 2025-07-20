@@ -49,8 +49,8 @@ export default function LessonSectionsPage() {
         coursesApi.getLessonSections(courseId, moduleId, lessonId)
       ]);
 
-      if (lessonRes.data) setLesson(lessonRes.data);
-      if (sectionsRes.data) setSections(sectionsRes.data);
+      if (lessonRes.data?.results) setLesson(lessonRes.data?.results);
+      if (sectionsRes.data?.results) setSections(sectionsRes.data?.results);
       if (lessonRes.error || sectionsRes.error) {
         setError(lessonRes.error || sectionsRes.error || 'Failed to fetch data');
       }

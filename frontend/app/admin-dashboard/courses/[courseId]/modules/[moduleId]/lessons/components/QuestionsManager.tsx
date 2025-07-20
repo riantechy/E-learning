@@ -62,15 +62,20 @@ export default function QuestionsManager({
         coursesApi.getLesson(courseId as string, moduleId as string, lessonId as string),
         assessmentsApi.getQuestions(lessonId as string),
       ]);
-
-      if (lessonRes.data) setLesson(lessonRes.data);
+  
+      if (lessonRes.data?.results ) setLesson(lessonRes.data);
       if (questionsRes.data) {
+        // Handle both paginated and non-paginated responses
+        const questionsData = questionsRes.data.results || questionsRes.data;
+        
         const questionsWithAnswers = await Promise.all(
-          questionsRes.data.map(async (question: any) => {
+          questionsData.map(async (question: any) => {
             const answersRes = await assessmentsApi.getAnswers(question.id);
+            // Handle both paginated and non-paginated answers
+            const answersData = answersRes.data.results || answersRes.data || [];
             return {
               ...question,
-              answers: answersRes.data || []
+              answers: answersData
             };
           })
         );
