@@ -37,11 +37,11 @@ export default function DashboardPage() {
           coursesApi.getUserEnrollments(),
           certificatesApi.getUserCertificates(),
         ])
-
+    
         // Initialize progress data
         let completedCourses = 0
         const progressData: CourseProgress[] = []
-
+    
         // Process enrollments to get progress for each course
         if (enrollmentsRes.data) {
           for (const enrollment of enrollmentsRes.data) {
@@ -58,11 +58,11 @@ export default function DashboardPage() {
             }
           }
         }
-
+    
         setStats({
           enrolledCourses: enrollmentsRes.data?.length || 0,
           completedCourses,
-          certificatesCount: certificatesRes.data?.length || 0
+          certificatesCount: certificatesRes.data?.results?.length || 0
         })
         setCourseProgress(progressData)
       } catch (error) {
@@ -132,7 +132,7 @@ export default function DashboardPage() {
             transition: 'margin-left 0.3s ease'
           }}
         >
-          <div className="d-flex justify-content-between align-items-center mb-4">
+          {/* <div className="d-flex justify-content-between align-items-center mb-4">
             <h1 className="h2 mb-0">Welcome back, {user?.first_name}!</h1>
             <button 
               onClick={logout} 
@@ -141,7 +141,7 @@ export default function DashboardPage() {
               <i className="bi bi-box-arrow-right me-2"></i>
               Logout
             </button>
-          </div>
+          </div> */}
 
           {/* Stats Cards */}
           <div className="row g-4 mb-4">

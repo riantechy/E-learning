@@ -1,4 +1,4 @@
-// app/certificates/verify/[certificateNumber]/page.tsx
+// certificates/verify/[certificateNumber]/page.tsx
 'use client'
 
 import { useParams } from 'next/navigation'
@@ -6,6 +6,9 @@ import { useState, useEffect } from 'react'
 import { certificatesApi } from '@/lib/api'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import Link from 'next/link'
+import TopNavbar from '@/components/TopNavbar'
+import LearnerSidebar from '@/components/LearnerSidebar'
+import { Menu } from 'lucide-react'
 
 interface CertificateDetails {
   id: string
@@ -24,10 +27,12 @@ interface CertificateDetails {
 }
 
 export default function VerifyCertificatePage() {
-  const { certificateNumber } = useParams<{ certificateNumber: string }>()
+  const params = useParams()
+  const certificateNumber = params.certificateNumber as string
   const [certificate, setCertificate] = useState<CertificateDetails | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
 
   useEffect(() => {
     const verifyCertificate = async () => {
@@ -50,17 +55,65 @@ export default function VerifyCertificatePage() {
       }
     }
 
-    verifyCertificate()
+    if (certificateNumber) {
+      verifyCertificate()
+    }
   }, [certificateNumber])
+
+  const handleDownload = () => {
+    if (certificate?.pdf_file) {
+      window.open(certificate.pdf_file, '_blank')
+    }
+  }
 
   if (loading) {
     return (
       <ProtectedRoute>
-        <div className="container py-5 text-center">
-          <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">Loading...</span>
+        <div className="d-flex vh-100 bg-light position-relative">
+          {/* Mobile Sidebar Toggle Button */}
+          <button 
+            className="d-lg-none btn btn-light position-fixed top-2 start-2 z-3"
+            onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
+            style={{zIndex: 1000}}
+          >
+            <Menu className="bi bi-list" />
+          </button>
+
+          {/* Sidebar */}
+          <div 
+            className={`d-flex flex-column flex-shrink-0 p-3 bg-white shadow-sm h-100 
+              ${mobileSidebarOpen ? 'd-block position-fixed' : 'd-none d-lg-block'}`}
+            style={{
+              width: '280px',
+              zIndex: 999,
+              left: mobileSidebarOpen ? '0' : '-280px',
+              transition: 'left 0.3s ease'
+            }}
+          >
+            <LearnerSidebar />
           </div>
-          <p className="mt-3">Verifying certificate...</p>
+
+          {/* Overlay for mobile */}
+          {mobileSidebarOpen && (
+            <div 
+              className="d-lg-none position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50"
+              style={{zIndex: 998}}
+              onClick={() => setMobileSidebarOpen(false)}
+            />
+          )}
+
+          {/* Main Content */}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <TopNavbar toggleSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)} />
+            <main className="flex-grow-1 p-4 overflow-auto">
+              <div className="container py-5 text-center">
+                <div className="spinner-border text-primary" role="status">
+                  <span className="visually-hidden">Loading...</span>
+                </div>
+                <p className="mt-3">Verifying certificate...</p>
+              </div>
+            </main>
+          </div>
         </div>
       </ProtectedRoute>
     )
@@ -69,24 +122,64 @@ export default function VerifyCertificatePage() {
   if (error || !certificate) {
     return (
       <ProtectedRoute>
-        <div className="container py-5">
-          <div className="card border-danger">
-            <div className="card-header bg-danger text-white">
-              <h2 className="mb-0">Certificate Verification Failed</h2>
-            </div>
-            <div className="card-body text-center">
-              <i className="bi bi-x-circle-fill text-danger display-1 mb-4"></i>
-              <h3 className="mb-3">Invalid Certificate</h3>
-              <p className="lead">
-                {error || 'The certificate could not be verified.'}
-              </p>
-              <p>
-                Certificate ID: {certificateNumber}
-              </p>
-              <Link href="/" className="btn btn-primary">
-                Return Home
-              </Link>
-            </div>
+        <div className="d-flex vh-100 bg-light position-relative">
+          {/* Mobile Sidebar Toggle Button */}
+          <button 
+            className="d-lg-none btn btn-light position-fixed top-2 start-2 z-3"
+            onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
+            style={{zIndex: 1000}}
+          >
+            <Menu className="bi bi-list" />
+          </button>
+
+          {/* Sidebar */}
+          <div 
+            className={`d-flex flex-column flex-shrink-0 p-3 bg-white shadow-sm h-100 
+              ${mobileSidebarOpen ? 'd-block position-fixed' : 'd-none d-lg-block'}`}
+            style={{
+              width: '280px',
+              zIndex: 999,
+              left: mobileSidebarOpen ? '0' : '-280px',
+              transition: 'left 0.3s ease'
+            }}
+          >
+            <LearnerSidebar />
+          </div>
+
+          {/* Overlay for mobile */}
+          {mobileSidebarOpen && (
+            <div 
+              className="d-lg-none position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50"
+              style={{zIndex: 998}}
+              onClick={() => setMobileSidebarOpen(false)}
+            />
+          )}
+
+          {/* Main Content */}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <TopNavbar toggleSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)} />
+            <main className="flex-grow-1 p-4 overflow-auto">
+              <div className="container py-5">
+                <div className="card border-danger">
+                  <div className="card-header bg-danger text-white">
+                    <h2 className="mb-0">Certificate Verification Failed</h2>
+                  </div>
+                  <div className="card-body text-center">
+                    <i className="bi bi-x-circle-fill text-danger display-1 mb-4"></i>
+                    <h3 className="mb-3">Invalid Certificate</h3>
+                    <p className="lead">
+                      {error || 'The certificate could not be verified.'}
+                    </p>
+                    <p>
+                      Certificate ID: {certificateNumber}
+                    </p>
+                    <Link href="/dashboard/certificates" className="btn btn-primary">
+                      Return Home
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </main>
           </div>
         </div>
       </ProtectedRoute>
@@ -95,61 +188,102 @@ export default function VerifyCertificatePage() {
 
   return (
     <ProtectedRoute>
-      <div className="container py-5">
-        <div className="card border-success">
-          <div className="card-header bg-success text-white">
-            <h2 className="mb-0">Certificate Verified</h2>
-          </div>
-          <div className="card-body">
-            <div className="text-center mb-4">
-              <i className="bi bi-check-circle-fill text-success display-1"></i>
-            </div>
-            
-            <div className="row">
-              <div className="col-md-6">
-                <h4>Certificate Details</h4>
-                <ul className="list-group list-group-flush mb-4">
-                  <li className="list-group-item">
-                    <strong>Certificate ID:</strong> {certificate.certificate_number}
-                  </li>
-                  <li className="list-group-item">
-                    <strong>Issued To:</strong> {certificate.user.first_name} {certificate.user.last_name}
-                  </li>
-                  <li className="list-group-item">
-                    <strong>Email:</strong> {certificate.user.email}
-                  </li>
-                  <li className="list-group-item">
-                    <strong>Course:</strong> {certificate.course.title}
-                  </li>
-                  <li className="list-group-item">
-                    <strong>Issued Date:</strong> {new Date(certificate.issued_date).toLocaleDateString()}
-                  </li>
-                </ul>
-              </div>
-              
-              <div className="col-md-6">
-                <h4>Verification Information</h4>
-                <div className="alert alert-info">
-                  <p>This certificate was issued by our platform and has been successfully verified.</p>
-                  <p className="mb-0">
-                    <strong>Verification URL:</strong> {certificate.verification_url}
-                  </p>
+      <div className="d-flex vh-100 bg-light position-relative">
+        {/* Mobile Sidebar Toggle Button */}
+        <button 
+          className="d-lg-none btn btn-light position-fixed top-2 start-2 z-3"
+          onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
+          style={{zIndex: 1000}}
+        >
+          <Menu className="bi bi-list" />
+        </button>
+
+        {/* Sidebar */}
+        <div 
+          className={`d-flex flex-column flex-shrink-0 p-3 bg-white shadow-sm h-100 
+            ${mobileSidebarOpen ? 'd-block position-fixed' : 'd-none d-lg-block'}`}
+          style={{
+            width: '280px',
+            zIndex: 999,
+            left: mobileSidebarOpen ? '0' : '-280px',
+            transition: 'left 0.3s ease'
+          }}
+        >
+          <LearnerSidebar />
+        </div>
+
+        {/* Overlay for mobile */}
+        {mobileSidebarOpen && (
+          <div 
+            className="d-lg-none position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50"
+            style={{zIndex: 998}}
+            onClick={() => setMobileSidebarOpen(false)}
+          />
+        )}
+
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <TopNavbar toggleSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)} />
+          <main className="flex-grow-1 p-4 overflow-auto">
+            <div className="container py-5">
+              <div className="card border-success">
+                <div className="card-header bg-success text-white">
+                  <h2 className="mb-0">Certificate Verified</h2>
                 </div>
-                
-                <div className="d-grid gap-2">
-                  <Link 
-                    href={`/certificates/download/${certificate.id}`}
-                    className="btn btn-primary"
-                  >
-                    Download Certificate
-                  </Link>
-                  <Link href="/dashboard/certificates" className="btn btn-outline-secondary">
-                    View My Certificates
-                  </Link>
+                <div className="card-body">
+                  <div className="text-center mb-4">
+                    <i className="bi bi-check-circle-fill text-success display-1"></i>
+                  </div>
+                  
+                  <div className="row">
+                    <div className="col-md-6">
+                      <h4>Certificate Details</h4>
+                      <ul className="list-group list-group-flush mb-4">
+                        <li className="list-group-item">
+                          <strong>Certificate ID:</strong> {certificate.certificate_number}
+                        </li>
+                        <li className="list-group-item">
+                          <strong>Issued To:</strong> {certificate.user.first_name} {certificate.user.last_name}
+                        </li>
+                        <li className="list-group-item">
+                          <strong>Email:</strong> {certificate.user.email}
+                        </li>
+                        <li className="list-group-item">
+                          <strong>Course:</strong> {certificate.course.title}
+                        </li>
+                        <li className="list-group-item">
+                          <strong>Issued Date:</strong> {new Date(certificate.issued_date).toLocaleDateString()}
+                        </li>
+                      </ul>
+                    </div>
+                    
+                    <div className="col-md-6">
+                      <h4>Verification Information</h4>
+                      <div className="alert alert-info">
+                        <p>This certificate was issued by our platform and has been successfully verified.</p>
+                        <p className="mb-0">
+                          <strong>Verification URL:</strong> {certificate.verification_url}
+                        </p>
+                      </div>
+                      
+                      <div className="d-grid gap-2">
+                        {/* <button
+                          onClick={handleDownload}
+                          className="btn btn-primary btn-lg"
+                        >
+                          <i className="bi bi-download me-2"></i>
+                          Download Now
+                        </button> */}
+                        <Link href="/dashboard/certificates" className="btn btn-outline-secondary">
+                          View My Certificates
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          </main>
         </div>
       </div>
     </ProtectedRoute>

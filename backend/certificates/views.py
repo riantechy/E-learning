@@ -164,10 +164,33 @@ class VerifyCertificateView(generics.RetrieveAPIView):
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         serializer = self.get_serializer(instance)
-        return Response({
-            **serializer.data,
-            "valid": True
-        })
+        
+        # Get the full user and course details
+        user = instance.user
+        course = instance.course
+        
+        # Format the response to match frontend expectations
+        response_data = {
+            "certificate": {
+                "id": str(instance.id),
+                "user": {
+                    "first_name": user.first_name,
+                    "last_name": user.last_name,
+                    "email": user.email
+                },
+                "course": {
+                    "title": course.title,
+                    "description": course.description
+                },
+                "issued_date": instance.issued_date,
+                "certificate_number": instance.certificate_number,
+                "verification_url": instance.verification_url,
+                "pdf_file": instance.pdf_file.url if instance.pdf_file else None,
+                "valid": True
+            }
+        }
+        
+        return Response(response_data)
 class BinaryFileRenderer(BaseRenderer):
     media_type = 'application/pdf'
     format = 'pdf'

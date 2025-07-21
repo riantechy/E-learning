@@ -8,7 +8,7 @@ from django.utils import timezone
 from .models import Question, Answer, UserAttempt, UserResponse,  Survey, SurveyQuestion, SurveyChoice, SurveyResponse, SurveyAnswer
 from .serializers import (
     QuestionSerializer, 
-    AnswerSerializer,
+    AnswerSerializer, UserAttemptSerializer,
     QuizSerializer,  SurveySerializer, 
     SurveyResponseSerializer,  SurveyQuestionSerializer 
 )
@@ -348,3 +348,68 @@ class SurveyResponseViewSet(viewsets.ModelViewSet):
             'answers__question',
             'answers__choice_answer'
         )
+
+class UserAttemptViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = UserAttemptSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return UserAttempt.objects.filter(
+            user=self.request.user
+        ).select_related(
+            'lesson__module__course'
+        ).order_by('-attempt_date')
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = self.get_serializer(queryset, many=True)
+        
+        # Convert to dictionary format if needed
+        data = {
+            str(idx): item for idx, item in enumerate(serializer.data, start=1)
+        }
+        
+        return Response({
+            'status': 'success',
+            'data': data,
+            'count': len(data)
+        })
+
+class UserAttemptsListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        attempts = UserAttempt.objects.filter(
+            user=request.user
+        ).select_related(
+            'lesson__module__course'
+        ).order_by('-attempt_date')
+
+        # Format the data to match what frontend expects
+        attempts_data = {}
+        for idx, attempt in enumerate(attempts, start=1):
+            attempts_data[str(idx)] = {
+                'id': str(attempt.id),
+                'score': {
+                    'source': str(attempt.score),
+                    'parsedValue': attempt.score if isinstance(attempt.score, (int, float)) 
+                                  else attempt.score.get('parsedValue', 0)
+                },
+                'passed': attempt.passed,
+                'attempt_date': attempt.attempt_date.isoformat(),
+                'lesson': {
+                    'title': attempt.lesson.title if attempt.lesson else 'N/A',
+                    'module': {
+                        'title': attempt.lesson.module.title if attempt.lesson and attempt.lesson.module else 'N/A',
+                        'course': {
+                            'title': attempt.lesson.module.course.title if attempt.lesson and attempt.lesson.module and attempt.lesson.module.course else 'N/A'
+                        }
+                    }
+                }
+            }
+
+        return Response({
+            'status': 'success',
+            'data': attempts_data,
+            'count': len(attempts_data)
+        })

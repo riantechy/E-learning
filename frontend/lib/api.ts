@@ -63,13 +63,13 @@ export const usersApi = {
     apiRequest<{ access: string }>('/auth/token/refresh/', 'POST', { refresh }),
 
   // Admin endpoints
-  getAllUsers: () => apiRequest<User[]>('/auth/users/'),
+  getAllUsers: () => apiRequest<PaginatedResponse<User>>('/auth/users/'),
   getLearnersCount: () => apiRequest<{ count: number }>('/auth/learners/count/'),
   getLearners: (page: number = 1, pageSize: number = 10, search: string = '') => 
     apiRequest<{results: User[]; count: number; next: string | null; previous: string | null}>(
       `/auth/users/learners/?page=${page}&page_size=${pageSize}&search=${search}`
     ),
-  getNonLearners: () => apiRequest<User[]>('/auth/users/non-learners/'),
+  getNonLearners: () => apiRequest<PaginatedResponse<User>>('/auth/users/non-learners/'),
   getUser: (id: string) => apiRequest<User>(`/auth/users/${id}/`),
   updateUser: (id: string, user: Partial<User>) => apiRequest<User>(`/auth/users/update/${id}/`, 'PUT', user),
   deleteUser: (id: string) => apiRequest(`/auth/users/delete/${id}/`, 'DELETE'),
@@ -87,7 +87,7 @@ export const usersApi = {
 // Courses API
 export const coursesApi = {
   // Course operations
-  getAllCourses: () => apiRequest<Course[]>('/courses/'),
+  getAllCourses: () => apiRequest<PaginatedResponse<Course>>('/courses/'),
   getCourse: (id: string) => apiRequest<Course>(`/courses/${id}/`),
   createCourse: (course: Partial<Course>) => apiRequest<Course>('/courses/', 'POST', course),
   updateCourse: (id: string, course: Partial<Course>) => apiRequest<Course>(`/courses/${id}/`, 'PUT', course),
@@ -99,14 +99,14 @@ export const coursesApi = {
   publishCourse: (id: string) => apiRequest<Course>(`/courses/publish/${id}/`, 'POST'),
 
   // Module operations
-  getModules: (courseId: string) => apiRequest<Module[]>(`/courses/${courseId}/modules/`),
+  getModules: (courseId: string) => apiRequest<PaginatedResponse<Module>>(`/courses/${courseId}/modules/`),
   getModule: (courseId: string, moduleId: string) => apiRequest<Module>(`/courses/${courseId}/modules/${moduleId}/`),
   createModule: (courseId: string, module: Partial<Module>) => apiRequest<Module>(`/courses/${courseId}/modules/`, 'POST', module),
   updateModule: (courseId: string, moduleId: string, module: Partial<Module>) => apiRequest<Module>(`/courses/${courseId}/modules/${moduleId}/`, 'PUT', module),
   deleteModule: (courseId: string, moduleId: string) => apiRequest(`/courses/${courseId}/modules/${moduleId}/`, 'DELETE'),
 
   // Lesson operations
-  getLessons: (courseId: string, moduleId: string) => apiRequest<Lesson[]>(`/courses/${courseId}/modules/${moduleId}/lessons/`),
+  getLessons: (courseId: string, moduleId: string) => apiRequest<PaginatedResponse<Lesson>>(`/courses/${courseId}/modules/${moduleId}/lessons/`),
   getLesson: (courseId: string, moduleId: string, lessonId: string) => apiRequest<Lesson>(`/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}/`),
   createLesson: (courseId: string, moduleId: string, lesson: Partial<Lesson>) => apiRequest<Lesson>(`/courses/${courseId}/modules/${moduleId}/lessons/`, 'POST', lesson),
   updateLesson: (courseId: string, moduleId: string, lessonId: string, lesson: Partial<Lesson>) => apiRequest<Lesson>(`/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}/`, 'PUT', lesson),
@@ -180,7 +180,7 @@ markModuleCompleted: (moduleId: string) =>
 
 // Categories API
 export const categoriesApi = {
-  getAllCategories: () => apiRequest<CourseCategory[]>('/courses/categories/'),
+  getAllCategories: () => apiRequest<PaginatedResponse<CourseCategory>>('/courses/categories/'),
   getCategory: (id: string) => apiRequest<CourseCategory>(`/courses/categories/${id}/`),
   createCategory: (category: Partial<CourseCategory>) => apiRequest<CourseCategory>('/courses/categories/', 'POST', category),
   updateCategory: (id: string, category: Partial<CourseCategory>) => apiRequest<CourseCategory>(`/courses/categories/${id}/`, 'PUT', category),
@@ -197,6 +197,7 @@ export const assessmentsApi = {
     apiRequest<Question>(`/assessments/lessons/${lessonId}/questions/${questionId}/`, 'PUT', question),
   deleteQuestion: (lessonId: string, questionId: string) => 
     apiRequest(`/assessments/lessons/${lessonId}/questions/${questionId}/`, 'DELETE'),
+  getUserAttempts: () => apiRequest<UserAttempt[]>(`/assessments/user-attempts/`),
 
   // Answers
   getAnswers: (questionId: string) => apiRequest<Answer[]>(`/assessments/questions/${questionId}/answers/`),
@@ -206,11 +207,6 @@ export const assessmentsApi = {
     apiRequest<Answer>(`/assessments/questions/${questionId}/answers/${answerId}/`, 'PUT', answer),
   deleteAnswer: (questionId: string, answerId: string) => 
     apiRequest(`/assessments/questions/${questionId}/answers/${answerId}/`, 'DELETE'),
-
-  // Quiz
-  // getQuiz: (lessonId: string) => apiRequest<{ lesson: Lesson; questions: Question[] }>(`/assessments/lessons/${lessonId}/quiz/`),
-  // submitQuiz: (lessonId: string, answers: { answers: Record<string, string> }) =>
-  //   apiRequest<{ score: number; passed: boolean }>(`/assessments/lessons/${lessonId}/quiz/`, 'POST', answers),
 
   getQuiz: (lessonId: string) => apiRequest<{ lesson: Lesson; questions: Question[] }>(`/assessments/lessons/${lessonId}/quiz/`),
   submitQuiz: (lessonId: string, answers: { answers: Record<string, string> }) =>
@@ -298,7 +294,7 @@ export const assessmentsApi = {
   
 // Certificates API
 export const certificatesApi = {
-  getUserCertificates: () => apiRequest<Certificate[]>('/certificates/user/'),
+  getUserCertificates: () => apiRequest<PaginatedResponse<Certificate>>('/certificates/user/'),
   getCourseCertificate: (courseId: string) => 
     apiRequest<Certificate[]>(`/certificates/user/?course_id=${courseId}`),
   generateCertificate: (courseId: string) => 
@@ -538,4 +534,52 @@ export interface SurveyAnswer {
   text_answer?: string;
   choice_answer?: string | SurveyChoice;
   scale_answer?: number;
+}
+
+interface PaginatedResponse<T> {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
+}
+
+export interface UserAttempt {
+  id: string;
+  user: string | User;
+  lesson: {
+    id: string;
+    title: string;
+    module: {
+      id: string;
+      title: string;
+      course: {
+        id: string;
+        title: string;
+      };
+    };
+  };
+  score: number;
+  max_score: number;
+  passed: boolean;
+  attempt_date: string;
+  completion_date: string | null;
+  responses?: UserResponse[];
+}
+
+export interface UserResponse {
+  id: string;
+  attempt: string | UserAttempt;
+  question: {
+    id: string;
+    question_text: string;
+    question_type: string;
+    points: number;
+  };
+  selected_answer?: {
+    id: string;
+    answer_text: string;
+    is_correct: boolean;
+  };
+  text_response?: string;
+  is_correct: boolean;
 }

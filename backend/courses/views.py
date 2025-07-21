@@ -160,7 +160,7 @@ class CourseViewSet(viewsets.ModelViewSet):
         })
 class ModuleViewSet(viewsets.ModelViewSet):
     serializer_class = ModuleSerializer
-    permission_classes = [permissions.IsAuthenticated]  # ⬅️ Only authenticated users
+    permission_classes = [permissions.IsAuthenticated]  
 
     def get_queryset(self):
         return Module.objects.filter(course_id=self.kwargs['course_pk'])

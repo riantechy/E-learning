@@ -4,6 +4,7 @@
 import { useParams, useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { coursesApi, certificatesApi } from '@/lib/api'
+import TopNavbar from '@/components/TopNavbar'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import LearnerSidebar from '@/components/LearnerSidebar'
 import { Menu } from 'lucide-react'
@@ -176,6 +177,8 @@ export default function CourseCompletionPage() {
           />
         )}
 
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <TopNavbar toggleSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)} /> 
         {/* Main Content */}
         <main 
           className="flex-grow-1 p-4 overflow-auto"
@@ -264,6 +267,7 @@ export default function CourseCompletionPage() {
             </div>
           </div>
         </main>
+      </div>
       </div>
     </ProtectedRoute>
   )

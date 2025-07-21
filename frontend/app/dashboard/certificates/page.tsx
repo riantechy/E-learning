@@ -102,18 +102,21 @@ export default function CertificatesPage() {
                             Certificate ID: {certificate.certificate_number}
                           </small>
                         </p>
-                        <button
-                          onClick={() => window.open(certificate.pdf_file, '_blank')}
-                          className="btn btn-primary"
-                        >
-                          Download Certificate
-                        </button>
-                        <Link
-                          href={`/certificates/verify/${certificate.certificate_number}`}
-                          className="btn btn-outline-secondary mt-2"
-                        >
-                          Verify Certificate
-                        </Link>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => window.open(certificate.pdf_file, '_blank')}
+                            className="btn btn-primary"
+                          >
+                            Download
+                          </button>
+                          <Link
+                            href={`/dashboard/certificates/verify/${certificate.certificate_number}`}
+                            className="btn btn-outline-secondary"
+                          >
+                            Verify
+                          </Link>
+                        </div>
+
                       </div>
                     </div>
                   </div>

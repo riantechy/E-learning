@@ -151,6 +151,15 @@ export default function LearnerSidebar() {
         </li>
         <li>
           <Link 
+            href="/dashboard/my-score" 
+            className={`flex items-center p-2 rounded-md ${isActive('/certificates') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100'}`}
+          >
+            <i className="bi bi-award mr-3"></i>
+            My Score
+          </Link>
+        </li>
+        <li>
+          <Link 
             href="/dashboard/certificates" 
             className={`flex items-center p-2 rounded-md ${isActive('/certificates') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100'}`}
           >

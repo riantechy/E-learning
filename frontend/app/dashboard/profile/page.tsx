@@ -1,11 +1,12 @@
-// app/admin-dashboard/profile/page.tsx
 'use client'
 
 import { useState, useEffect, useRef } from 'react';
 import { usersApi } from '@/lib/api';
-import DashboardLayout from '@/components/DashboardLayout';
-import AdminSidebar from '@/components/AdminSidebar';
-import { Card, Alert, Spinner, Form, Button, Tab, Tabs, Image, Col, Row } from 'react-bootstrap';
+import { Menu } from 'lucide-react'
+import TopNavbar from '@/components/TopNavbar';
+import LearnerSidebar from '@/components/LearnerSidebar'
+import ProtectedRoute from '@/components/ProtectedRoute';
+import { Card, Alert, Spinner, Form, Button, Tab, Tabs, Image, Col, Row} from 'react-bootstrap';
 import { useRouter } from 'next/navigation';
 import styles from './profile.module.css';
 
@@ -14,6 +15,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [editMode, setEditMode] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('profile');
   const [passwordForm, setPasswordForm] = useState({
     old_password: '',
@@ -145,7 +147,42 @@ export default function ProfilePage() {
   };
 
   return (
-    <DashboardLayout sidebar={<AdminSidebar />}>
+    <ProtectedRoute>
+      <div className="d-flex vh-100 bg-light position-relative">
+        {/* Mobile Sidebar Toggle Button */}
+        <button 
+          className="d-lg-none btn btn-light position-fixed top-2 start-2 z-3"
+          onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
+          style={{zIndex: 1000}}
+        >
+          <Menu className="bi bi-list" />
+        </button>
+  
+        {/* Sidebar */}
+        <div 
+          className={`d-flex flex-column flex-shrink-0 p-3 bg-white shadow-sm h-100 
+            ${mobileSidebarOpen ? 'd-block position-fixed' : 'd-none d-lg-block'}`}
+          style={{
+            width: '280px',
+            zIndex: 999,
+            left: mobileSidebarOpen ? '0' : '-280px',
+            transition: 'left 0.3s ease'
+          }}
+        >
+          <LearnerSidebar />
+        </div>
+  
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <TopNavbar toggleSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)} />
+          <main 
+            className="flex-grow-1 p-4 overflow-auto"
+            style={{
+              width: 'calc(100%)',
+              transition: 'margin-left 0.3s ease'
+            }}
+          >
+
       <div className="container-fluid">
         <h1 className="h2 mb-4">User Profile</h1>
         
@@ -336,7 +373,10 @@ export default function ProfilePage() {
             </Card.Body>
           </Card>
         )}
+        </div>
+        </main>
       </div>
-    </DashboardLayout>
+      </div>
+      </ProtectedRoute>
   );
 }

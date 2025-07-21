@@ -7,6 +7,7 @@ import { assessmentsApi } from '@/lib/api'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import LearnerSidebar from '@/components/LearnerSidebar'
 import { Menu } from 'lucide-react'
+import TopNavbar from '@/components/TopNavbar'
 import Link from 'next/link'
 import Alert from 'react-bootstrap/Alert'
 import Button from 'react-bootstrap/Button'
@@ -203,7 +204,9 @@ export default function ModuleSurveyPage() {
             onClick={() => setMobileSidebarOpen(false)}
           />
         )}
-
+        
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <TopNavbar toggleSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)} />   
         {/* Main Content */}
         <main 
           className="flex-grow-1 p-4 overflow-auto"
@@ -326,6 +329,7 @@ export default function ModuleSurveyPage() {
             </div>
           </div>
         </main>
+      </div>
       </div>
     </ProtectedRoute>
   )

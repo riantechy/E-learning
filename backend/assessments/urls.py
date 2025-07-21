@@ -12,9 +12,11 @@ router.register(
     basename='survey-questions'
 )
 router.register(r'survey-responses', views.SurveyResponseViewSet, basename='survey-response')
+router.register(r'user-attempts', views.UserAttemptViewSet, basename='user-attempts')
 
 urlpatterns = [
     path('', include(router.urls)),
+    path('user-attempts-list/', views.UserAttemptsListView.as_view(), name='user-attempts-list'),
     
     # Quiz endpoints
     path('lessons/<uuid:lesson_pk>/quiz/', views.QuizView.as_view(), name='lesson-quiz'),

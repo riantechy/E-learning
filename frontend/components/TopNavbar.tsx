@@ -4,8 +4,13 @@
 import { useAuth } from '@/context/AuthContext'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { Menu } from 'lucide-react' // Import the Menu icon
 
-export default function TopNavbar() {
+interface TopNavbarProps {
+  toggleSidebar?: () => void;
+}
+
+export default function TopNavbar({ toggleSidebar }: TopNavbarProps) {
   const { user, logout } = useAuth()
   const pathname = usePathname()
 
@@ -13,6 +18,14 @@ export default function TopNavbar() {
     <nav className="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top">
       <div className="container-fluid">
         <div className="d-flex align-items-center">
+          {/* Mobile menu button - only shows on small screens */}
+          <button 
+            className="d-lg-none btn btn-link me-2 p-1"
+            onClick={toggleSidebar}
+            aria-label="Toggle sidebar"
+          >
+            <Menu size={24} /> {/* Using the Menu icon from lucide-react */}
+          </button>
           <span className="navbar-brand mb-0 h1">Learning Platform</span>
         </div>
         

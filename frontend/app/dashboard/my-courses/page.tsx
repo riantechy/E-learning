@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { coursesApi } from '@/lib/api'
+import TopNavbar from '@/components/TopNavbar';
 import ProtectedRoute from '@/components/ProtectedRoute'
 import LearnerSidebar from '@/components/LearnerSidebar'
 import { Menu } from 'lucide-react'
@@ -75,6 +76,8 @@ export default function MyCoursesPage() {
         )}
 
         {/* Main Content */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <TopNavbar toggleSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)} />
         <main 
           className="flex-grow-1 p-4 overflow-auto"
           style={{
@@ -135,6 +138,7 @@ export default function MyCoursesPage() {
             )}
           </div>
         </main>
+        </div>
       </div>
     </ProtectedRoute>
   )
