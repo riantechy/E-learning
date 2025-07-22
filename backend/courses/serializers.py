@@ -23,6 +23,43 @@ class ModuleProgressSerializer(serializers.ModelSerializer):
         model = ModuleProgress
         fields = ['id', 'user', 'module', 'is_completed', 'completed_at']
         read_only_fields = ['user', 'completed_at']
+
+class LessonSerializer(serializers.ModelSerializer):
+    sections = serializers.SerializerMethodField()
+    has_quiz = serializers.SerializerMethodField()
+    content = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Lesson
+        fields = '__all__'
+
+    # def validate(self, data):
+    #     content_type = data.get('content_type')
+    #     content = data.get('content')
+    #     pdf_file = data.get('pdf_file')
+
+    #     if content_type == 'TEXT' and not content:
+    #         raise serializers.ValidationError("Content is required for text-based lessons.")
+    #     elif content_type == 'VIDEO' and not content:
+    #         raise serializers.ValidationError("Video URL is required for video-based lessons.")
+    #     elif content_type == 'PDF' and not pdf_file:
+    #         raise serializers.ValidationError("PDF file is required for PDF-based lessons.")
+    #     elif content_type == 'QUIZ' and (content or pdf_file):
+    #         raise serializers.ValidationError("Quiz lessons should not have content or PDF file.")
+    #     return data
+
+    def get_sections(self, obj):
+        sections = obj.sections.filter(parent_section__isnull=True).order_by('order')
+        serializer = LessonSectionSerializer(sections, many=True, context=self.context)
+        return serializer.data
+
+    def get_has_quiz(self, obj):
+        return obj.content_type == 'QUIZ'
+
+    def get_content(self, obj):
+        if obj.content_type == 'PDF' and obj.pdf_file:
+            return obj.pdf_file.url
+        return obj.content
 class LessonSectionSerializer(serializers.ModelSerializer):
     subsections = serializers.SerializerMethodField()
 
@@ -40,45 +77,6 @@ class LessonSectionSerializer(serializers.ModelSerializer):
             many=True,
             context=self.context
         ).data
-
-# class LessonSerializer(serializers.ModelSerializer):
-#     sections = serializers.SerializerMethodField()
-
-#     class Meta:
-#         model = Lesson
-#         fields = '__all__'
-    
-#     def get_sections(self, obj):
-#         sections = obj.sections.filter(parent_section__isnull=True).order_by('order')
-#         serializer = LessonSectionSerializer(
-#             sections,
-#             many=True,
-#             context=self.context  # Pass along the context
-#         )
-#         return serializer.data
-
-class LessonSerializer(serializers.ModelSerializer):
-    sections = serializers.SerializerMethodField()
-    has_quiz = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Lesson
-        fields = '__all__'
-    
-    def get_sections(self, obj):
-        # Get top-level sections (those without parents)
-        sections = obj.sections.filter(parent_section__isnull=True).order_by('order')
-        serializer = LessonSectionSerializer(
-            sections,
-            many=True,
-            context=self.context
-        )
-        return serializer.data
-    
-    def get_has_quiz(self, obj):
-        # Determine if this lesson has a quiz
-        return obj.content_type == 'QUIZ'
-
 class UserProgressSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProgress

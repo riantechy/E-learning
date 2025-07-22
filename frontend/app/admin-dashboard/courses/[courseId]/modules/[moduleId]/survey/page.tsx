@@ -59,17 +59,26 @@ export default function ModuleSurveyPage() {
         coursesApi.getModule(courseId, moduleId),
         assessmentsApi.getModuleSurveys(courseId, moduleId),
       ]);
-
+  
       if (moduleRes.data) setModule(moduleRes.data);
       
-      if (surveyRes.data && surveyRes.data.length > 0) {
-        const surveyData = surveyRes.data[0];
-        setSurvey(surveyData);
+      // Check surveyRes.data.results instead of surveyRes.data
+      if (surveyRes.data?.results && surveyRes.data.results.length > 0) {
+        // Find the survey for the current module
+        const surveyData = surveyRes.data.results.find((s: any) => s.module === moduleId);
         
-        // Fetch questions if survey exists
-        const questionsRes = await assessmentsApi.getSurveyQuestions(surveyData.id);
-        if (questionsRes.data) {
-          setQuestions(questionsRes.data);
+        if (surveyData) {
+          setSurvey(surveyData);
+          const questionsRes = await assessmentsApi.getSurveyQuestions(surveyData.id);
+          if (questionsRes.data?.results) {
+            setQuestions(questionsRes.data.results);
+          } else if (surveyData.questions) {
+            // Use questions from the survey response if available
+            setQuestions(surveyData.questions);
+          }
+        } else {
+          setSurvey(null);
+          setQuestions([]);
         }
       } else {
         setSurvey(null);

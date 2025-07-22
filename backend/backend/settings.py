@@ -193,3 +193,13 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Authentication
 AUTH_USER_MODEL = 'users.User'
+
+# Email Configuration
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'mail.govmail.ke'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'whitebox@icta.go.ke'
+EMAIL_HOST_PASSWORD = 'LBFCLKNDDUVAGSLD'
+DEFAULT_FROM_EMAIL = 'whitebox@icta.go.ke'
+SERVER_EMAIL = 'whitebox@icta.go.ke'

@@ -15,33 +15,52 @@ async function apiRequest<T>(
 ): Promise<ApiResponse<T>> {
   try {
     const url = `${API_BASE_URL}${endpoint}`;
+    const isLessonEndpoint = endpoint.includes('/courses/') && endpoint.includes('/lessons/');
+    
     const defaultHeaders = {
-      'Content-Type': 'application/json',
+      ...(isLessonEndpoint || body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
       ...(typeof window !== 'undefined' && localStorage.getItem('access_token') 
         ? { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
         : {}),
-      ...headers
+      ...headers,
     };
+
+    let requestBody;
+    if (body instanceof FormData) {
+      requestBody = body;
+      console.log('apiRequest FormData contents:');
+      for (const [key, value] of body.entries()) {
+        console.log(`${key}: ${typeof value === 'object' && value instanceof File ? value.name : value}`);
+      }
+    } else if (body && isLessonEndpoint) {
+      const formData = new FormData();
+      for (const [key, value] of Object.entries(body)) {
+        formData.append(key, value instanceof Object ? JSON.stringify(value) : value.toString());
+      }
+      requestBody = formData;
+    } else {
+      requestBody = body ? JSON.stringify(body) : undefined;
+    }
+
+    console.log('Sending request to:', url, 'Method:', method, 'Headers:', defaultHeaders);
 
     const response = await fetch(url, {
       method,
       headers: defaultHeaders,
-      body: body ? JSON.stringify(body) : undefined,
+      body: requestBody,
       credentials: 'include',
     });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      throw new Error(errorData.detail || errorData.message || `HTTP error! status: ${response.status}`);
     }
 
-    // Handle binary response differently
     if (isBinary) {
       const data = await response.blob();
       return { data: data as unknown as T };
     }
 
-    // Default JSON handling
     const data = await response.json();
     return { data };
   } catch (error) {
@@ -108,8 +127,24 @@ export const coursesApi = {
   // Lesson operations
   getLessons: (courseId: string, moduleId: string) => apiRequest<PaginatedResponse<Lesson>>(`/courses/${courseId}/modules/${moduleId}/lessons/`),
   getLesson: (courseId: string, moduleId: string, lessonId: string) => apiRequest<Lesson>(`/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}/`),
-  createLesson: (courseId: string, moduleId: string, lesson: Partial<Lesson>) => apiRequest<Lesson>(`/courses/${courseId}/modules/${moduleId}/lessons/`, 'POST', lesson),
-  updateLesson: (courseId: string, moduleId: string, lessonId: string, lesson: Partial<Lesson>) => apiRequest<Lesson>(`/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}/`, 'PUT', lesson),
+  
+  createLesson: (courseId: string, moduleId: string, lesson: Partial<Lesson> | FormData) => {
+    return apiRequest<Lesson>(
+      `/courses/${courseId}/modules/${moduleId}/lessons/`,
+      'POST',
+      lesson
+    );
+  },
+
+  updateLesson: (courseId: string, moduleId: string, lessonId: string, lesson: Partial<Lesson> | FormData) => {
+    return apiRequest<Lesson>(
+      `/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}/`,
+      'PUT',
+      lesson
+    );
+  },
+  // createLesson: (courseId: string, moduleId: string, lesson: Partial<Lesson>) => apiRequest<Lesson>(`/courses/${courseId}/modules/${moduleId}/lessons/`, 'POST', lesson),
+  // updateLesson: (courseId: string, moduleId: string, lessonId: string, lesson: Partial<Lesson>) => apiRequest<Lesson>(`/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}/`, 'PUT', lesson),
   deleteLesson: (courseId: string, moduleId: string, lessonId: string) => apiRequest(`/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}/`, 'DELETE'),
 
    // Lesson sections

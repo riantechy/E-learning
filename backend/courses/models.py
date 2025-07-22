@@ -123,6 +123,7 @@ class Lesson(models.Model):
     title = models.CharField(max_length=200)
     content_type = models.CharField(max_length=10, choices=CONTENT_TYPES)
     content = models.TextField(blank=True)
+    pdf_file = models.FileField(upload_to='lesson_pdfs/', null=True, blank=True)
     duration_minutes = models.PositiveIntegerField(default=0)
     order = models.PositiveIntegerField(default=0)
     is_required = models.BooleanField(default=True)

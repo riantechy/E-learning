@@ -1,6 +1,7 @@
 from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.parsers import MultiPartParser, FormParser
 from django.utils import timezone
 from rest_framework import status
 from django.shortcuts import get_object_or_404
@@ -221,63 +222,26 @@ class ModuleProgressViewSet(viewsets.GenericViewSet):
         serializer = ModuleProgressSerializer(progress)
         return Response(serializer.data)
 
-# class ModuleProgressViewSet(viewsets.ViewSet):
-#     permission_classes = [permissions.IsAuthenticated]
-
-#     @action(detail=False, methods=['get'])
-#     def get_progress(self, request):
-#         module_id = request.query_params.get('module_id')
-#         if not module_id:
-#             return Response({'error': 'module_id is required'}, status=status.HTTP_400_BAD_REQUEST)
-        
-#         module = get_object_or_404(Module, id=module_id)
-        
-#         # Get all required lessons (non-optional)
-#         lessons = Lesson.objects.filter(module=module, is_required=True)
-#         completed_lessons = UserProgress.objects.filter(
-#             user=request.user,
-#             lesson__in=lessons,
-#             is_completed=True
-#         ).count()
-        
-#         # Auto-complete module if all required lessons are done
-#         is_completed = lessons.count() > 0 and completed_lessons == lessons.count()
-        
-#         progress, created = ModuleProgress.objects.get_or_create(
-#             user=request.user,
-#             module=module,
-#             defaults={'is_completed': is_completed}
-#         )
-        
-#         if not created and progress.is_completed != is_completed:
-#             progress.is_completed = is_completed
-#             progress.save()
-        
-#         serializer = ModuleProgressSerializer(progress)
-#         return Response(serializer.data)
-
 class LessonViewSet(viewsets.ModelViewSet):
     serializer_class = LessonSerializer
-    permission_classes = [permissions.IsAuthenticated]  # ⬅️ Only authenticated users
+    permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
 
     def get_queryset(self):
         return Lesson.objects.filter(module_id=self.kwargs['module_pk'])
-    
+
     def perform_create(self, serializer):
+        module = get_object_or_404(Module, pk=self.kwargs['module_pk'])
+        serializer.save(module=module)
+
+    def perform_update(self, serializer):
         module = get_object_or_404(Module, pk=self.kwargs['module_pk'])
         serializer.save(module=module)
 
     @action(detail=False, methods=['get'])
     def with_sections(self, request, course_pk=None, module_pk=None):
-        """Get all lessons with their sections for a module"""
         lessons = Lesson.objects.filter(module_id=module_pk).order_by('order')
-        
-        # Prefetch related sections to optimize queries
-        lessons = lessons.prefetch_related(
-            'sections',
-            'sections__subsections'
-        )
-        
+        lessons = lessons.prefetch_related('sections', 'sections__subsections')
         serializer = self.get_serializer(lessons, many=True)
         return Response(serializer.data)
 
