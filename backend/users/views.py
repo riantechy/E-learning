@@ -4,7 +4,11 @@ from rest_framework.permissions import AllowAny
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
+from django.utils import timezone
+from datetime import timedelta
+from .email_utils import send_verification_email, send_password_reset_email
 import os
+import uuid
 from rest_framework.pagination import PageNumberPagination
 from rest_framework import filters
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -26,6 +30,9 @@ class RegisterView(generics.CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
+        
+        verification_url = f"{settings.FRONTEND_URL}/verify-email/{user.verification_token}"
+        send_verification_email(user, verification_url)
         
         refresh = RefreshToken.for_user(user)
         return Response({
@@ -209,3 +216,80 @@ class LogoutView(APIView):
             return Response(status=status.HTTP_205_RESET_CONTENT)
         except Exception as e:
             return Response(status=status.HTTP_400_BAD_REQUEST)
+
+class VerifyEmailView(APIView):
+    permission_classes = [AllowAny]
+    
+    def get(self, request, token):
+        try:
+            user = User.objects.get(verification_token=token)
+            
+            if user.verification_token_expires < timezone.now():
+                return Response({'error': 'Verification link has expired'}, status=status.HTTP_400_BAD_REQUEST)
+                
+            user.is_verified = True
+            user.save()
+            
+            return Response({'message': 'Email successfully verified'}, status=status.HTTP_200_OK)
+            
+        except User.DoesNotExist:
+            return Response({'error': 'Invalid verification token'}, status=status.HTTP_400_BAD_REQUEST)
+
+class ResendVerificationEmailView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        user = request.user
+        if user.is_verified:
+            return Response({'message': 'Email is already verified'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        # Generate new token
+        user.verification_token = uuid.uuid4()
+        user.verification_token_expires = timezone.now() + timedelta(days=1)
+        user.save()
+        
+        verification_url = f"{settings.FRONTEND_URL}/verify-email/{user.verification_token}"
+        send_verification_email(user, verification_url)
+        
+        return Response({'message': 'Verification email resent'}, status=status.HTTP_200_OK)
+
+class PasswordResetRequestView(APIView):
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        email = request.data.get('email')
+        try:
+            user = User.objects.get(email=email)
+            reset_token = uuid.uuid4()
+            user.password_reset_token = reset_token
+            user.password_reset_token_expires = timezone.now() + timedelta(hours=24)
+            user.save()
+            
+            reset_url = f"{settings.FRONTEND_URL}/reset-password/{reset_token}"
+            send_password_reset_email(user, reset_url)
+            
+            return Response({'message': 'Password reset email sent'}, status=status.HTTP_200_OK)
+            
+        except User.DoesNotExist:
+            return Response({'error': 'User with this email does not exist'}, status=status.HTTP_400_BAD_REQUEST)
+
+class PasswordResetConfirmView(APIView):
+    permission_classes = [AllowAny]
+    
+    def post(self, request, token):
+        try:
+            user = User.objects.get(password_reset_token=token)
+            
+            if user.password_reset_token_expires < timezone.now():
+                return Response({'error': 'Password reset link has expired'}, status=status.HTTP_400_BAD_REQUEST)
+                
+            new_password = request.data.get('new_password')
+            user.set_password(new_password)
+            user.password_reset_token = None
+            user.password_reset_token_expires = None
+            user.save()
+            
+            return Response({'message': 'Password successfully reset'}, status=status.HTTP_200_OK)
+            
+        except User.DoesNotExist:
+            return Response({'error': 'Invalid password reset token'}, status=status.HTTP_400_BAD_REQUEST)

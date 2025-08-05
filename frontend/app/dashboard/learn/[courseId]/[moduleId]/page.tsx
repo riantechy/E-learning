@@ -272,22 +272,26 @@ export default function ModulePage() {
     }
 
     if (lesson.content_type === 'PDF') {
-      return (
-        <div className="mb-3">
-          <iframe 
-            ref={(el) => iframeRefs.current[lesson.id] = el}
-            src={lesson.content} 
-            className="w-100" 
-            style={{ height: '500px' }}
-            title={lesson.title}
-            onLoad={() => {
-              setContentInteraction(prev => ({...prev, [lesson.id]: true}))
-              handlePdfLoaded(lesson.id)
-            }}
-          />
-        </div>
-      )
-    }
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_HOST
+      const pdfUrl = lesson.content.startsWith('http') 
+        ? lesson.content 
+        : `${baseUrl}${lesson.content}`; 
+        return (
+          <div className="mb-3">
+            <iframe 
+              ref={(el) => iframeRefs.current[lesson.id] = el}
+              src={pdfUrl}  // Use the full URL
+              className="w-100" 
+              style={{ height: '500px' }}
+              title={lesson.title}
+              onLoad={() => {
+                setContentInteraction(prev => ({...prev, [lesson.id]: true}))
+                handlePdfLoaded(lesson.id)
+              }}
+            />
+          </div>
+        )
+      }
 
     // For TEXT content with sections
     return (

@@ -1,5 +1,6 @@
 // lib/api.ts
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
+const API_BASE_URL = `${process.env.NEXT_PUBLIC_API_BASE_HOST}/api`
+// const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
 
 interface ApiResponse<T> {
   data?: T;
@@ -101,6 +102,18 @@ export const usersApi = {
       'POST', formData, false 
     );
   },
+
+  verifyEmail: (token: string) => 
+    apiRequest(`/auth/verify-email/${token}/`, 'GET'),
+  
+  resendVerificationEmail: () => 
+    apiRequest('/auth/resend-verification-email/', 'POST'),
+  
+  requestPasswordReset: (data: { email: string }) => 
+    apiRequest('/auth/request-password-reset/', 'POST', data),
+  
+  resetPassword: (data: { token: string; new_password: string }) => 
+    apiRequest('/auth/reset-password-confirm/', 'POST', data),
 };
 
 // Courses API

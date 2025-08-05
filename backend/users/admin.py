@@ -5,7 +5,7 @@ from .models import User
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
     model = User
-    list_display = ('email', 'first_name', 'last_name', 'role', 'is_staff', 'is_active')
+    list_display = ('email', 'first_name', 'last_name', 'role', 'is_staff', 'is_active', 'is_verified')
     list_filter = ('role', 'is_staff', 'is_active')
     search_fields = ('email', 'first_name', 'last_name')
     ordering = ('email',)
@@ -21,7 +21,7 @@ class UserAdmin(BaseUserAdmin):
             )
         }),
         ('Permissions', {
-            'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')
+            'fields': ('is_verified', 'is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')
         }),
         ('Important dates', {'fields': ('last_login', 'date_joined')}),
     )

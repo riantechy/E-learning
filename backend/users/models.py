@@ -21,6 +21,9 @@ class UserManager(BaseUserManager):
         return self.create_user(email, password, **extra_fields)
 
 class User(AbstractBaseUser, PermissionsMixin):
+    is_verified = models.BooleanField(default=False)
+    verification_token = models.UUIDField(default=uuid.uuid4, editable=False)
+    verification_token_expires = models.DateTimeField(default=timezone.now() + timezone.timedelta(days=1))
     ROLES = (
         ('LEARNER', 'Learner'),
         ('CONTENT_MANAGER', 'Content Manager'),

@@ -185,6 +185,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
 ]
+FRONTEND_URL = 'http://localhost:3000'
 CORS_ALLOW_CREDENTIALS = True
 
 # Media files
@@ -196,10 +197,19 @@ AUTH_USER_MODEL = 'users.User'
 
 # Email Configuration
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'mail.govmail.ke'
+EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'whitebox@icta.go.ke'
-EMAIL_HOST_PASSWORD = 'LBFCLKNDDUVAGSLD'
-DEFAULT_FROM_EMAIL = 'whitebox@icta.go.ke'
-SERVER_EMAIL = 'whitebox@icta.go.ke'
+EMAIL_HOST_USER = 'wajirtest@gmail.com'  
+EMAIL_HOST_PASSWORD = 'dtrn kucq lxeo qgng ' 
+DEFAULT_FROM_EMAIL = 'wajirtest@gmail.com'
+SERVER_EMAIL = 'wajirtest@gmail.com'
+
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_HOST = 'mail.govmail.ke'
+# EMAIL_PORT = 587
+# EMAIL_USE_TLS = True
+# EMAIL_HOST_USER = 'whitebox@icta.go.ke'
+# EMAIL_HOST_PASSWORD = 'TZLREYWMZODWUQNC'
+# DEFAULT_FROM_EMAIL = 'whitebox@icta.go.ke'
+# SERVER_EMAIL = 'whitebox@icta.go.ke'

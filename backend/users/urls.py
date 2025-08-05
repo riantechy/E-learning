@@ -3,7 +3,8 @@ from .views import (
     RegisterView, LoginView, UserProfileView,
     UserListView, UserDetailView, UserUpdateView, UserDeleteView,
     ChangePasswordView, LogoutView, LearnerListView, NonLearnerListView, 
-    UserCreateView, LearnerCountView, ProfileImageView
+    UserCreateView, LearnerCountView, ProfileImageView, PasswordResetConfirmView,
+    VerifyEmailView, ResendVerificationEmailView, PasswordResetRequestView
 )
 
 urlpatterns = [
@@ -27,4 +28,9 @@ urlpatterns = [
     # Keep the old 'all/' endpoint for backward compatibility
     path('learners/count/', LearnerCountView.as_view(), name='learner-count'),
     path('all/', UserListView.as_view(), name='user-list-old'),
+
+    path('verify-email/<uuid:token>/', VerifyEmailView.as_view(), name='verify-email'),
+    path('resend-verification-email/', ResendVerificationEmailView.as_view(), name='resend-verification-email'),
+    path('request-password-reset/', PasswordResetRequestView.as_view(), name='request-password-reset'),
+    path('reset-password/<uuid:token>/', PasswordResetConfirmView.as_view(), name='reset-password-confirm'),
 ]
