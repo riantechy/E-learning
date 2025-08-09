@@ -357,6 +357,19 @@ export const certificatesApi = {
       },
       true  
     ),
+    getCertificateTemplates: () => 
+      apiRequest<PaginatedResponse<CertificateTemplate>>('/certificates/templates/'),
+    
+    createCertificateTemplate: (formData: FormData) => 
+      apiRequest<CertificateTemplate>(
+        '/certificates/templates/',
+        'POST',
+        formData,
+        {},
+        false
+      ),
+    deleteCertificateTemplate: (id: string) => 
+      apiRequest(`/certificates/templates/${id}/`, 'DELETE'),
 };
 
 // Analytics API

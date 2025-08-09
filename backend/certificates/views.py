@@ -142,8 +142,18 @@ class GenerateCertificateView(generics.GenericAPIView):
 class CertificateTemplateListCreateView(generics.ListCreateAPIView):
     queryset = CertificateTemplate.objects.all()
     serializer_class = CertificateTemplateSerializer
-    permission_classes = [IsAdminUser]  
+    permission_classes = [IsAuthenticated]  
 
+# certificates/views.py
+class CertificateTemplateDeleteView(generics.DestroyAPIView):
+    queryset = CertificateTemplate.objects.all()
+    serializer_class = CertificateTemplateSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = 'pk'
+
+    def perform_destroy(self, instance):
+        instance.template_file.delete()
+        super().perform_destroy(instance)
 
 class UserCertificateListView(generics.ListAPIView):
     serializer_class = CertificateSerializer

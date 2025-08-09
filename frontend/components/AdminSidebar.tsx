@@ -37,6 +37,18 @@ export default function AdminSidebar() {
     { href: '/admin-dashboard/analytics', label: 'Analytics', icon: '📈' },
     { href: '/admin-dashboard/profile', label: 'Profile', icon: '👤' },
     { href: '/admin-dashboard/settings', label: 'Settings', icon: '⚙️' },
+    // { 
+    //   href: '/admin-dashboard/settings', 
+    //   label: 'Settings', 
+    //   icon: '⚙️',
+    //   subItems: [
+    //     { href: '/admin-dashboard/settings/general', label: 'General' },
+    //     { href: '/admin-dashboard/settings/email', label: 'Email' },
+    //     { href: '/admin-dashboard/settings/notifications', label: 'Notifications' },
+    //     { href: '/admin-dashboard/settings/security', label: 'Security' },
+    //     { href: '/admin-dashboard/settings/integrations', label: 'Integrations' },
+    //   ]
+    // },
   ];
 
   // Determine the target for Course Management

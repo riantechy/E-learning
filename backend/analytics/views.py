@@ -20,6 +20,7 @@ from .serializers import (
 import pandas as pd
 from io import BytesIO
 from django.http import HttpResponse
+print("Imports successful: pandas, xlsxwriter, and models loaded")
 
 class UserActivityAnalyticsView(APIView):
     def get(self, request):
@@ -274,11 +275,12 @@ class QuizPerformanceAnalyticsView(APIView):
 
 class ExportAnalyticsReportView(APIView):
     def get(self, request):
+        print("Export view accessed!")
         report_type = request.query_params.get('type', 'user_activity')
         time_filter = request.query_params.get('time_filter', '7d')
-        export_format = request.query_params.get('format', 'csv')  
-        print(f"Export format received: {export_format}")  # Debug
-        
+        export_format = request.query_params.get('format', 'csv')
+        print(f"Export endpoint hit: type={report_type}, time_filter={time_filter}, format={export_format}")  # Debug
+
         # Calculate time range
         now = timezone.now()
         if time_filter == '24h':
@@ -289,13 +291,13 @@ class ExportAnalyticsReportView(APIView):
             start_date = now - timedelta(days=30)
         else:  # all time
             start_date = None
-        
+
         try:
             if report_type == 'user_activity':
                 query = UserActivity.objects.all()
                 if start_date:
                     query = query.filter(timestamp__gte=start_date)
-                
+
                 data = list(query.values(
                     'user__email',
                     'activity_type',
@@ -304,15 +306,15 @@ class ExportAnalyticsReportView(APIView):
                     'ip_address'
                 ))
                 df = pd.DataFrame(data)
-                
+
             elif report_type == 'course_progress':
                 courses = Course.objects.filter(status='PUBLISHED')
                 data = []
-                
+
                 for course in courses:
                     enrollments = Enrollment.objects.filter(course=course)
                     total_enrollments = enrollments.count()
-                    
+
                     if total_enrollments == 0:
                         avg_progress = 0
                         completed = 0
@@ -325,7 +327,7 @@ class ExportAnalyticsReportView(APIView):
                             if progress['percentage'] >= 90:
                                 completed += 1
                         avg_progress = total_progress / total_enrollments
-                    
+
                     data.append({
                         'Course ID': str(course.id),
                         'Course Title': course.title,
@@ -334,23 +336,50 @@ class ExportAnalyticsReportView(APIView):
                         'Completed Enrollments': completed,
                         'Completion Rate (%)': round((completed / total_enrollments) * 100, 2) if total_enrollments > 0 else 0
                     })
-                
+
                 df = pd.DataFrame(data)
-            
+
             elif report_type == 'enrollment_stats':
                 enrollments = Enrollment.objects.all()
                 if start_date:
                     enrollments = enrollments.filter(enrolled_at__gte=start_date)
-                
+
                 data = list(enrollments.values(
                     'user__email',
                     'course__title',
                     'enrolled_at'
                 ))
-                
+
                 df = pd.DataFrame(data)
                 df.columns = ['User Email', 'Course', 'Enrollment Date']
-            
+
+            elif report_type == 'completion_rates':
+                courses = Course.objects.filter(status='PUBLISHED')
+                data = []
+
+                for course in courses:
+                    total_enrollments = Enrollment.objects.filter(course=course).count()
+                    if total_enrollments == 0:
+                        completion_rate = 0
+                        completed_enrollments = 0
+                    else:
+                        completed_enrollments = 0
+                        for enrollment in Enrollment.objects.filter(course=course):
+                            progress = UserProgress.get_course_progress(enrollment.user, course)
+                            if progress['percentage'] >= 90:
+                                completed_enrollments += 1
+                        completion_rate = (completed_enrollments / total_enrollments) * 100
+
+                    data.append({
+                        'Course ID': str(course.id),
+                        'Course Title': course.title,
+                        'Total Enrollments': total_enrollments,
+                        'Completed Enrollments': completed_enrollments,
+                        'Completion Rate (%)': round(completion_rate, 2)
+                    })
+
+                df = pd.DataFrame(data)
+
             elif report_type == 'module_coverage':
                 course_id = request.query_params.get('course_id')
                 if not course_id:
@@ -358,7 +387,7 @@ class ExportAnalyticsReportView(APIView):
                         {"error": "course_id is required for module coverage export"},
                         status=status.HTTP_400_BAD_REQUEST
                     )
-                
+
                 try:
                     course = Course.objects.get(id=course_id)
                 except Course.DoesNotExist:
@@ -366,27 +395,33 @@ class ExportAnalyticsReportView(APIView):
                         {"error": "Course not found"},
                         status=status.HTTP_404_NOT_FOUND
                     )
-                
+
                 # Get module coverage data
                 response = ModuleCoverageAnalyticsView().get(request, course_id)
                 if response.status_code != 200:
                     return response
-                
+
                 coverage_data = response.data
                 rows = []
-                
+
                 for learner in coverage_data['learners']:
                     row = {
                         'Learner ID': learner['user_id'],
                         'Learner Name': learner['name'],
                     }
-                    
+
                     for i, module in enumerate(coverage_data['modules']):
                         row[module] = 'Completed' if learner['module_progress'][i]['completed'] else 'Not Completed'
-                    
+
                     rows.append(row)
-                
-                df = pd.DataFrame(data)
+
+                df = pd.DataFrame(rows)  # Fixed: Use 'rows' instead of 'data'
+
+            else:
+                return Response(
+                    {"error": f"Invalid report type: {report_type}"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
             # Export to requested format
             try:
@@ -401,7 +436,7 @@ class ExportAnalyticsReportView(APIView):
                     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
                         df.to_excel(writer, sheet_name='Report', index=False)
                     output.seek(0)
-                    
+
                     response = HttpResponse(
                         output.getvalue(),
                         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -417,13 +452,13 @@ class ExportAnalyticsReportView(APIView):
 
             except Exception as e:
                 return Response(
-                    {"error": str(e)},
+                    {"error": f"Export failed: {str(e)}"},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
 
         except Exception as e:
             return Response(
-                {"error": str(e)},
+                {"error": f"Data processing failed: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 

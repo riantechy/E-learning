@@ -71,7 +71,14 @@ export default function LearnerSidebar() {
     }
   }, [user?.id]) 
 
-  const isActive = (path: string) => pathname.startsWith(path)
+  const isActive = (path: string) => {
+    // Exact match for dashboard
+    if (path === '/dashboard') {
+      return pathname === path;
+    }
+    // For other paths, check if current path starts with the navigation path
+    return pathname.startsWith(path);
+  }
 
   return (
     <div className="h-full p-4">
@@ -134,7 +141,7 @@ export default function LearnerSidebar() {
         <li>
           <Link 
             href="/dashboard/courses" 
-            className={`flex items-center p-2 rounded-md ${isActive('/courses') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100'}`}
+            className={`flex items-center p-2 rounded-md ${isActive('/dashboard/courses') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100'}`}
           >
             <i className="bi bi-book mr-3"></i>
             Browse Courses
@@ -143,7 +150,7 @@ export default function LearnerSidebar() {
         <li>
           <Link 
             href="/dashboard/learn" 
-            className={`flex items-center p-2 rounded-md ${isActive('/learn') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100'}`}
+            className={`flex items-center p-2 rounded-md ${isActive('/dashboard/learn') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100'}`}
           >
             <i className="bi bi-collection mr-3"></i>
             My Courses
@@ -152,16 +159,16 @@ export default function LearnerSidebar() {
         <li>
           <Link 
             href="/dashboard/my-score" 
-            className={`flex items-center p-2 rounded-md ${isActive('/certificates') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100'}`}
+            className={`flex items-center p-2 rounded-md ${isActive('/dashboard/my-score') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100'}`}
           >
-            <i className="bi bi-award mr-3"></i>
+            <i className="bi bi-graph-up mr-3"></i>
             My Score
           </Link>
         </li>
         <li>
           <Link 
             href="/dashboard/certificates" 
-            className={`flex items-center p-2 rounded-md ${isActive('/certificates') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100'}`}
+            className={`flex items-center p-2 rounded-md ${isActive('/dashboard/certificates') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100'}`}
           >
             <i className="bi bi-award mr-3"></i>
             My Certificates
@@ -170,7 +177,7 @@ export default function LearnerSidebar() {
         <li>
           <Link 
             href="/dashboard/profile" 
-            className={`flex items-center p-2 rounded-md ${isActive('/profile') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100'}`}
+            className={`flex items-center p-2 rounded-md ${isActive('/dashboard/profile') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100'}`}
           >
             <i className="bi bi-person mr-3"></i>
             Profile

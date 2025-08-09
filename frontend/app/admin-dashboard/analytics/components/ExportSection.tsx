@@ -3,6 +3,7 @@
 import { Button, Card, Form, Row, Col, Alert } from 'react-bootstrap';
 import { analyticsApi } from '@/lib/api';
 import { useState } from 'react';
+import * as XLSX from 'xlsx';
 
 export default function ExportSection({
   reportType,
@@ -20,18 +21,113 @@ export default function ExportSection({
   setExportFormat: (format: string) => void;
 }) {
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleExport = async () => {
+    setIsLoading(true);
+    setError('');
+    
     try {
-      const response = await analyticsApi.exportReport(reportType, timeRange, exportFormat);
+      // Get the data based on report type
+      let response;
+      switch (reportType) {
+        case 'user_activity':
+          response = await analyticsApi.getUserActivity(timeRange);
+          break;
+        case 'course_progress':
+          response = await analyticsApi.getCourseProgress();
+          break;
+        case 'enrollment_stats':
+          response = await analyticsApi.getEnrollmentStats(timeRange);
+          break;
+        case 'completion_rates':
+          response = await analyticsApi.getCompletionRates();
+          break;
+        case 'quiz_performance':
+          response = await analyticsApi.getQuizPerformance();
+          break;
+        default:
+          throw new Error('Invalid report type');
+      }
+
       if (response.error) throw new Error(response.error);
       
-      if (response.data?.download_url) {
-        window.open(response.data.download_url, '_blank');
+      // Transform data based on report type
+      let dataToExport = [];
+      let fileName = `${reportType}_report`;
+      
+      switch (reportType) {
+        case 'user_activity':
+          dataToExport = response.data?.activity_counts || [];
+          break;
+        case 'course_progress':
+          dataToExport = response.data?.course_progress || [];
+          break;
+        case 'enrollment_stats':
+          dataToExport = response.data?.enrollment_trend || [];
+          break;
+        case 'completion_rates':
+          dataToExport = response.data?.completion_data || [];
+          break;
+        case 'quiz_performance':
+          dataToExport = response.data?.lesson_stats || [];
+          break;
       }
+
+      if (exportFormat === 'csv') {
+        exportToCSV(dataToExport, fileName);
+      } else if (exportFormat === 'excel') {
+        exportToExcel(dataToExport, fileName);
+      }
+      
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to export report');
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  const exportToCSV = (data: any[], fileName: string) => {
+    if (!data || data.length === 0) {
+      setError('No data to export');
+      return;
+    }
+
+    // Convert array of objects to CSV
+    const headers = Object.keys(data[0]);
+    const csvRows = [
+      headers.join(','),
+      ...data.map(row => 
+        headers.map(fieldName => 
+          JSON.stringify(row[fieldName], (key, value) => 
+            value === null ? '' : value
+          )
+        ).join(',')
+      )
+    ];
+
+    const csvContent = csvRows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${fileName}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const exportToExcel = (data: any[], fileName: string) => {
+    if (!data || data.length === 0) {
+      setError('No data to export');
+      return;
+    }
+
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Report');
+    XLSX.writeFile(workbook, `${fileName}.xlsx`);
   };
 
   return (
@@ -49,7 +145,6 @@ export default function ExportSection({
               >
                 <option value="user_activity">User Activity</option>
                 <option value="course_progress">Course Progress</option>
-                <option value="module_coverage">Module Coverage</option>
                 <option value="enrollment_stats">Enrollment Stats</option>
                 <option value="completion_rates">Completion Rates</option>
                 <option value="quiz_performance">Quiz Performance</option>
@@ -83,8 +178,12 @@ export default function ExportSection({
             </Form.Group>
           </Col>
           <Col md={3} className="d-flex align-items-end">
-            <Button variant="primary" onClick={handleExport}>
-              Export Report
+            <Button 
+              variant="primary" 
+              onClick={handleExport}
+              disabled={isLoading}
+            >
+              {isLoading ? 'Exporting...' : 'Export Report'}
             </Button>
           </Col>
         </Row>

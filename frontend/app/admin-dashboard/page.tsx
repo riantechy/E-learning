@@ -78,21 +78,21 @@ const fetchDashboardData = async () => {
         <div className="row mb-4">
           {statCards.map((card, index) => (
             <div key={index} className="col-md-3 mb-3">
-              <Card bg={card.variant.toLowerCase()} text="white">
-                <Card.Body>
-                  <Card.Title>{card.title}</Card.Title>
-                  <Card.Text className="h4">
-                    {loading ? (
-                      <div className="spinner-border spinner-border-sm" role="status">
-                        <span className="visually-hidden">Loading...</span>
-                      </div>
-                    ) : (
-                      card.value
-                    )}
-                  </Card.Text>
-                  <small>{card.change}</small>
-                </Card.Body>
-              </Card>
+            <Card bg={card.variant.toLowerCase()} text="white">
+              <Card.Body>
+                <Card.Title>{card.title}</Card.Title>
+                <div className="h4 card-text">
+                  {loading ? (
+                    <div className="spinner-border spinner-border-sm" role="status">
+                      <span className="visually-hidden">Loading...</span>
+                    </div>
+                  ) : (
+                    card.value
+                  )}
+                </div>
+                <small>{card.change}</small>
+              </Card.Body>
+            </Card>
             </div>
           ))}
         </div>
