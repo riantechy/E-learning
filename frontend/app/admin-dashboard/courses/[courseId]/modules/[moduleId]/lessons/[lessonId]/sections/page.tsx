@@ -26,9 +26,12 @@ export default function LessonSectionsPage() {
   const [success, setSuccess] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [currentSection, setCurrentSection] = useState<any>(null);
+  // UPDATED: Added content_type and video_url fields
   const [formData, setFormData] = useState({
     title: '',
     content: '',
+    content_type: 'TEXT', // Default to text
+    video_url: '',
     order: 0,
     is_subsection: false,
     parent_section: '',
@@ -65,6 +68,7 @@ export default function LessonSectionsPage() {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     const checked = type === 'checkbox' ? (e.target as HTMLInputElement).checked : undefined;
+    
     setFormData(prev => ({ 
       ...prev, 
       [name]: type === 'checkbox' ? checked : value 
@@ -115,9 +119,12 @@ export default function LessonSectionsPage() {
 
   const handleEdit = (section: any) => {
     setCurrentSection(section);
+    // UPDATED: Added content_type and video_url fields
     setFormData({
       title: section.title,
       content: section.content,
+      content_type: section.content_type || 'TEXT', // Default to text
+      video_url: section.video_url || '',
       order: section.order,
       is_subsection: section.is_subsection,
       parent_section: section.parent_section?.id || '',
@@ -127,9 +134,12 @@ export default function LessonSectionsPage() {
 
   const handleNewSection = () => {
     setCurrentSection(null);
+    // UPDATED: Added content_type and video_url fields
     setFormData({
       title: '',
       content: '',
+      content_type: 'TEXT', // Default to text
+      video_url: '',
       order: sections.length > 0 ? Math.max(...sections.map(s => s.order)) + 1 : 0,
       is_subsection: false,
       parent_section: '',
@@ -162,6 +172,15 @@ export default function LessonSectionsPage() {
 
   const getParentSections = () => {
     return sections.filter(section => !section.is_subsection);
+  };
+
+  // NEW: Get badge color based on content type
+  const getContentTypeBadge = (type: string) => {
+    const variants: Record<string, string> = {
+      TEXT: 'primary',
+      VIDEO: 'danger',
+    };
+    return <Badge bg={variants[type] || 'secondary'}>{type}</Badge>;
   };
 
   return (
@@ -203,6 +222,8 @@ export default function LessonSectionsPage() {
               <tr>
                 <th>Title</th>
                 <th>Type</th>
+                {/* UPDATED: Added Content Type column */}
+                <th>Content Type</th>
                 <th>Order</th>
                 <th>Parent</th>
                 <th>Actions</th>
@@ -216,6 +237,10 @@ export default function LessonSectionsPage() {
                     <Badge bg={section.is_subsection ? 'info' : 'primary'}>
                       {section.is_subsection ? 'Subsection' : 'Section'}
                     </Badge>
+                  </td>
+                  {/* UPDATED: Display content type badge */}
+                  <td>
+                    {getContentTypeBadge(section.content_type || 'TEXT')}
                   </td>
                   <td>{section.order}</td>
                   <td>
@@ -262,18 +287,52 @@ export default function LessonSectionsPage() {
                 />
               </Form.Group>
 
+              {/* NEW: Content Type Selector */}
               <Form.Group className="mb-3">
-                <Form.Label>Content</Form.Label>
-                <Form.Control
-                  as="textarea"
-                  rows={5}
-                  name="content"
-                  value={formData.content}
+                <Form.Label>Content Type</Form.Label>
+                <Form.Select
+                  name="content_type"
+                  value={formData.content_type}
                   onChange={handleInputChange}
                   required
                   disabled={loading}
-                />
+                >
+                  <option value="TEXT">Text</option>
+                  <option value="VIDEO">Video</option>
+                </Form.Select>
               </Form.Group>
+
+              {/* NEW: Conditionally render content field based on type */}
+              {formData.content_type === 'VIDEO' ? (
+                <Form.Group className="mb-3">
+                  <Form.Label>Video URL</Form.Label>
+                  <Form.Control
+                    type="url"
+                    name="video_url"
+                    value={formData.video_url}
+                    onChange={handleInputChange}
+                    placeholder="Enter video URL (e.g., https://youtube.com/watch?v=...)"
+                    required
+                    disabled={loading}
+                  />
+                  <Form.Text className="text-muted">
+                    Supported platforms: YouTube, Vimeo, or direct video links
+                  </Form.Text>
+                </Form.Group>
+              ) : (
+                <Form.Group className="mb-3">
+                  <Form.Label>Content</Form.Label>
+                  <Form.Control
+                    as="textarea"
+                    rows={5}
+                    name="content"
+                    value={formData.content}
+                    onChange={handleInputChange}
+                    required
+                    disabled={loading}
+                  />
+                </Form.Group>
+              )}
 
               <div className="row">
                 <Form.Group className="col-md-4 mb-3">

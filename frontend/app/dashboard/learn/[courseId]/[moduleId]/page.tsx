@@ -9,6 +9,18 @@ import LearnerSidebar from '@/components/LearnerSidebar'
 import { Menu, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
 
+// Helper function to convert YouTube URLs to embed format
+const convertToEmbedUrl = (url: string) => {
+  if (url.includes('youtube.com/watch')) {
+    const videoId = new URL(url).searchParams.get('v');
+    return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
+  } else if (url.includes('youtu.be')) {
+    const videoId = url.split('/').pop();
+    return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
+  }
+  return url;
+};
+
 export default function ModulePage() {
   const params = useParams()
   const courseId = params.courseId as string
@@ -55,7 +67,7 @@ export default function ModulePage() {
           const interactionData: Record<string, boolean> = {}
           
           await Promise.all(
-            lessonsRes.data.results.map(async (lesson: any) => { // Changed here
+            lessonsRes.data.results.map(async (lesson: any) => {
               expanded[lesson.id] = true
               interactionData[lesson.id] = false
               try {
@@ -74,7 +86,21 @@ export default function ModulePage() {
           setContentInteraction(interactionData)
         }
   
-        // ... rest of the code
+        // Check if this module has a survey
+        const surveyRes = await assessmentsApi.getModuleSurveys(courseId, moduleId)
+        if (surveyRes.data && surveyRes.data.length > 0) {
+          setHasSurvey(true)
+          
+          // Check if user has already completed the survey
+          const responsesRes = await assessmentsApi.getSurveyResponses(surveyRes.data[0].id)
+          if (responsesRes.data && responsesRes.data.length > 0) {
+            // Check if current user has submitted a response
+            const userResponse = responsesRes.data.find((r: any) => 
+              r.user.id === user?.id
+            );
+            setSurveyCompleted(!!userResponse)
+          }
+        }
       } catch (error) {
         console.error('Error fetching module data:', error)
       } finally {
@@ -158,7 +184,6 @@ export default function ModulePage() {
               rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
               rect.right <= (window.innerWidth || document.documentElement.clientWidth)
             )
-            
             if (isVisible) {
               setContentInteraction(prev => ({
                 ...prev,
@@ -166,7 +191,7 @@ export default function ModulePage() {
               }))
               handleLessonCompleted(lesson.id)
             }
-          }
+      }
         }
       })
     }
@@ -280,7 +305,7 @@ export default function ModulePage() {
           <div className="mb-3">
             <iframe 
               ref={(el) => iframeRefs.current[lesson.id] = el}
-              src={pdfUrl}  // Use the full URL
+              src={pdfUrl}
               className="w-100" 
               style={{ height: '500px' }}
               title={lesson.title}
@@ -308,20 +333,47 @@ export default function ModulePage() {
             {lesson.sections.map((section: any) => (
               <div key={section.id} className="section mb-4">
                 <h5>{section.title}</h5>
-                <div 
-                  dangerouslySetInnerHTML={{ __html: section.content }} 
-                  onClick={() => setContentInteraction(prev => ({...prev, [lesson.id]: true}))}
-                />
+                
+                {/* Handle section content based on content_type */}
+                {section.content_type === 'VIDEO' ? (
+                  <div className="ratio ratio-16x9 mb-3">
+                    <iframe 
+                      src={convertToEmbedUrl(section.video_url)} 
+                      title={section.title}
+                      allowFullScreen
+                      onLoad={() => setContentInteraction(prev => ({...prev, [lesson.id]: true}))}
+                    />
+                  </div>
+                ) : (
+                  <div 
+                    dangerouslySetInnerHTML={{ __html: section.content }} 
+                    onClick={() => setContentInteraction(prev => ({...prev, [lesson.id]: true}))}
+                  />
+                )}
                 
                 {section.subsections?.length > 0 && (
                   <div className="subsections ms-4">
                     {section.subsections.map((sub: any) => (
                       <div key={sub.id} className="subsection mb-3">
-                        <h6>{sub.title}</h6>
-                        <div 
-                          dangerouslySetInnerHTML={{ __html: sub.content }} 
-                          onClick={() => setContentInteraction(prev => ({...prev, [lesson.id]: true}))}
-                        />
+                        <h6 className="fs-6">{sub.title}</h6>
+
+                        
+                        {/* Handle subsection content based on content_type */}
+                        {sub.content_type === 'VIDEO' ? (
+                          <div className="ratio ratio-16x9 mb-3">
+                            <iframe 
+                              src={convertToEmbedUrl(sub.video_url)} 
+                              title={sub.title}
+                              allowFullScreen
+                              onLoad={() => setContentInteraction(prev => ({...prev, [lesson.id]: true}))}
+                            />
+                          </div>
+                        ) : (
+                          <div 
+                            dangerouslySetInnerHTML={{ __html: sub.content }} 
+                            onClick={() => setContentInteraction(prev => ({...prev, [lesson.id]: true}))}
+                          />
+                        )}
                       </div>
                     ))}
                   </div>
@@ -469,21 +521,21 @@ export default function ModulePage() {
 
                 <div className="card mt-4">
                   <div className="card-body text-center">
-                    {hasSurvey && (
-                      <div className="mt-3">
-                        <Link 
-                          href={`/dashboard/learn/${courseId}/${moduleId}/survey`} 
-                          className="btn btn-primary"
-                        >
-                          {surveyCompleted ? 'Survey Completed' : 'Take Module Survey'}
-                        </Link>
-                        <p className="text-muted mt-2 small">
-                          {surveyCompleted ? 
-                            'Thank you for completing the survey' : 
-                            'Help us improve by completing this short survey'}
-                        </p>
-                      </div>
-                    )}
+                      {hasSurvey && (
+                        <div className="mt-3">
+                          <Link 
+                            href={`/dashboard/learn/${courseId}/${moduleId}/survey`}
+                            className={`btn ${surveyCompleted ? 'btn-outline-primary' : 'btn-primary'}`}
+                          >
+                            {surveyCompleted ? 'Retake Survey' : 'Take Module Survey'}
+                          </Link>
+                          <p className="text-muted mt-2 small">
+                            {surveyCompleted ? 
+                              'Thank you for completing the survey' : 
+                              'Help us improve by completing this short survey'}
+                          </p>
+                        </div>
+                      )}
                     <div className="d-flex flex-column flex-sm-row justify-content-between gap-2 mt-3">
                       {getPreviousModule() && (
                         <Link
@@ -549,7 +601,7 @@ export default function ModulePage() {
 
                 <div className="card">
                   <div className="card-header">
-                    <h6>Course Navigation</h6>
+                    <h6>Module Navigation</h6>
                   </div>
                   <div className="list-group list-group-flush">
                     {modules.map((mod: any) => (

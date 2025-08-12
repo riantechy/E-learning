@@ -27,26 +27,11 @@ class ModuleProgressSerializer(serializers.ModelSerializer):
 class LessonSerializer(serializers.ModelSerializer):
     sections = serializers.SerializerMethodField()
     has_quiz = serializers.SerializerMethodField()
-    content = serializers.SerializerMethodField()
+    content = serializers.CharField(required=False, allow_blank=True)
 
     class Meta:
         model = Lesson
         fields = '__all__'
-
-    # def validate(self, data):
-    #     content_type = data.get('content_type')
-    #     content = data.get('content')
-    #     pdf_file = data.get('pdf_file')
-
-    #     if content_type == 'TEXT' and not content:
-    #         raise serializers.ValidationError("Content is required for text-based lessons.")
-    #     elif content_type == 'VIDEO' and not content:
-    #         raise serializers.ValidationError("Video URL is required for video-based lessons.")
-    #     elif content_type == 'PDF' and not pdf_file:
-    #         raise serializers.ValidationError("PDF file is required for PDF-based lessons.")
-    #     elif content_type == 'QUIZ' and (content or pdf_file):
-    #         raise serializers.ValidationError("Quiz lessons should not have content or PDF file.")
-    #     return data
 
     def get_sections(self, obj):
         sections = obj.sections.filter(parent_section__isnull=True).order_by('order')
@@ -66,6 +51,7 @@ class LessonSectionSerializer(serializers.ModelSerializer):
     class Meta:
         model = LessonSection
         fields = '__all__'
+        read_only_fields = ['lesson']  
         extra_kwargs = {
             'parent_section': {'required': False, 'allow_null': True}
         }

@@ -18,6 +18,7 @@ export const useLessonsManagement = () => {
     pdf_file: '',
     content: '',
     content_type: 'TEXT',
+    video_url: '',
     duration_minutes: 0,
     order: 0,
     is_required: true,

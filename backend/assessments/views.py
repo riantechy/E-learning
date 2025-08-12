@@ -279,6 +279,39 @@ class SurveyViewSet(viewsets.ModelViewSet):
     queryset = Survey.objects.all()
     serializer_class = SurveySerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = None  # Disable pagination to return direct list
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        course_id = self.kwargs.get('course_id')
+        module_id = self.kwargs.get('module_id')
+        
+        if module_id and course_id:
+            # Filter by module and validate course
+            queryset = queryset.filter(
+                module__id=module_id,
+                module__course__id=course_id
+            )
+        elif module_id:
+            queryset = queryset.filter(module__id=module_id)
+            
+        return queryset.prefetch_related('questions__choices')
+
+    def perform_create(self, serializer):
+        course_id = self.kwargs.get('course_id')
+        module_id = self.kwargs.get('module_id')
+        
+        if module_id and course_id:
+            module = get_object_or_404(
+                Module, 
+                id=module_id, 
+                course__id=course_id
+            )
+            if Survey.objects.filter(module=module).exists():
+                raise ValidationError("A survey already exists for this module.")
+            serializer.save(module=module)
+        else:
+            serializer.save()
 
     @action(detail=True, methods=['get', 'post'])
     def questions(self, request, pk=None):
@@ -299,18 +332,14 @@ class SurveyViewSet(viewsets.ModelViewSet):
         survey = self.get_object()
         responses = survey.responses.all().prefetch_related('answers', 'user')
         
-        # Add pagination
-        page = self.paginate_queryset(responses)
-        if page is not None:
-            serializer = SurveyResponseSerializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-            
+        # Add pagination if needed, but since pagination_class=None, keep as list
         serializer = SurveyResponseSerializer(responses, many=True)
         return Response({
             'status': 'success',
             'count': responses.count(),
             'data': serializer.data
         })
+
 
 class SurveyResponseViewSet(viewsets.ModelViewSet):
     queryset = SurveyResponse.objects.all()

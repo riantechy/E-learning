@@ -63,15 +63,15 @@ export default function ModuleSurveyPage() {
       if (moduleRes.data) setModule(moduleRes.data);
       
       // Check surveyRes.data.results instead of surveyRes.data
-      if (surveyRes.data?.results && surveyRes.data.results.length > 0) {
+      if (surveyRes.data && surveyRes.data.length > 0) {
         // Find the survey for the current module
-        const surveyData = surveyRes.data.results.find((s: any) => s.module === moduleId);
+        const surveyData = surveyRes.data.find((s: any) => s.module === moduleId);
         
         if (surveyData) {
           setSurvey(surveyData);
           const questionsRes = await assessmentsApi.getSurveyQuestions(surveyData.id);
-          if (questionsRes.data?.results) {
-            setQuestions(questionsRes.data.results);
+          if (questionsRes.data) {
+            setQuestions(questionsRes.data);
           } else if (surveyData.questions) {
             // Use questions from the survey response if available
             setQuestions(surveyData.questions);
@@ -162,39 +162,40 @@ export default function ModuleSurveyPage() {
     }
   };
 
-const handleSaveQuestion = async (questionData: Question) => {
-  try {
-    setLoading(true);
-    let response;
+  const handleSaveQuestion = async (questionData: Question) => {
+    try {
+      setLoading(true);
+      const payload: Question = {
+        question_text: questionData.question_text,
+        question_type: questionData.question_type,
+        is_required: questionData.is_required,
+        order: questionData.order,
+      };
+      if (questionData.question_type === 'MCQ' && questionData.choices) {
+        payload.choices = questionData.choices.filter(choice => choice.choice_text.trim() !== '');
+      }
+      console.log('Saving question with payload:', JSON.stringify(payload, null, 2));
 
-    if (currentQuestion?.id) {
-      // Update existing question (send full payload with choices)
-      response = await assessmentsApi.updateSurveyQuestion(
-        survey.id,
-        currentQuestion.id,
-        questionData  
-      );
-    } else {
-      // Create new question (send full payload with choices)
-      response = await assessmentsApi.createSurveyQuestion(
-        survey.id,
-        questionData  
-      );
-    }
+      let response;
+      if (currentQuestion?.id) {
+        response = await assessmentsApi.updateSurveyQuestion(survey.id, currentQuestion.id, payload);
+      } else {
+        response = await assessmentsApi.createSurveyQuestion(survey.id, payload);
+      }
 
-    if (response.error) {
-      showError(response.error);
-    } else {
-      showSuccess(currentQuestion?.id ? 'Question updated!' : 'Question added!');
-      setShowQuestionModal(false);
-      fetchData();
+      if (response.error) {
+        showError(response.error);
+      } else {
+        showSuccess(currentQuestion?.id ? 'Question updated!' : 'Question added!');
+        setShowQuestionModal(false);
+        fetchData();
+      }
+    } catch (err) {
+      setError('Failed to save question');
+    } finally {
+      setLoading(false);
     }
-  } catch (err) {
-    setError('Failed to save question');
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const handleDeleteQuestion = async (questionId: string) => {
     if (confirm('Are you sure you want to delete this question?')) {

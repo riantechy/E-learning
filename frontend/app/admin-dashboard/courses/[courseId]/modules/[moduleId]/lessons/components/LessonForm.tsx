@@ -74,6 +74,7 @@ const LessonFormModal = ({
     return Object.keys(newErrors).length === 0;
   };
 
+  // LessonFormModal.tsx
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) {
@@ -81,22 +82,44 @@ const LessonFormModal = ({
     }
 
     const formDataToSend = new FormData();
-    formDataToSend.append('title', formData.title || '');
-    formDataToSend.append('content_type', formData.content_type || 'TEXT');
-    formDataToSend.append('duration_minutes', (formData.duration_minutes ?? 0).toString());
-    formDataToSend.append('order', (formData.order ?? 0).toString());
-    formDataToSend.append('is_required', (formData.is_required ?? true).toString());
 
-    if (formData.content_type === 'PDF') {
-      if (selectedFile) {
-        formDataToSend.append('pdf_file', selectedFile);
-      } else if (formData.content) {
-        formDataToSend.append('content', formData.content);
+    // Handle lessons and quizzes
+    if (itemType === 'lesson' || itemType === 'quiz') {
+      formDataToSend.append('title', formData.title || '');
+      formDataToSend.append('content_type', formData.content_type || 'TEXT');
+      formDataToSend.append('duration_minutes', (formData.duration_minutes ?? 0).toString());
+      formDataToSend.append('order', (formData.order ?? 0).toString());
+      formDataToSend.append('is_required', (formData.is_required ?? true).toString());
+
+      if (formData.content_type === 'PDF') {
+        if (selectedFile) {
+          formDataToSend.append('pdf_file', selectedFile);
+        } else if (formData.content) {
+          formDataToSend.append('content', formData.content);
+        }
+      } else if (formData.content_type === 'VIDEO' || formData.content_type === 'TEXT') {
+        formDataToSend.append('content', formData.content?.trim() || '');
+      } else if (formData.content_type === 'QUIZ') {
+        formDataToSend.append('content', '');
       }
-    } else if (formData.content_type === 'VIDEO' || formData.content_type === 'TEXT') {
-      formDataToSend.append('content', formData.content?.trim() || '');
-    } else if (formData.content_type === 'QUIZ') {
-      formDataToSend.append('content', '');
+    } 
+    // Handle sections
+    else if (itemType === 'section') {
+      formDataToSend.append('title', formData.title || '');
+      formDataToSend.append('content_type', formData.content_type || 'TEXT');
+      formDataToSend.append('order', (formData.order ?? 0).toString());
+      formDataToSend.append('is_subsection', (formData.is_subsection ?? false).toString());
+
+      if (formData.parent_section) {
+        formDataToSend.append('parent_section', formData.parent_section);
+      }
+
+      // ADDED: Properly handle video URLs for sections
+      if (formData.content_type === 'VIDEO') {
+        formDataToSend.append('video_url', formData.video_url || '');
+      } else {
+        formDataToSend.append('content', formData.content || '');
+      }
     }
 
     // Debug FormData contents
@@ -267,19 +290,45 @@ const LessonFormModal = ({
 
           {itemType === 'section' && (
             <>
+
               <Form.Group className="mb-3">
-                <Form.Label>Content</Form.Label>
-                <Form.Control
-                  as="textarea"
-                  rows={5}
-                  name="content"
-                  value={formData.content || ''}
+                <Form.Label>Content Type</Form.Label>
+                <Form.Select
+                  name="content_type"
+                  value={formData.content_type || 'TEXT'}
                   onChange={onInputChange}
-                  required
-                  isInvalid={!!errors.content}
-                />
-                <Form.Control.Feedback type="invalid">{errors.content}</Form.Control.Feedback>
+                  required={itemType === 'section'}
+                >
+                  <option value="TEXT">Text</option>
+                  <option value="VIDEO">Video</option>
+                </Form.Select>
               </Form.Group>
+
+              {formData.content_type === 'VIDEO' ? (
+                <Form.Group className="mb-3">
+                  <Form.Label>Video URL</Form.Label>
+                  <Form.Control
+                    type="url"
+                    name="video_url"
+                    value={formData.video_url || ''}
+                    onChange={onInputChange}
+                    placeholder="Enter video URL (e.g., https://youtube.com/watch?v=...)"
+                    required={formData.content_type === 'VIDEO'}
+                  />
+                </Form.Group>
+              ) : (
+                <Form.Group className="mb-3">
+                  <Form.Label>Content</Form.Label>
+                  <Form.Control
+                    as="textarea"
+                    rows={5}
+                    name="content"
+                    value={formData.content || ''}
+                    onChange={onInputChange}
+                    required={formData.content_type === 'TEXT'}
+                  />
+                </Form.Group>
+              )}
 
               <div className="row">
                 <Form.Group className="col-md-6 mb-3">

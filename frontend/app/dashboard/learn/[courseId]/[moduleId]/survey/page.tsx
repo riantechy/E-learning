@@ -49,10 +49,17 @@ export default function ModuleSurveyPage() {
           const surveyData = surveyRes.data[0]
           setSurvey(surveyData)
           
-          const questionsRes = await assessmentsApi.getSurveyQuestions(surveyData.id)
-          if (questionsRes.data) {
-            setQuestions(questionsRes.data.sort((a: SurveyQuestion, b: SurveyQuestion) => a.order - b.order))
+          // Use embedded questions if available, otherwise fetch separately
+          if (surveyData.questions && surveyData.questions.length > 0) {
+            setQuestions(surveyData.questions.sort((a: SurveyQuestion, b: SurveyQuestion) => a.order - b.order))
+          } else {
+            const questionsRes = await assessmentsApi.getSurveyQuestions(surveyData.id)
+            if (questionsRes.data) {
+              setQuestions(questionsRes.data.sort((a: SurveyQuestion, b: SurveyQuestion) => a.order - b.order))
+            }
           }
+        } else {
+          setError('No survey found for this module')
         }
       } catch (err) {
         setError('Failed to load survey')
@@ -91,24 +98,17 @@ export default function ModuleSurveyPage() {
   
       // Prepare submission data
       const submissionData = {
-        survey: survey.id,
+        survey_id: survey.id,
         answers: questions.map(question => {
           const answerValue = answers[question.id];
           if (!answerValue) return null;
-  
-          const answer: any = {
-            question: question.id
+      
+          return {
+            question: question.id,  // Ensure UUID is used
+            ...(question.question_type === 'TEXT' && { text_answer: String(answerValue) }),
+            ...(question.question_type === 'MCQ' && { choice_answer: String(answerValue) }),
+            ...(question.question_type === 'SCALE' && { scale_answer: Number(answerValue) })
           };
-  
-          if (question.question_type === 'TEXT') {
-            answer.text_answer = String(answerValue);
-          } else if (question.question_type === 'MCQ') {
-            answer.choice_answer = String(answerValue);
-          } else if (question.question_type === 'SCALE') {
-            answer.scale_answer = Number(answerValue);
-          }
-  
-          return answer;
         }).filter(Boolean)
       };
   

@@ -24,7 +24,7 @@ export default function AdminSurveysPage() {
       }
 
       // Extract the surveys from the results array in the response
-      setSurveys(res.data?.results || [])
+      setSurveys(res.data || [])
     } catch (err) {
       setError('An error occurred while fetching surveys')
     } finally {

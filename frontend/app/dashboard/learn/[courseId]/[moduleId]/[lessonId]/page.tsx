@@ -37,12 +37,16 @@ export default function LessonPage() {
           coursesApi.getCourse(courseId),
           coursesApi.getUserProgress()
         ])
-
+    
         if (lessonRes.data) {
           setLesson(lessonRes.data)
           if (lessonRes.data.content_type === 'QUIZ') {
             const questionsRes = await assessmentsApi.getQuestions(lessonId)
-            if (questionsRes.data) setQuestions(questionsRes.data)
+            if (questionsRes.data) {
+              // Extract the array, handling paginated response
+              const q = questionsRes.data.results || questionsRes.data
+              setQuestions(Array.isArray(q) ? q : [])
+            }
           }
         }
         if (moduleRes.data) setModule(moduleRes.data)

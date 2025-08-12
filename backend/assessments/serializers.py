@@ -88,6 +88,12 @@ class SurveyQuestionSerializer(serializers.ModelSerializer):
             for choice_data in choices_data:
                 SurveyChoice.objects.create(question=instance, **choice_data)
         return instance
+
+    def validate(self, data):
+        question_type = data.get('question_type')
+        if question_type != 'MCQ':
+            data.pop('choices', None)  # Remove choices if present
+        return data
 class SurveySerializer(serializers.ModelSerializer):
     questions = SurveyQuestionSerializer(many=True, read_only=True)
     
@@ -104,11 +110,12 @@ class SurveyResponseSerializer(serializers.ModelSerializer):
     answers = SurveyAnswerSerializer(many=True)
     user = serializers.SerializerMethodField()
     survey = serializers.SerializerMethodField()
+    survey_id = serializers.PrimaryKeyRelatedField(queryset=Survey.objects.all(), write_only=True, source='survey')
     
     class Meta:
         model = SurveyResponse
-        fields = ['id', 'survey', 'user', 'submitted_at', 'answers']
-        read_only_fields = ['user', 'submitted_at']
+        fields = ['id', 'survey', 'user', 'submitted_at', 'answers', 'survey_id']
+        read_only_fields = ['user', 'submitted_at', 'survey']
 
     def get_user(self, obj):
         return {
@@ -126,3 +133,27 @@ class SurveyResponseSerializer(serializers.ModelSerializer):
                 'title': obj.survey.module.title
             }
         }
+    
+    def create(self, validated_data):
+        answers_data = validated_data.pop('answers')
+        survey = validated_data.pop('survey')
+        response = SurveyResponse.objects.create(survey=survey, **validated_data)
+        for answer_data in answers_data:
+            SurveyAnswer.objects.create(response=response, **answer_data)
+        return response
+    
+    def validate_answers(self, answers):
+        for answer in answers:
+            question = answer['question']
+            if question.question_type == 'MCQ':
+                if 'choice_answer' not in answer or answer.get('text_answer') or answer.get('scale_answer'):
+                    raise serializers.ValidationError(f"MCQ question '{question.question_text}' requires a choice_answer only.")
+            elif question.question_type == 'TEXT':
+                if 'text_answer' not in answer or answer.get('choice_answer') or answer.get('scale_answer'):
+                    raise serializers.ValidationError(f"Text question '{question.question_text}' requires a text_answer only.")
+            elif question.question_type == 'SCALE':
+                if 'scale_answer' not in answer or answer.get('text_answer') or answer.get('choice_answer'):
+                    raise serializers.ValidationError(f"Scale question '{question.question_text}' requires a scale_answer only.")
+                if not (1 <= answer['scale_answer'] <= 5):
+                    raise serializers.ValidationError(f"Scale answer for '{question.question_text}' must be between 1 and 5.")
+        return answers

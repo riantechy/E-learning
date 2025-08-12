@@ -136,10 +136,17 @@ class Lesson(models.Model):
         return f"{self.module.title} - {self.title}"
 
 class LessonSection(models.Model):
+    CONTENT_TYPES = (
+        ('TEXT', 'Text'),
+        ('VIDEO', 'Video'),
+    )
+    
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, related_name='sections')
     title = models.CharField(max_length=200)
     content = models.TextField(blank=True)
+    content_type = models.CharField(max_length=10, choices=CONTENT_TYPES, default='TEXT')
+    video_url = models.URLField(blank=True, null=True)  # Add this field
     order = models.PositiveIntegerField(default=0)
     is_subsection = models.BooleanField(default=False)
     parent_section = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='subsections')
