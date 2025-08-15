@@ -103,25 +103,25 @@ export const useLessonsManagement = () => {
     try {
       setLoading(true);
 
-      // Debug FormData contents
       console.log('useLessonsManagement handleSubmit FormData contents:');
       for (const [key, value] of data.entries()) {
         console.log(`${key}: ${typeof value === 'object' && value instanceof File ? value.name : value}`);
       }
 
-      // Ensure module is included
       if (!data.get('module')) {
         data.append('module', moduleId);
       }
 
       let response;
       if (itemType === 'lesson') {
+        data.append('description', formData.description || '');
         if (currentItem) {
           response = await coursesApi.updateLesson(courseId, moduleId, currentItem.id, data);
         } else {
           response = await coursesApi.createLesson(courseId, moduleId, data);
         }
       } else if (itemType === 'section') {
+        data.append('description', formData.description || '');
         const lessonId = currentItem?.lesson?.id || data.get('lesson')?.toString();
         
         if (!lessonId) {
@@ -135,6 +135,7 @@ export const useLessonsManagement = () => {
           response = await coursesApi.createLessonSection(courseId, moduleId, lessonId, data);
         }
       } else if (itemType === 'quiz') {
+        data.append('description', formData.description || '');
         data.set('content_type', 'QUIZ');
         data.set('title', `${data.get('title') || 'Quiz'} Quiz`);
 
@@ -187,10 +188,11 @@ export const useLessonsManagement = () => {
     } else if (type === 'section') {
       setFormData({
         title: item.title || '',
-        description: '',
+        description: item.description || '',
         pdf_file: '',
         content: item.content || '',
-        content_type: 'TEXT',
+        content_type: item.content_type || 'TEXT',
+        video_url: item.video_url || '',
         duration_minutes: 0,
         order: item.order ?? 0,
         is_required: true,
@@ -200,7 +202,7 @@ export const useLessonsManagement = () => {
     } else if (type === 'quiz') {
       setFormData({
         title: item.title.replace(' Quiz', '') || '',
-        description: '',
+        description: item.description || '',
         pdf_file: '',
         content: item.content || '',
         content_type: 'QUIZ',
@@ -226,6 +228,7 @@ export const useLessonsManagement = () => {
       content: '',
       pdf_file: '',
       content_type: type === 'quiz' ? 'QUIZ' : 'TEXT',
+      video_url: '',
       duration_minutes: 0,
       order: lessons.length > 0 ? Math.max(...lessons.map((l) => l.order)) + 1 : 0,
       is_required: true,

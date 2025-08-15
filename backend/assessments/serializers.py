@@ -94,12 +94,36 @@ class SurveyQuestionSerializer(serializers.ModelSerializer):
         if question_type != 'MCQ':
             data.pop('choices', None)  # Remove choices if present
         return data
+# class SurveySerializer(serializers.ModelSerializer):
+#     questions = SurveyQuestionSerializer(many=True, read_only=True)
+    
+#     class Meta:
+#         model = Survey
+#         fields = ['id', 'module', 'title', 'description', 'is_active', 'questions']
+
 class SurveySerializer(serializers.ModelSerializer):
     questions = SurveyQuestionSerializer(many=True, read_only=True)
-    
+    responses_count = serializers.SerializerMethodField()
+    module = serializers.SerializerMethodField()
+
     class Meta:
         model = Survey
-        fields = ['id', 'module', 'title', 'description', 'is_active', 'questions']
+        fields = ['id', 'module', 'title', 'description', 'is_active', 'questions', 'responses_count']
+
+    def get_responses_count(self, obj):
+        return obj.responses.count()
+
+    def get_module(self, obj):
+        if not obj.module:
+            return None
+        return {
+            'id': str(obj.module.id),
+            'title': obj.module.title,
+            'course': {
+                'id': str(obj.module.course.id),
+                'title': obj.module.course.title
+            } if obj.module.course else None
+        }
 
 class SurveyAnswerSerializer(serializers.ModelSerializer):
     class Meta:

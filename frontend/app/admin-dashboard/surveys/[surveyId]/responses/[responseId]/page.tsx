@@ -244,7 +244,8 @@ export default function SurveyResponseDetail() {
                         </div>
                       )}
                       
-                      {answer.scale_answer !== undefined && (
+                      {/* Only show rating for SCALE type questions */}
+                      {getQuestionType(answer.question) === 'SCALE' && answer.scale_answer !== undefined && (
                         <div className="mb-2">
                           <strong>Rating:</strong>
                           <div className="d-flex align-items-center mt-1">

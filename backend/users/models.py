@@ -1,3 +1,4 @@
+# models.py
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.utils import timezone
@@ -24,6 +25,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_verified = models.BooleanField(default=False)
     verification_token = models.UUIDField(default=uuid.uuid4, editable=False)
     verification_token_expires = models.DateTimeField(default=timezone.now() + timezone.timedelta(days=1))
+    password_reset_token = models.UUIDField(null=True, blank=True, editable=False)
+    password_reset_token_expires = models.DateTimeField(null=True, blank=True)
     ROLES = (
         ('LEARNER', 'Learner'),
         ('CONTENT_MANAGER', 'Content Manager'),

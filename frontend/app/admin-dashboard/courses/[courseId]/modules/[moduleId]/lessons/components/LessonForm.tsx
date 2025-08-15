@@ -30,7 +30,6 @@ const LessonFormModal = ({
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
-  // Handle file selection for PDF
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
@@ -44,7 +43,6 @@ const LessonFormModal = ({
     }
   };
 
-  // Clean up preview URL
   useEffect(() => {
     return () => {
       if (filePreview) {
@@ -53,7 +51,6 @@ const LessonFormModal = ({
     };
   }, [filePreview]);
 
-  // Validate form data
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {};
     if (!formData.title) newErrors.title = 'Title is required';
@@ -74,7 +71,6 @@ const LessonFormModal = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  // LessonFormModal.tsx
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) {
@@ -83,9 +79,9 @@ const LessonFormModal = ({
 
     const formDataToSend = new FormData();
 
-    // Handle lessons and quizzes
     if (itemType === 'lesson' || itemType === 'quiz') {
       formDataToSend.append('title', formData.title || '');
+      formDataToSend.append('description', formData.description || '');
       formDataToSend.append('content_type', formData.content_type || 'TEXT');
       formDataToSend.append('duration_minutes', (formData.duration_minutes ?? 0).toString());
       formDataToSend.append('order', (formData.order ?? 0).toString());
@@ -102,10 +98,9 @@ const LessonFormModal = ({
       } else if (formData.content_type === 'QUIZ') {
         formDataToSend.append('content', '');
       }
-    } 
-    // Handle sections
-    else if (itemType === 'section') {
+    } else if (itemType === 'section') {
       formDataToSend.append('title', formData.title || '');
+      formDataToSend.append('description', formData.description || '');
       formDataToSend.append('content_type', formData.content_type || 'TEXT');
       formDataToSend.append('order', (formData.order ?? 0).toString());
       formDataToSend.append('is_subsection', (formData.is_subsection ?? false).toString());
@@ -114,7 +109,6 @@ const LessonFormModal = ({
         formDataToSend.append('parent_section', formData.parent_section);
       }
 
-      // ADDED: Properly handle video URLs for sections
       if (formData.content_type === 'VIDEO') {
         formDataToSend.append('video_url', formData.video_url || '');
       } else {
@@ -122,7 +116,6 @@ const LessonFormModal = ({
       }
     }
 
-    // Debug FormData contents
     console.log('LessonFormModal FormData contents:');
     for (const [key, value] of formDataToSend.entries()) {
       console.log(`${key}: ${typeof value === 'object' && value instanceof File ? value.name : value}`);
@@ -146,43 +139,12 @@ const LessonFormModal = ({
           <Form.Control.Feedback type="invalid">{errors.pdf_file}</Form.Control.Feedback>
           {filePreview && (
             <div className="mt-2">
-              <a href={filePreview} target="_blank" rel="noopener noreferrer" className="btn btn-sm btn-outline-primary">
-                Preview PDF
-              </a>
-            </div>
-          )}
-          {formData.content && !selectedFile && (
-            <div className="mt-2">
-              <p>Current file: <a href={formData.content} target="_blank" rel="noopener noreferrer">{formData.content}</a></p>
+              <a href={filePreview} target="_blank" rel="noopener noreferrer">Preview PDF</a>
             </div>
           )}
         </Form.Group>
       );
-    } else if (formData.content_type === 'VIDEO') {
-      return (
-        <Form.Group className="mb-3">
-          <Form.Label>Video URL</Form.Label>
-          <Form.Control
-            type="url"
-            name="content"
-            value={formData.content || ''}
-            onChange={onInputChange}
-            placeholder="Enter video URL (e.g., https://www.youtube.com/watch?v=...)"
-            required
-            disabled={loading}
-            isInvalid={!!errors.content}
-          />
-          <Form.Control.Feedback type="invalid">{errors.content}</Form.Control.Feedback>
-          {formData.content && (
-            <div className="mt-2">
-              <a href={formData.content} target="_blank" rel="noopener noreferrer" className="btn btn-sm btn-outline-primary">
-                Preview Video
-              </a>
-            </div>
-          )}
-        </Form.Group>
-      );
-    } else {
+    } else if (formData.content_type === 'TEXT') {
       return (
         <Form.Group className="mb-3">
           <Form.Label>Content</Form.Label>
@@ -192,39 +154,85 @@ const LessonFormModal = ({
             name="content"
             value={formData.content || ''}
             onChange={onInputChange}
-            required={formData.content_type === 'TEXT'}
+            required
             disabled={loading}
             isInvalid={!!errors.content}
           />
           <Form.Control.Feedback type="invalid">{errors.content}</Form.Control.Feedback>
         </Form.Group>
       );
+    } else if (formData.content_type === 'VIDEO') {
+      return (
+        <>
+          <Form.Group className="mb-3">
+            <Form.Label>Video URL</Form.Label>
+            <Form.Control
+              type="url"
+              name="content"
+              value={formData.content || ''}
+              onChange={onInputChange}
+              placeholder="Enter video URL (e.g., https://youtube.com/watch?v=...)"
+              required
+              disabled={loading}
+              isInvalid={!!errors.content}
+            />
+            <Form.Control.Feedback type="invalid">{errors.content}</Form.Control.Feedback>
+          </Form.Group>
+          <Form.Group className="mb-3">
+            <Form.Label>Description (optional)</Form.Label>
+            <Form.Control
+              as="textarea"
+              rows={3}
+              name="description"
+              value={formData.description || ''}
+              onChange={onInputChange}
+              disabled={loading}
+            />
+          </Form.Group>
+        </>
+      );
+    } else if (formData.content_type === 'QUIZ') {
+      return null;
     }
   };
 
   return (
     <Modal show={show} onHide={onHide} size="lg">
-      <Modal.Header closeButton>
-        <Modal.Title>{currentItem ? `Edit ${itemType}` : `Add New ${itemType}`}</Modal.Title>
-      </Modal.Header>
       <Form onSubmit={handleFormSubmit}>
+        <Modal.Header closeButton>
+          <Modal.Title>
+            {currentItem ? 'Edit' : 'Add'} {itemType?.charAt(0).toUpperCase() + itemType?.slice(1)}
+          </Modal.Title>
+        </Modal.Header>
         <Modal.Body>
-          <Form.Group className="mb-3">
-            <Form.Label>Title</Form.Label>
-            <Form.Control
-              type="text"
-              name="title"
-              value={formData.title || ''}
-              onChange={onInputChange}
-              required
-              disabled={loading}
-              isInvalid={!!errors.title}
-            />
-            <Form.Control.Feedback type="invalid">{errors.title}</Form.Control.Feedback>
-          </Form.Group>
-
-          {itemType === 'lesson' && (
+          {(itemType === 'lesson' || itemType === 'quiz') && (
             <>
+              <Form.Group className="mb-3">
+                <Form.Label>Title</Form.Label>
+                <Form.Control
+                  type="text"
+                  name="title"
+                  value={formData.title || ''}
+                  onChange={onInputChange}
+                  required
+                  disabled={loading}
+                  isInvalid={!!errors.title}
+                />
+                <Form.Control.Feedback type="invalid">{errors.title}</Form.Control.Feedback>
+              </Form.Group>
+              {itemType === 'lesson' && (
+                <Form.Group className="mb-3">
+                  <Form.Label>Description (optional)</Form.Label>
+                  <Form.Control
+                    as="textarea"
+                    rows={3}
+                    name="description"
+                    value={formData.description || ''}
+                    onChange={onInputChange}
+                    disabled={loading}
+                  />
+                </Form.Group>
+              )}
               <Form.Group className="mb-3">
                 <Form.Label>Content Type</Form.Label>
                 <Form.Select
@@ -232,7 +240,7 @@ const LessonFormModal = ({
                   value={formData.content_type || 'TEXT'}
                   onChange={onInputChange}
                   required
-                  disabled={loading}
+                  disabled={loading || itemType === 'quiz'}
                   isInvalid={!!errors.content_type}
                 >
                   <option value="TEXT">Text</option>
@@ -290,14 +298,25 @@ const LessonFormModal = ({
 
           {itemType === 'section' && (
             <>
-
+              <Form.Group className="mb-3">
+                <Form.Label>Title</Form.Label>
+                <Form.Control
+                  type="text"
+                  name="title"
+                  value={formData.title || ''}
+                  onChange={onInputChange}
+                  required
+                  disabled={loading}
+                />
+              </Form.Group>
               <Form.Group className="mb-3">
                 <Form.Label>Content Type</Form.Label>
                 <Form.Select
                   name="content_type"
                   value={formData.content_type || 'TEXT'}
                   onChange={onInputChange}
-                  required={itemType === 'section'}
+                  required
+                  disabled={loading}
                 >
                   <option value="TEXT">Text</option>
                   <option value="VIDEO">Video</option>
@@ -305,17 +324,31 @@ const LessonFormModal = ({
               </Form.Group>
 
               {formData.content_type === 'VIDEO' ? (
-                <Form.Group className="mb-3">
-                  <Form.Label>Video URL</Form.Label>
-                  <Form.Control
-                    type="url"
-                    name="video_url"
-                    value={formData.video_url || ''}
-                    onChange={onInputChange}
-                    placeholder="Enter video URL (e.g., https://youtube.com/watch?v=...)"
-                    required={formData.content_type === 'VIDEO'}
-                  />
-                </Form.Group>
+                <>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Video URL</Form.Label>
+                    <Form.Control
+                      type="url"
+                      name="video_url"
+                      value={formData.video_url || ''}
+                      onChange={onInputChange}
+                      placeholder="Enter video URL (e.g., https://youtube.com/watch?v=...)"
+                      required
+                      disabled={loading}
+                    />
+                  </Form.Group>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Description (optional)</Form.Label>
+                    <Form.Control
+                      as="textarea"
+                      rows={3}
+                      name="description"
+                      value={formData.description || ''}
+                      onChange={onInputChange}
+                      disabled={loading}
+                    />
+                  </Form.Group>
+                </>
               ) : (
                 <Form.Group className="mb-3">
                   <Form.Label>Content</Form.Label>
@@ -325,7 +358,8 @@ const LessonFormModal = ({
                     name="content"
                     value={formData.content || ''}
                     onChange={onInputChange}
-                    required={formData.content_type === 'TEXT'}
+                    required
+                    disabled={loading}
                   />
                 </Form.Group>
               )}
@@ -340,6 +374,7 @@ const LessonFormModal = ({
                     value={formData.order ?? 0}
                     onChange={onInputChange}
                     required
+                    disabled={loading}
                   />
                 </Form.Group>
 
@@ -350,6 +385,7 @@ const LessonFormModal = ({
                     name="is_subsection"
                     checked={formData.is_subsection ?? false}
                     onChange={onInputChange}
+                    disabled={loading}
                   />
                 </Form.Group>
               </div>
@@ -362,6 +398,7 @@ const LessonFormModal = ({
                     value={formData.parent_section || ''}
                     onChange={onInputChange}
                     required={formData.is_subsection}
+                    disabled={loading}
                   >
                     <option value="">Select parent section</option>
                     {currentItem?.lessonId && getParentSections(currentItem.lessonId).map((section: any) => (

@@ -2,19 +2,18 @@
 'use client'
 
 import { useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { usersApi } from '@/lib/api';
 
-export default function ResetPasswordPage() {
+export default function ResetPasswordPage({ params }: { params: { token: string } }) {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const token = searchParams.get('token');
+  const token = params.token;  // Correct extraction from path segment
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,7 +33,6 @@ export default function ResetPasswordPage() {
     setMessage('');
 
     try {
-      // This endpoint should match your backend API
       const response = await usersApi.resetPassword({
         token,
         new_password: password
@@ -46,7 +44,6 @@ export default function ResetPasswordPage() {
       
       setMessage('Password reset successfully! You can now login with your new password.');
       
-      // Redirect to login after 3 seconds
       setTimeout(() => {
         router.push('/login');
       }, 3000);

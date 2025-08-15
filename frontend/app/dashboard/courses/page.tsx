@@ -18,7 +18,11 @@ export default function CourseListPage() {
       try {
         const response = await coursesApi.getAllCourses();
         if (response.data?.results) {
-          setCourses(response.data.results);
+          // Filter courses to only include those with status 'PUBLISHED'
+          const publishedCourses = response.data.results.filter(
+            (course: any) => course.status === 'PUBLISHED'
+          );
+          setCourses(publishedCourses);
         }
       } catch (error) {
         console.error('Error fetching courses:', error);
@@ -68,47 +72,47 @@ export default function CourseListPage() {
         {/* Main Content */}
         <div className="flex-1 flex flex-col overflow-hidden">
           <TopNavbar toggleSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)} />
-        <main 
-          className="flex-grow-1 p-4 overflow-auto"
-          style={{
-            width: 'calc(100%)',
-            transition: 'margin-left 0.3s ease'
-          }}
-        >
-          <div className="container py-5">
-            <h1 className="mb-4">Available Courses</h1>
-            
-            {loading ? (
-              <div className="d-flex justify-content-center">
-                <div className="spinner-border" role="status">
-                  <span className="visually-hidden">Loading...</span>
+          <main 
+            className="flex-grow-1 p-4 overflow-auto"
+            style={{
+              width: 'calc(100%)',
+              transition: 'margin-left 0.3s ease'
+            }}
+          >
+            <div className="container py-5">
+              <h4 className="mb-4">Available Courses</h4>
+              
+              {loading ? (
+                <div className="d-flex justify-content-center">
+                  <div className="spinner-border" role="status">
+                    <span className="visually-hidden">Loading...</span>
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-                {courses.map((course) => (
-                  <div key={course.id} className="col">
-                    <div className="card h-100">
-                      <div className="card-body">
-                        <h5 className="card-title">{course.title}</h5>
-                        <p className="card-text text-muted">{course.description.substring(0, 150)}...</p>
-                        <div className="d-flex justify-content-between align-items-center">
-                          <span className="badge bg-secondary">{course.category?.name || 'General'}</span>
-                          <span>{course.duration_hours} hours</span>
+              ) : (
+                <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                  {courses.map((course) => (
+                    <div key={course.id} className="col">
+                      <div className="card h-100">
+                        <div className="card-body">
+                          <h5 className="card-title">{course.title}</h5>
+                          <p className="card-text text-muted">{course.description.substring(0, 150)}...</p>
+                          <div className="d-flex justify-content-between align-items-center">
+                            <span className="badge bg-secondary">{course.category?.name || 'General'}</span>
+                            <span>{course.duration_hours} hours</span>
+                          </div>
+                        </div>
+                        <div className="card-footer bg-transparent">
+                          <Link href={`/dashboard/courses/${course.id}`} className="btn btn-primary">
+                            View Details
+                          </Link>
                         </div>
                       </div>
-                      <div className="card-footer bg-transparent">
-                        <Link href={`/dashboard/courses/${course.id}`} className="btn btn-primary">
-                          View Details
-                        </Link>
-                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </main>
+                  ))}
+                </div>
+              )}
+            </div>
+          </main>
         </div>
       </div>
     </ProtectedRoute>

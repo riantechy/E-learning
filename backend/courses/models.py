@@ -145,6 +145,7 @@ class LessonSection(models.Model):
     lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, related_name='sections')
     title = models.CharField(max_length=200)
     content = models.TextField(blank=True)
+    description = models.TextField(blank=True, null=True)
     content_type = models.CharField(max_length=10, choices=CONTENT_TYPES, default='TEXT')
     video_url = models.URLField(blank=True, null=True)  # Add this field
     order = models.PositiveIntegerField(default=0)

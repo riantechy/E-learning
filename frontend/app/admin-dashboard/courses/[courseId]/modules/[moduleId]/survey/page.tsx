@@ -62,10 +62,9 @@ export default function ModuleSurveyPage() {
   
       if (moduleRes.data) setModule(moduleRes.data);
       
-      // Check surveyRes.data.results instead of surveyRes.data
       if (surveyRes.data && surveyRes.data.length > 0) {
-        // Find the survey for the current module
-        const surveyData = surveyRes.data.find((s: any) => s.module === moduleId);
+        // Updated find condition
+        const surveyData = surveyRes.data.find((s: any) => s.module.id === moduleId);
         
         if (surveyData) {
           setSurvey(surveyData);
@@ -73,7 +72,6 @@ export default function ModuleSurveyPage() {
           if (questionsRes.data) {
             setQuestions(questionsRes.data);
           } else if (surveyData.questions) {
-            // Use questions from the survey response if available
             setQuestions(surveyData.questions);
           }
         } else {
@@ -244,7 +242,7 @@ export default function ModuleSurveyPage() {
       <div className="container-fluid">
         <div className="d-flex justify-content-between align-items-center mb-4">
           <div>
-            <h1 className="h2 mb-0">Module Survey</h1>
+            <h5 className="h2 mb-0">Module Survey</h5>
             {module && (
               <p className="text-muted mb-0">
                 Module: {module.title} - Course: {module.course?.title || 'Loading...'}

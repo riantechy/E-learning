@@ -112,8 +112,10 @@ export const usersApi = {
   requestPasswordReset: (data: { email: string }) => 
     apiRequest('/auth/request-password-reset/', 'POST', data),
   
+  // resetPassword: (data: { token: string; new_password: string }) => 
+  //   apiRequest('/auth/reset-password/', 'POST', data),
   resetPassword: (data: { token: string; new_password: string }) => 
-    apiRequest('/auth/reset-password-confirm/', 'POST', data),
+    apiRequest(`/auth/reset-password/${data.token}/`, 'POST', { new_password: data.new_password }),
 };
 
 // Courses API
