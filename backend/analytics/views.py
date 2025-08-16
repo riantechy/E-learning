@@ -5,7 +5,7 @@ from django.db.models import Count, Avg, Q, F
 from django.utils import timezone
 from datetime import timedelta
 from users.models import User
-from courses.models import Course, Enrollment, UserProgress, Module, ModuleProgress
+from courses.models import Course, Enrollment, UserProgress, Module, ModuleProgress, Lesson 
 from assessments.models import UserAttempt
 from .models import UserActivity
 from .serializers import (
@@ -74,63 +74,107 @@ class CourseProgressAnalyticsView(APIView):
         
         if course_id:
             # Get progress for a specific course
-            course = Course.objects.get(id=course_id)
-            enrollments = Enrollment.objects.filter(course=course)
-            total_enrollments = enrollments.count()
+            try:
+                course = Course.objects.get(id=course_id)
+            except Course.DoesNotExist:
+                return Response({"error": "Course not found"}, status=status.HTTP_404_NOT_FOUND)
             
-            progress_data = []
-            for enrollment in enrollments:
-                progress = UserProgress.get_course_progress(enrollment.user, course)
-                progress_data.append({
-                    'user_id': enrollment.user.id,
-                    'user_email': enrollment.user.email,
-                    'progress': progress['percentage'],
-                    'completed_lessons': progress['completed'],
-                    'total_lessons': progress['total']
+            enrollments_count = Enrollment.objects.filter(course=course).count()
+            if enrollments_count == 0:
+                return Response({
+                    'course_id': str(course_id),
+                    'course_title': course.title,
+                    'total_enrollments': 0,
+                    'average_progress': 0,
+                    'progress_data': []
                 })
             
-            avg_progress = sum(p['progress'] for p in progress_data) / total_enrollments if total_enrollments > 0 else 0
+            # Get total lessons once
+            total_lessons = Lesson.objects.filter(module__course=course).count()
+            if total_lessons == 0:
+                return Response({
+                    'course_id': str(course_id),
+                    'course_title': course.title,
+                    'total_enrollments': enrollments_count,
+                    'average_progress': 0,
+                    'progress_data': []
+                })
+            
+            # Aggregated query for all users' completed lessons
+            user_completed = UserProgress.objects.filter(
+                lesson__module__course=course,
+                is_completed=True
+            ).values('user__id', 'user__email').annotate(
+                completed_lessons=Count('lesson', distinct=True)
+            )
+            
+            progress_data = []
+            total_completed_all = 0
+            for item in user_completed:
+                completed = item['completed_lessons']
+                percentage = round((completed / total_lessons * 100), 2) if total_lessons > 0 else 0
+                progress_data.append({
+                    'user_id': item['user__id'],
+                    'user_email': item['user__email'],
+                    'progress': percentage,
+                    'completed_lessons': completed,
+                    'total_lessons': total_lessons
+                })
+                total_completed_all += completed
+            
+            avg_progress = round((total_completed_all / (enrollments_count * total_lessons)) * 100, 2) if total_lessons > 0 else 0
             
             serializer = UserProgressSerializer(progress_data, many=True)
-            course_serializer = CourseProgressSerializer({
-                'course_id': course_id,
+            return Response({
+                'course_id': str(course_id),
                 'course_title': course.title,
-                'total_enrollments': total_enrollments,
-                'average_progress': round(avg_progress, 2),
+                'total_enrollments': enrollments_count,
+                'average_progress': avg_progress,
                 'progress_data': serializer.data
             })
-            
-            return Response(course_serializer.data)
         else:
             # Get progress for all courses
             courses = Course.objects.filter(status='PUBLISHED')
             course_progress = []
             
             for course in courses:
-                enrollments = Enrollment.objects.filter(course=course)
-                total_enrollments = enrollments.count()
+                enrollments_count = Enrollment.objects.filter(course=course).count()
+                if enrollments_count == 0:
+                    course_progress.append({
+                        'course_id': str(course.id),
+                        'course_title': course.title,
+                        'total_enrollments': 0,
+                        'average_progress': 0
+                    })
+                    continue
                 
-                if total_enrollments == 0:
-                    avg_progress = 0
-                else:
-                    total_progress = 0
-                    for enrollment in enrollments:
-                        progress = UserProgress.get_course_progress(enrollment.user, course)
-                        total_progress += progress['percentage']
-                    avg_progress = total_progress / total_enrollments
+                total_lessons = Lesson.objects.filter(module__course=course).count()
+                if total_lessons == 0:
+                    course_progress.append({
+                        'course_id': str(course.id),
+                        'course_title': course.title,
+                        'total_enrollments': enrollments_count,
+                        'average_progress': 0
+                    })
+                    continue
+                
+                # Aggregated total completed lessons across all users
+                total_completed = UserProgress.objects.filter(
+                    lesson__module__course=course,
+                    is_completed=True
+                ).count()
+                
+                avg_progress = round((total_completed / (enrollments_count * total_lessons)) * 100, 2) if total_lessons > 0 else 0
                 
                 course_progress.append({
-                    'course_id': course.id,
+                    'course_id': str(course.id),
                     'course_title': course.title,
-                    'total_enrollments': total_enrollments,
-                    'average_progress': round(avg_progress, 2)
+                    'total_enrollments': enrollments_count,
+                    'average_progress': avg_progress
                 })
             
             serializer = CourseProgressSerializer(course_progress, many=True)
-            return Response({
-                'course_progress': serializer.data
-            })
-
+            return Response({'course_progress': serializer.data})
 class EnrollmentAnalyticsView(APIView):
     def get(self, request):
         time_range = request.query_params.get('time_range', 'monthly')
@@ -199,42 +243,64 @@ class CompletionRateAnalyticsView(APIView):
     def get(self, request):
         courses = Course.objects.filter(status='PUBLISHED')
         completion_data = []
+        total_enrollments_all = 0
+        total_completions_all = 0
         
         for course in courses:
-            total_enrollments = Enrollment.objects.filter(course=course).count()
-            if total_enrollments == 0:
-                completion_rate = 0
-            else:
-                completed_enrollments = 0
-                for enrollment in Enrollment.objects.filter(course=course):
-                    progress = UserProgress.get_course_progress(enrollment.user, course)
-                    if progress['percentage'] >= 90:  # Consider 90%+ as completed
-                        completed_enrollments += 1
-                completion_rate = (completed_enrollments / total_enrollments) * 100
+            enrollments_count = Enrollment.objects.filter(course=course).count()
+            total_enrollments_all += enrollments_count
+            
+            if enrollments_count == 0:
+                completion_data.append({
+                    'course_id': str(course.id),
+                    'course_title': course.title,
+                    'total_enrollments': 0,
+                    'completion_rate': 0.0,
+                    'completed_enrollments': 0
+                })
+                continue
+            
+            total_lessons = Lesson.objects.filter(module__course=course).count()
+            if total_lessons == 0:
+                completion_data.append({
+                    'course_id': str(course.id),
+                    'course_title': course.title,
+                    'total_enrollments': enrollments_count,
+                    'completion_rate': 0.0,
+                    'completed_enrollments': 0
+                })
+                continue
+            
+            # Aggregated query for users who completed all lessons (100%)
+            user_completed = UserProgress.objects.filter(
+                lesson__module__course=course,
+                is_completed=True
+            ).values('user__id').annotate(
+                completed_count=Count('lesson', distinct=True)
+            ).filter(
+                completed_count=total_lessons
+            )
+            
+            completed_enrollments = user_completed.count()
+            total_completions_all += completed_enrollments
+            
+            completion_rate = round((completed_enrollments / enrollments_count) * 100, 2) if enrollments_count > 0 else 0.0
             
             completion_data.append({
-                'course_id': course.id,
+                'course_id': str(course.id),
                 'course_title': course.title,
-                'completion_rate': round(completion_rate, 2),
-                'total_enrollments': total_enrollments,
+                'total_enrollments': enrollments_count,
+                'completion_rate': completion_rate,
                 'completed_enrollments': completed_enrollments
             })
         
-        # Sort by completion rate descending
-        completion_data.sort(key=lambda x: x['completion_rate'], reverse=True)
-        
-        # Overall completion rate
-        total_enrollments_all = sum(item['total_enrollments'] for item in completion_data)
-        completed_enrollments_all = sum(item['completed_enrollments'] for item in completion_data)
-        overall_completion_rate = (completed_enrollments_all / total_enrollments_all) * 100 if total_enrollments_all > 0 else 0
-        
-        serializer = CompletionRateSerializer(completion_data, many=True)
+        overall_rate = round((total_completions_all / total_enrollments_all) * 100, 2) if total_enrollments_all > 0 else 0.0
         
         return Response({
-            'completion_data': serializer.data,
-            'overall_completion_rate': round(overall_completion_rate, 2),
+            'overall_completion_rate': overall_rate,
             'total_enrollments': total_enrollments_all,
-            'completed_enrollments': completed_enrollments_all
+            'completed_enrollments': total_completions_all,
+            'completion_rates': CompletionRateSerializer(completion_data, many=True).data
         })
 
 class QuizPerformanceAnalyticsView(APIView):
@@ -465,27 +531,41 @@ class ExportAnalyticsReportView(APIView):
 class ModuleCoverageAnalyticsView(APIView):
     def get(self, request, course_id=None):
         if not course_id:
-            return Response(
-                {"error": "course_id is required"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"error": "course_id is required"}, status=status.HTTP_400_BAD_REQUEST)
         
         try:
             course = Course.objects.get(id=course_id)
         except Course.DoesNotExist:
-            return Response(
-                {"error": "Course not found"},
-                status=status.HTTP_404_NOT_FOUND
-            )
+            return Response({"error": "Course not found"}, status=status.HTTP_404_NOT_FOUND)
         
-        # Get all modules for the course
+        # Get all modules
         modules = Module.objects.filter(course=course).order_by('order')
         module_names = [module.title for module in modules]
+        module_ids = [str(module.id) for module in modules]  # Use str for consistency
         
-        # Get all enrollments for the course
-        enrollments = Enrollment.objects.filter(course=course).select_related('user')
+        # Get all enrolled users
+        enrolled_users = Enrollment.objects.filter(course=course).values('user__id', 'user__first_name', 'user__last_name')
         
-        # Prepare the response data
+        # Bulk fetch all relevant ModuleProgress
+        progress_qs = ModuleProgress.objects.filter(
+            module__course=course
+        ).select_related('user', 'module').values(
+            'user__id', 'module__id', 'is_completed', 'completed_at'
+        )
+        
+        # Build lookup dict: {user_id: {module_id: {'completed': bool, 'completed_at': dt}}}
+        user_progress_dict = {}
+        for prog in progress_qs:
+            user_id = prog['user__id']
+            module_id = prog['module__id']
+            if user_id not in user_progress_dict:
+                user_progress_dict[user_id] = {}
+            user_progress_dict[user_id][str(module_id)] = {  # str for key
+                'completed': prog['is_completed'],
+                'completed_at': prog['completed_at']
+            }
+        
+        # Build response data
         data = {
             "course_id": str(course.id),
             "course_title": course.title,
@@ -493,30 +573,23 @@ class ModuleCoverageAnalyticsView(APIView):
             "learners": []
         }
         
-        for enrollment in enrollments:
-            user = enrollment.user
-            user_data = {
-                "user_id": str(user.id),
-                "name": f"{user.first_name} {user.last_name}",
-                "module_progress": []
-            }
+        for enrollment in enrolled_users:
+            user_id = enrollment['user__id']
+            user_progress = user_progress_dict.get(user_id, {})
             
-            # Check progress for each module
-            for module in modules:
-                try:
-                    progress = ModuleProgress.objects.get(user=user, module=module)
-                    user_data["module_progress"].append({
-                        "module_id": str(module.id),
-                        "completed": progress.is_completed,
-                        "completed_at": progress.completed_at
-                    })
-                except ModuleProgress.DoesNotExist:
-                    user_data["module_progress"].append({
-                        "module_id": str(module.id),
-                        "completed": False,
-                        "completed_at": None
-                    })
+            module_progress_list = []
+            for module_id in module_ids:
+                prog = user_progress.get(module_id, {'completed': False, 'completed_at': None})
+                module_progress_list.append({
+                    "module_id": module_id,
+                    "completed": prog['completed'],
+                    "completed_at": prog['completed_at']
+                })
             
-            data["learners"].append(user_data)
+            data["learners"].append({
+                "user_id": str(user_id),
+                "name": f"{enrollment['user__first_name']} {enrollment['user__last_name']}",
+                "module_progress": module_progress_list
+            })
         
         return Response(data)

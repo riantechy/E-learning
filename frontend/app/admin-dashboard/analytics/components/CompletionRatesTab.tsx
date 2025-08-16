@@ -1,3 +1,4 @@
+// components/CompletionRatesTab.tsx
 'use client'
 
 import { useState, useEffect } from 'react';
@@ -17,7 +18,15 @@ export default function CompletionRatesTab() {
         setError('');
         const response = await analyticsApi.getCompletionRates();
         if (response.error) throw new Error(response.error);
-        setCompletionData(response.data);
+        console.log('Completion Rates Data:', response.data); // Debug
+        // Filter out invalid completion rates
+        const sanitizedData = {
+          ...response.data,
+          completion_rates: response.data.completion_rates.filter(
+            (item: any) => !isNaN(item.completion_rate) && item.completion_rate != null
+          ),
+        };
+        setCompletionData(sanitizedData);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch data');
       } finally {
@@ -46,7 +55,9 @@ export default function CompletionRatesTab() {
                 <Card.Body>
                   <Card.Title>Overall Completion Rate</Card.Title>
                   <Card.Text className="display-6">
-                    {completionData.overall_completion_rate || 0}%
+                    {isNaN(completionData.overall_completion_rate) 
+                      ? '0%' 
+                      : `${completionData.overall_completion_rate}%`}
                   </Card.Text>
                   <div>
                     <small>
@@ -66,7 +77,7 @@ export default function CompletionRatesTab() {
                   <div style={{ height: '200px' }}>
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart
-                        data={completionData.completion_data || []}
+                        data={completionData.completion_rates || []}
                         margin={{ top: 20, right: 30, left: 100, bottom: 5 }}
                       >
                         <CartesianGrid strokeDasharray="3 3" />

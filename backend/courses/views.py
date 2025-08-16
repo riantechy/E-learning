@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.utils import timezone
 from rest_framework import status
+from django.db.models import Count
 from django.shortcuts import get_object_or_404
 from .models import CourseCategory, Course, Module, Lesson, UserProgress, Enrollment, LessonSection, ModuleProgress
 from .serializers import (
@@ -121,39 +122,45 @@ class CourseViewSet(viewsets.ModelViewSet):
         courses = Course.objects.filter(status='PUBLISHED')
         completion_data = []
         
+        total_enrollments_all = 0
+        total_completions_all = 0
+        
         for course in courses:
-            enrollments = Enrollment.objects.filter(course=course).count()
-            if enrollments == 0:
+            enrollments_count = Enrollment.objects.filter(course=course).count()
+            if enrollments_count == 0:
                 continue
-                
-            # Get all lessons in the course
-            lessons = Lesson.objects.filter(module__course=course)
-            total_lessons = lessons.count()
             
+            # Get total lessons once per course
+            total_lessons = Lesson.objects.filter(module__course=course).count()
             if total_lessons == 0:
                 continue
-                
-            # Get all users who completed all lessons
-            completed_users = 0
-            for enrollment in Enrollment.objects.filter(course=course):
-                progress = UserProgress.get_course_progress(enrollment.user, course)
-                if progress['percentage'] == 100:
-                    completed_users += 1
-                    
-            completion_rate = round((completed_users / enrollments) * 100, 2) if enrollments > 0 else 0
+            
+            # Aggregated query to count users who have completed all lessons (percentage == 100)
+            completed_users = UserProgress.objects.filter(
+                lesson__module__course=course,
+                is_completed=True,
+                user__enrollment__course=course  # Ensure only enrolled users
+            ).values('user').annotate(
+                completed_count=Count('lesson')
+            ).filter(
+                completed_count=total_lessons
+            ).count()
+            
+            completion_rate = round((completed_users / enrollments_count) * 100, 2) if enrollments_count > 0 else 0
             
             completion_data.append({
                 'course_id': str(course.id),
                 'course_title': course.title,
-                'enrollments': enrollments,
+                'enrollments': enrollments_count,
                 'completions': completed_users,
                 'completion_rate': completion_rate
             })
+            
+            total_enrollments_all += enrollments_count
+            total_completions_all += completed_users
         
         # Calculate overall completion rate
-        total_enrollments = sum(item['enrollments'] for item in completion_data)
-        total_completions = sum(item['completions'] for item in completion_data)
-        overall_rate = round((total_completions / total_enrollments) * 100, 2) if total_enrollments > 0 else 0
+        overall_rate = round((total_completions_all / total_enrollments_all) * 100, 2) if total_enrollments_all > 0 else 0
         
         return Response({
             'overall_completion_rate': overall_rate,
