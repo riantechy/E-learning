@@ -1,19 +1,22 @@
 'use client'
 
 import { useState, useEffect } from 'react';
-import { usersApi } from '@/lib/api';
+import { usersApi, User } from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
 import AdminSidebar from '@/components/AdminSidebar';
 import Modal from 'react-bootstrap/Modal';
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
-import Table from 'react-bootstrap/Table';
 import Alert from 'react-bootstrap/Alert';
+import Table from 'react-bootstrap/Table';
 import Badge from 'react-bootstrap/Badge';
 import Pagination from 'react-bootstrap/Pagination';
 import InputGroup from 'react-bootstrap/InputGroup';
+import { Search } from 'lucide-react';
 
-const defaultForm = {
+type FormData = Partial<User>;
+
+const defaultForm: FormData = {
   email: '',
   first_name: '',
   last_name: '',
@@ -30,16 +33,17 @@ const defaultForm = {
   training_institution: '',
   agreed_to_terms: false,
   status: '',
-  role: '',
+  role: 'LEARNER',
+  date_registered: '',
 };
 
-export default function UsersPage() {
-  const [users, setUsers] = useState<any[]>([]);
+export default function ManageUsers() {
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showModal, setShowModal] = useState(false);
-  const [currentUser, setCurrentUser] = useState<any>(null);
-  const [formData, setFormData] = useState(defaultForm);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [formData, setFormData] = useState<FormData>(defaultForm);
   const [searchQuery, setSearchQuery] = useState('');
   const [pagination, setPagination] = useState({
     page: 1,
@@ -49,22 +53,22 @@ export default function UsersPage() {
 
   useEffect(() => {
     fetchUsers();
-  }, [pagination.page, searchQuery]); // Add searchQuery as dependency
+  }, [pagination.page, searchQuery]);
 
   const fetchUsers = async () => {
     try {
       setLoading(true);
       const response = await usersApi.getLearners(
-        pagination.page, 
+        pagination.page,
         pagination.pageSize,
         searchQuery
       );
 
       if (response.data) {
-        setUsers(response.data.results || response.data);
-        setPagination(prev => ({
+        setUsers(response.data.results);
+        setPagination((prev) => ({
           ...prev,
-          total: response.data?.count || response.data?.length || 0
+          total: response.data.count || 0,
         }));
       }
       if (response.error) setError(response.error);
@@ -77,11 +81,11 @@ export default function UsersPage() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
-    const target = e.target as HTMLInputElement; 
-    
-    setFormData(prev => ({ 
-      ...prev, 
-      [name]: type === 'checkbox' ? target.checked : value 
+    const target = e.target as HTMLInputElement;
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? target.checked : value,
     }));
   };
 
@@ -101,6 +105,7 @@ export default function UsersPage() {
         setError(response.error);
       } else {
         setShowModal(false);
+        setFormData(defaultForm);
         fetchUsers();
       }
     } catch {
@@ -110,7 +115,7 @@ export default function UsersPage() {
     }
   };
 
-  const handleEdit = (user: any) => {
+  const handleEdit = (user: User) => {
     setCurrentUser(user);
     setFormData({ ...defaultForm, ...user });
     setShowModal(true);

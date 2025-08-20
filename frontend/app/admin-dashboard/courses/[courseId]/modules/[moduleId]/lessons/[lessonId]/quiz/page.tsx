@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { assessmentsApi, coursesApi } from '@/lib/api';
+import { Lesson, Question, Answer } from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
 import AdminSidebar from '@/components/AdminSidebar';
 import Modal from 'react-bootstrap/Modal';
@@ -17,48 +18,49 @@ import Spinner from 'react-bootstrap/Spinner';
 
 export default function QuizPage() {
   const { courseId, moduleId, lessonId } = useParams();
-  const [questions, setQuestions] = useState<any[]>([]);
-  const [lesson, setLesson] = useState<any>(null);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [lesson, setLesson] = useState<Lesson | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [showQuestionModal, setShowQuestionModal] = useState(false);
   const [showAnswerModal, setShowAnswerModal] = useState(false);
-  const [currentQuestion, setCurrentQuestion] = useState<any>(null);
-  const [currentAnswer, setCurrentAnswer] = useState<any>(null);
+  const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
+  const [currentAnswer, setCurrentAnswer] = useState<Answer | null>(null);
   const [openQuestionId, setOpenQuestionId] = useState<string | null>(null);
-  
+
   const [questionForm, setQuestionForm] = useState({
     question_text: '',
-    question_type: 'MCQ',
+    question_type: 'MCQ' as 'MCQ' | 'TF' | 'SA',
     points: 1,
     order: 0,
   });
-  
+
   const [answerForm, setAnswerForm] = useState({
     answer_text: '',
     is_correct: false,
   });
 
-  useEffect(() => {
-    fetchData();
-  }, [lessonId]);
-
+  // Move fetchData to component scope
   const fetchData = async () => {
+    if (!courseId || !moduleId || !lessonId || Array.isArray(courseId) || Array.isArray(moduleId) || Array.isArray(lessonId)) {
+      setError('Invalid route parameters');
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError('');
       setSuccess('');
-      
+
       const [lessonRes, questionsRes] = await Promise.all([
         coursesApi.getLesson(courseId, moduleId, lessonId),
-        coursesApi.getLessonQuestions(courseId, moduleId, lessonId)
+        assessmentsApi.getQuestions(lessonId),
       ]);
-
-      if (lessonRes.data?.results) setLesson(lessonRes.data?.results);
-      if (questionsRes.data?.results) {
-        setQuestions(questionsRes.data.results);
-      }
+      
+      if (lessonRes.data) setLesson(lessonRes.data);
+      if (questionsRes.data?.results) setQuestions(questionsRes.data.results);
       if (lessonRes.error || questionsRes.error) {
         setError(lessonRes.error || questionsRes.error || 'Failed to fetch data');
       }
@@ -70,38 +72,49 @@ export default function QuizPage() {
     }
   };
 
+  useEffect(() => {
+    fetchData();
+  }, [courseId, moduleId, lessonId]);
+
   // Question handlers
-  const handleQuestionInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleQuestionInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
-    setQuestionForm(prev => ({ 
-      ...prev, 
-      [name]: name === 'points' || name === 'order' ? parseInt(value) || 0 : value 
+    setQuestionForm((prev) => ({
+      ...prev,
+      [name]: name === 'points' || name === 'order' ? parseInt(value) || 0 : value,
     }));
   };
 
   const handleQuestionSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!lessonId || Array.isArray(lessonId)) {
+      setError('Invalid lesson ID');
+      return;
+    }
+
     try {
       setLoading(true);
       setError('');
       setSuccess('');
-      
-      const dataToSend = {
+
+      const dataToSend: Partial<Question> = {
         ...questionForm,
-        lesson: lessonId
+        lesson: lessonId,
       };
-      
+
       let response;
       if (currentQuestion) {
         response = await assessmentsApi.updateQuestion(
-          lessonId as string,
+          lessonId,
           currentQuestion.id,
           dataToSend
         );
         setSuccess('Question updated successfully!');
       } else {
         response = await assessmentsApi.createQuestion(
-          lessonId as string,
+          lessonId,
           dataToSend
         );
         setSuccess('Question created successfully!');
@@ -111,7 +124,7 @@ export default function QuizPage() {
         setError(response.error);
       } else {
         setShowQuestionModal(false);
-        await fetchData();
+        await fetchData(); // Now accessible
       }
     } catch (err) {
       setError('An error occurred while saving the question');
@@ -121,11 +134,11 @@ export default function QuizPage() {
     }
   };
 
-  const handleQuestionEdit = (question: any) => {
+  const handleQuestionEdit = (question: Question) => {
     setCurrentQuestion(question);
     setQuestionForm({
       question_text: question.question_text,
-      question_type: question.question_type,
+      question_type: question.question_type as 'MCQ' | 'TF' | 'SA',
       points: question.points,
       order: question.order,
     });
@@ -138,24 +151,28 @@ export default function QuizPage() {
       question_text: '',
       question_type: 'MCQ',
       points: 1,
-      order: questions.length > 0 ? Math.max(...questions.map(q => q.order)) + 1 : 0,
+      order: questions.length > 0 ? Math.max(...questions.map((q) => q.order)) + 1 : 0,
     });
     setShowQuestionModal(true);
   };
 
   const handleQuestionDelete = async (questionId: string) => {
+    if (!lessonId || Array.isArray(lessonId)) {
+      setError('Invalid lesson ID');
+      return;
+    }
     if (confirm('Are you sure you want to delete this question? All answers will also be deleted.')) {
       try {
         setLoading(true);
         setError('');
         setSuccess('');
-        const response = await assessmentsApi.deleteQuestion(lessonId as string, questionId);
+        const response = await assessmentsApi.deleteQuestion(lessonId, questionId);
 
         if (response.error) {
           setError(response.error);
         } else {
           setSuccess('Question deleted successfully!');
-          await fetchData();
+          await fetchData(); // Now accessible
         }
       } catch (err) {
         setError('Failed to delete question');
@@ -167,27 +184,33 @@ export default function QuizPage() {
   };
 
   // Answer handlers
-  const handleAnswerInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleAnswerInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value, type } = e.target;
     const checked = type === 'checkbox' ? (e.target as HTMLInputElement).checked : undefined;
-    setAnswerForm(prev => ({ 
-      ...prev, 
-      [name]: type === 'checkbox' ? checked : value 
+    setAnswerForm((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
     }));
   };
 
   const handleAnswerSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!currentQuestion) {
+      setError('No question selected');
+      return;
+    }
     try {
       setLoading(true);
       setError('');
       setSuccess('');
-      
-      const dataToSend = {
+
+      const dataToSend: Partial<Answer> = {
         ...answerForm,
-        question: currentQuestion.id
+        question: currentQuestion.id,
       };
-      
+
       let response;
       if (currentAnswer) {
         response = await assessmentsApi.updateAnswer(
@@ -208,7 +231,7 @@ export default function QuizPage() {
         setError(response.error);
       } else {
         setShowAnswerModal(false);
-        await fetchData();
+        await fetchData(); // Now accessible
       }
     } catch (err) {
       setError('An error occurred while saving the answer');
@@ -218,7 +241,7 @@ export default function QuizPage() {
     }
   };
 
-  const handleAnswerEdit = (question: any, answer: any) => {
+  const handleAnswerEdit = (question: Question, answer: Answer) => {
     setCurrentQuestion(question);
     setCurrentAnswer(answer);
     setAnswerForm({
@@ -228,7 +251,7 @@ export default function QuizPage() {
     setShowAnswerModal(true);
   };
 
-  const handleNewAnswer = (question: any) => {
+  const handleNewAnswer = (question: Question) => {
     setCurrentQuestion(question);
     setCurrentAnswer(null);
     setAnswerForm({
@@ -250,7 +273,7 @@ export default function QuizPage() {
           setError(response.error);
         } else {
           setSuccess('Answer deleted successfully!');
-          await fetchData();
+          await fetchData(); // Now accessible
         }
       } catch (err) {
         setError('Failed to delete answer');
@@ -289,19 +312,19 @@ export default function QuizPage() {
             Add New Question
           </Button>
         </div>
-  
+
         {error && (
           <Alert variant="danger" onClose={() => setError('')} dismissible>
             {error}
           </Alert>
         )}
-  
+
         {success && (
           <Alert variant="success" onClose={() => setSuccess('')} dismissible>
             {success}
           </Alert>
         )}
-  
+
         {loading && !questions.length ? (
           <div className="text-center py-5">
             <Spinner animation="border" role="status">
@@ -316,7 +339,7 @@ export default function QuizPage() {
                   <button
                     className={`accordion-button ${openQuestionId === question.id ? '' : 'collapsed'}`}
                     type="button"
-                    onClick={() => 
+                    onClick={() =>
                       setOpenQuestionId(openQuestionId === question.id ? null : question.id)
                     }
                     aria-expanded={openQuestionId === question.id}
@@ -371,7 +394,7 @@ export default function QuizPage() {
                         </Button>
                       </div>
                     </div>
-  
+
                     <p className="mb-3">
                       <strong>Question:</strong> {question.question_text}
                     </p>
@@ -384,7 +407,7 @@ export default function QuizPage() {
                     <p className="mb-3">
                       <strong>Order:</strong> {question.order}
                     </p>
-  
+
                     <h5 className="mt-4 mb-3">Answers</h5>
                     {question.answers && question.answers.length > 0 ? (
                       <Table striped bordered hover>
@@ -396,7 +419,7 @@ export default function QuizPage() {
                           </tr>
                         </thead>
                         <tbody>
-                          {question.answers.map((answer: any) => (
+                          {question.answers.map((answer: Answer) => (
                             <tr key={answer.id}>
                               <td>{answer.answer_text}</td>
                               <td>{answer.is_correct ? '✅' : '❌'}</td>
@@ -432,7 +455,7 @@ export default function QuizPage() {
             ))}
           </div>
         )}
-  
+
         {/* Question Modal */}
         <Modal show={showQuestionModal} onHide={() => setShowQuestionModal(false)} size="lg">
           <Modal.Header closeButton>
@@ -452,7 +475,7 @@ export default function QuizPage() {
                   disabled={loading}
                 />
               </Form.Group>
-  
+
               <div className="row">
                 <Form.Group className="col-md-6 mb-3">
                   <Form.Label>Question Type</Form.Label>
@@ -468,7 +491,7 @@ export default function QuizPage() {
                     <option value="SA">Short Answer</option>
                   </Form.Select>
                 </Form.Group>
-  
+
                 <Form.Group className="col-md-3 mb-3">
                   <Form.Label>Points</Form.Label>
                   <Form.Control
@@ -481,7 +504,7 @@ export default function QuizPage() {
                     disabled={loading}
                   />
                 </Form.Group>
-  
+
                 <Form.Group className="col-md-3 mb-3">
                   <Form.Label>Order</Form.Label>
                   <Form.Control
@@ -513,7 +536,7 @@ export default function QuizPage() {
             </Modal.Footer>
           </Form>
         </Modal>
-  
+
         {/* Answer Modal */}
         <Modal show={showAnswerModal} onHide={() => setShowAnswerModal(false)}>
           <Modal.Header closeButton>
@@ -541,7 +564,7 @@ export default function QuizPage() {
                   disabled={loading}
                 />
               </Form.Group>
-  
+
               {currentQuestion?.question_type !== 'SA' && (
                 <Form.Group className="mb-3">
                   <Form.Check

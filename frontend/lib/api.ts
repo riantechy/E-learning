@@ -81,6 +81,11 @@ export const usersApi = {
   getProfile: () => apiRequest<User>('/auth/profile/'),
   refreshToken: (refresh: string) => 
     apiRequest<{ access: string }>('/auth/token/refresh/', 'POST', { refresh }),
+  verifyEmail: (token: string) => 
+    apiRequest(`/auth/verify-email/${token}/`, 'GET'),
+  resendVerificationEmail: () => apiRequest<ResendVerificationResponse>('/auth/resend-verification-email/', 'POST'),
+  requestPasswordReset: (data: { email: string }) => apiRequest<{ message: string }>('/auth/request-password-reset/', 'POST', data),
+  // resetPassword: (data: { token: string; new_password: string }) => apiRequest<void>(`/auth/reset-password/${data.token}/`, 'POST', { new_password: data.new_password }),
 
   // Admin endpoints
   getAllUsers: () => apiRequest<PaginatedResponse<User>>('/auth/users/'),
@@ -90,6 +95,11 @@ export const usersApi = {
       `/auth/users/learners/?page=${page}&page_size=${pageSize}&search=${search}`
     ),
   getNonLearners: () => apiRequest<PaginatedResponse<User>>('/auth/users/non-learners/'),
+  // getNonLearners: (page: number = 1, pageSize: number = 10) =>
+  //   apiRequest<PaginatedResponse<User>>(
+  //     `auth/users/non-learners/`,
+  //     'GET'
+  //   ),
   getUser: (id: string) => apiRequest<User>(`/auth/users/${id}/`),
   updateUser: (id: string, user: Partial<User>) => apiRequest<User>(`/auth/users/update/${id}/`, 'PUT', user),
   deleteUser: (id: string) => apiRequest(`/auth/users/delete/${id}/`, 'DELETE'),
@@ -99,21 +109,21 @@ export const usersApi = {
   uploadProfileImage: (formData: FormData) => {
     return apiRequest<{ profile_image_url: string }>(
       '/auth/profile/image/',
-      'POST', formData, false 
+      'POST',
+      formData,
+      {}, // Empty headers object
+      false // isBinary
     );
   },
-
-  verifyEmail: (token: string) => 
-    apiRequest(`/auth/verify-email/${token}/`, 'GET'),
+ 
+  // resendVerificationEmail: () => 
+  //   apiRequest('/auth/resend-verification-email/', 'POST'),
   
-  resendVerificationEmail: () => 
-    apiRequest('/auth/resend-verification-email/', 'POST'),
+  // requestPasswordReset: (data: { email: string }) => 
+  //   apiRequest('/auth/request-password-reset/', 'POST', data),
   
-  requestPasswordReset: (data: { email: string }) => 
-    apiRequest('/auth/request-password-reset/', 'POST', data),
-  
-  // resetPassword: (data: { token: string; new_password: string }) => 
-  //   apiRequest('/auth/reset-password/', 'POST', data),
+  // // resetPassword: (data: { token: string; new_password: string }) => 
+  // //   apiRequest('/auth/reset-password/', 'POST', data),
   resetPassword: (data: { token: string; new_password: string }) => 
     apiRequest(`/auth/reset-password/${data.token}/`, 'POST', { new_password: data.new_password }),
 };
@@ -142,6 +152,7 @@ export const coursesApi = {
   // Lesson operations
   getLessons: (courseId: string, moduleId: string) => apiRequest<PaginatedResponse<Lesson>>(`/courses/${courseId}/modules/${moduleId}/lessons/`),
   getLesson: (courseId: string, moduleId: string, lessonId: string) => apiRequest<Lesson>(`/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}/`),
+  // getLesson: (courseId: string, moduleId: string, lessonId: string) => apiRequest<LessonResponse>(`/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}/`),
   
   createLesson: (courseId: string, moduleId: string, lesson: Partial<Lesson> | FormData) => {
     return apiRequest<Lesson>(
@@ -163,16 +174,19 @@ export const coursesApi = {
   deleteLesson: (courseId: string, moduleId: string, lessonId: string) => apiRequest(`/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}/`, 'DELETE'),
 
    // Lesson sections
-  getLessonsWithSections: (courseId: string, moduleId: string) => 
-    apiRequest<Array<Lesson & { sections: LessonSection[]; has_quiz: boolean }>>(
+   getLessonsWithSections: (courseId: string, moduleId: string) => 
+    apiRequest<(Lesson & { sections: LessonSection[]; has_quiz: boolean })[]>(
       `/courses/${courseId}/modules/${moduleId}/lessons-with-sections/`
     ),
   getLessonSections: (courseId: string, moduleId: string, lessonId: string) => 
-      apiRequest<LessonSection[]>(`/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}/sections/`),
-  createLessonSection: (courseId: string, moduleId: string, lessonId: string, section: Partial<LessonSection>) => 
-      apiRequest<LessonSection>(`/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}/sections/`, 'POST', section),
-  updateLessonSection: (courseId: string, moduleId: string, lessonId: string, sectionId: string, section: Partial<LessonSection>) => 
-      apiRequest<LessonSection>(`/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}/sections/${sectionId}/`, 'PUT', section),
+    apiRequest<PaginatedResponse<LessonSection>>(
+      `/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}/sections/`
+    ),
+  createLessonSection: (courseId: string, moduleId: string, lessonId: string, section: Partial<LessonSection> | FormData) => 
+    apiRequest<LessonSection>(`/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}/sections/`, 'POST', section),
+  
+  updateLessonSection: (courseId: string, moduleId: string, lessonId: string, sectionId: string, section: Partial<LessonSection> | FormData) => 
+    apiRequest<LessonSection>(`/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}/sections/${sectionId}/`, 'PUT', section),
   deleteLessonSection: (courseId: string, moduleId: string, lessonId: string, sectionId: string) => 
       apiRequest(`/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}/sections/${sectionId}/`, 'DELETE'),
 
@@ -217,7 +231,8 @@ markModuleCompleted: (moduleId: string) =>
     apiRequest<{ success: boolean }>(`/courses/${courseId}/enroll/`, 'POST'),
 
   getTotalEnrollments: () => apiRequest<{ total_enrollments: number }>('/courses/enrollments/total/'),
-  getUserEnrollments: () => apiRequest<{course_id: string}[]>('/courses/user/enrollments/'),
+  // getUserEnrollments: () => apiRequest<{course_id: string}[]>('/courses/user/enrollments/'),
+  getUserEnrollments: () => apiRequest<{ course_id: string; course_title: string }[]>('/courses/user/enrollments/'),
   getCourseEnrollments: (courseId: string) => 
     apiRequest<{ course_id: string; course_title: string; enrollment_count: number }>(
       `/courses/${courseId}/enrollments/`
@@ -240,7 +255,8 @@ export const categoriesApi = {
 // Assessments API
 export const assessmentsApi = {
   // Questions
-  getQuestions: (lessonId: string) => apiRequest<Question[]>(`/assessments/lessons/${lessonId}/questions/`),
+  // In api.ts, under assessmentsApi
+getQuestions: (lessonId: string) => apiRequest<PaginatedResponse<Question>>(`/assessments/lessons/${lessonId}/questions/`),
   createQuestion: (lessonId: string, question: Partial<Question>) => 
     apiRequest<Question>(`/assessments/lessons/${lessonId}/questions/`, 'POST', question),
   updateQuestion: (lessonId: string, questionId: string, question: Partial<Question>) => 
@@ -250,7 +266,7 @@ export const assessmentsApi = {
   getUserAttempts: () => apiRequest<UserAttempt[]>(`/assessments/user-attempts/`),
 
   // Answers
-  getAnswers: (questionId: string) => apiRequest<Answer[]>(`/assessments/questions/${questionId}/answers/`),
+  getAnswers: (questionId: string) => apiRequest<PaginatedResponse<Answer>>(`/assessments/questions/${questionId}/answers/`),
   createAnswer: (questionId: string, answer: Partial<Answer>) => 
     apiRequest<Answer>(`/assessments/questions/${questionId}/answers/`, 'POST', answer),
   updateAnswer: (questionId: string, answerId: string, answer: Partial<Answer>) => 
@@ -267,30 +283,36 @@ export const assessmentsApi = {
     ),
 
     // Module Surveys
-    getModuleSurveys: (courseId: string, moduleId: string) => 
-      apiRequest<Survey[]>(`/assessments/${courseId}/modules/${moduleId}/survey/`),
+    getModuleSurveys: (courseId: string, moduleId: string) =>
+      apiRequest<Survey[]>(`/assessments/${courseId}/modules/${moduleId}/survey/`, 'GET'),
   
-    createModuleSurvey: (courseId: string, moduleId: string, data: Omit<Survey, 'module'>) =>
-      apiRequest<Survey>(`/assessments/${courseId}/modules/${moduleId}/survey/`, 'POST', data),
-  
-    getModuleSurvey: (courseId: string, moduleId: string, surveyId: string) =>
-      apiRequest<Survey>(`/assessments/${courseId}/modules/${moduleId}/survey/${surveyId}/`),
-  
-    updateModuleSurvey: (courseId: string, moduleId: string, surveyId: string, data: Partial<Survey>) =>
-      apiRequest<Survey>(`/assessments/${courseId}/modules/${moduleId}/survey/${surveyId}/`, 'PUT', data),
+    createModuleSurvey: (courseId: string, moduleId: string, survey: CreateSurveyPayload) =>
+      apiRequest<Survey>(`/assessments/${courseId}/modules/${moduleId}/survey/`, 'POST', survey),
   
     deleteModuleSurvey: (courseId: string, moduleId: string, surveyId: string) =>
       apiRequest(`/assessments/${courseId}/modules/${moduleId}/survey/${surveyId}/`, 'DELETE'),
   
-    // Survey Questions
     getSurveyQuestions: (surveyId: string) =>
-      apiRequest<SurveyQuestion[]>(`/assessments/surveys/${surveyId}/questions/`),
+      apiRequest<SurveyQuestion[]>(`/assessments/surveys/${surveyId}/questions/`, 'GET'),
   
-    createSurveyQuestion: (surveyId: string, question: Omit<SurveyQuestion, 'id' | 'survey'>) =>
+    createSurveyQuestion: (surveyId: string, question: SurveyQuestionPayload) =>
       apiRequest<SurveyQuestion>(`/assessments/surveys/${surveyId}/questions/`, 'POST', question),
+  
+    updateSurveyQuestion: (surveyId: string, questionId: string, question: SurveyQuestionPayload) =>
+      apiRequest<SurveyQuestion>(`/assessments/surveys/${surveyId}/questions/${questionId}/`, 'PUT', question),
+  
+    deleteSurveyQuestion: (surveyId: string, questionId: string) =>
+      apiRequest(`/assessments/surveys/${surveyId}/questions/${questionId}/`, 'DELETE'),
+  
+    // Survey Questions
+    // getSurveyQuestions: (surveyId: string) =>
+    //   apiRequest<SurveyQuestion[]>(`/assessments/surveys/${surveyId}/questions/`),
+  
+    // createSurveyQuestion: (surveyId: string, question: Omit<SurveyQuestion, 'id' | 'survey'>) =>
+    //   apiRequest<SurveyQuestion>(`/assessments/surveys/${surveyId}/questions/`, 'POST', question),
 
     submitSurveyResponse: (data: {
-      survey: string;
+      survey_id: string;
       answers: Array<{
         question: string;
         text_answer?: string;
@@ -299,11 +321,11 @@ export const assessmentsApi = {
       }>;
     }) => apiRequest<SurveyResponse>('/assessments/survey-responses/', 'POST', data),
   
-    updateSurveyQuestion: (surveyId: string, questionId: string, question: Partial<SurveyQuestion>) =>
-      apiRequest<SurveyQuestion>(`/assessments/surveys/${surveyId}/questions/${questionId}/`, 'PUT', question),
+    // updateSurveyQuestion: (surveyId: string, questionId: string, question: Partial<SurveyQuestion>) =>
+    //   apiRequest<SurveyQuestion>(`/assessments/surveys/${surveyId}/questions/${questionId}/`, 'PUT', question),
   
-    deleteSurveyQuestion: (surveyId: string, questionId: string) =>
-      apiRequest(`/assessments/surveys/${surveyId}/questions/${questionId}/`, 'DELETE'),
+    // deleteSurveyQuestion: (surveyId: string, questionId: string) =>
+    //   apiRequest(`/assessments/surveys/${surveyId}/questions/${questionId}/`, 'DELETE'),
   
     // Survey Choices
     createSurveyChoice: (questionId: string, choice: Omit<SurveyChoice, 'id' | 'question'>) =>
@@ -327,7 +349,7 @@ export const assessmentsApi = {
       apiRequest<Survey>(`/assessments/surveys/${surveyId}/`),
   
     getSurveyResponses: (surveyId: string) =>
-      apiRequest<SurveyResponse[]>(`/assessments/surveys/${surveyId}/responses/`),
+      apiRequest<PaginatedSurveyResponse>(`/assessments/surveys/${surveyId}/responses/`),
     
     getSurveyResponse: (responseId: string) =>
       apiRequest<SurveyResponse>(`/assessments/survey-responses/${responseId}/`),
@@ -424,9 +446,47 @@ export interface User {
   email: string;
   first_name: string;
   last_name: string;
-  role: string;
+  role: 'LEARNER' | 'CONTENT_MANAGER' | 'ADMIN';
   is_active: boolean;
   date_joined: string;
+  status: string;
+  date_registered: string;
+  gender: string;
+  profile_image: string | null;
+  phone: string;
+  date_of_birth: string;
+  county: string;
+  education: string;
+  innovation: string;
+  innovation_stage: string;
+  innovation_in_whitebox: string;
+  innovation_industry: string;
+  training: string;
+  training_institution: string;
+  agreed_to_terms: boolean;
+  is_verified: boolean;
+  is_staff?: boolean;
+  last_login?: string | null;
+}
+
+interface ResendVerificationResponse {
+  message: string;
+}
+
+// Add to your Types section
+export interface LessonResponse {
+  id: string;
+  module: string | Module;
+  title: string;
+  content_type: string;
+  content: string;
+  duration_minutes: number;
+  order: number;
+  is_required: boolean;
+  created_at: string;
+  sections?: LessonSection[];
+  questions?: Question[];
+  description?: string;
 }
 
 export interface Course {
@@ -472,6 +532,8 @@ export interface Lesson {
   is_required: boolean;
   created_at: string;
   questions?: Question[];
+  description?: string;
+  sections: LessonSection[];
 }
 
 export interface LessonSection {
@@ -513,7 +575,24 @@ export interface UserProgress {
   last_accessed: string;
 }
 
-// In api.ts, update the Certificate interface
+export interface CreateSurveyPayload {
+  title: string;
+  description: string;
+  is_active?: boolean;
+}
+
+export interface SurveyQuestionPayload {
+  question_text: string;
+  question_type: 'MCQ' | 'TEXT' | 'SCALE';
+  is_required: boolean;
+  order: number;
+  choices?: { choice_text: string; order: number }[];
+}
+export interface PaginatedSurveyResponse {
+  status: string;
+  count: number;
+  data: SurveyResponse[];
+}
 export interface Certificate {
   id: string;
   user: {
@@ -593,9 +672,9 @@ export interface SurveyResponse {
 export interface SurveyAnswer {
   id: string;
   response: string | SurveyResponse;
-  question: string | SurveyQuestion;
+  question: string 
   text_answer?: string;
-  choice_answer?: string | SurveyChoice;
+  choice_answer?: string;
   scale_answer?: number;
 }
 

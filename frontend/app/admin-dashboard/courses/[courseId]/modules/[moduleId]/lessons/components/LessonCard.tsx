@@ -1,5 +1,6 @@
+// app/admin-dashboard/courses/[courseId]/modules/[moduleId]/lessons/components/LessonCard.tsx
 import { useState } from 'react';
-import { Lesson } from '@/types';
+import { Lesson } from '@/lib/api';
 import Button from 'react-bootstrap/Button';
 import Badge from 'react-bootstrap/Badge';
 import SectionItem from './SectionItem';
@@ -7,10 +8,9 @@ import QuizSection from './QuizSection';
 import ContentTypeBadge from './ContentTypeBadge';
 import QuestionsManager from './QuestionsManager';
 
-// LessonCard.tsx
 interface LessonCardProps {
   lesson: Lesson;
-  onEdit: (type: 'lesson' | 'section' | 'quiz', item: any) => void;
+  onEdit: (item: any, type: 'lesson' | 'section' | 'quiz') => void;
   onDelete: (type: 'lesson' | 'section' | 'quiz', id: string, lessonId?: string) => void;
   onManageQuestions: (lessonId: string) => void;
 }
@@ -32,7 +32,7 @@ const LessonCard = ({ lesson, onEdit, onDelete, onManageQuestions }: LessonCardP
               variant="info"
               size="sm"
               className="me-2"
-              onClick={() => onEdit(lesson, 'lesson')}
+              onClick={() => onEdit(lesson, 'lesson')} // Fixed: Correct argument order
             >
               Edit
             </Button>
@@ -48,7 +48,7 @@ const LessonCard = ({ lesson, onEdit, onDelete, onManageQuestions }: LessonCardP
               variant="secondary"
               size="sm"
               className="me-2"
-              onClick={() => onEdit({ lesson: { id: lesson.id }, is_subsection: false}, 'section')}
+              onClick={() => onEdit({ lesson: { id: lesson.id }, is_subsection: false }, 'section')} // Fixed: Correct argument order
             >
               Add Section
             </Button>
@@ -84,27 +84,10 @@ const LessonCard = ({ lesson, onEdit, onDelete, onManageQuestions }: LessonCardP
               </ul>
             </div>
           )}
-
-          {/* {lesson.hasQuiz && (
-            <QuizSection 
-              lesson={lesson}
-              onEdit={onEdit}
-              onDelete={onDelete}
-              onManageQuestions={onManageQuestions}
-            />
-          )} */}
-          {/* {showQuestionsManager && (
-            <QuestionsManager
-              show={showQuestionsManager}
-              onHide={() => setShowQuestionsManager(false)}
-              lessonId={lesson.id}
-              courseId={lesson.module.course}
-              moduleId={lesson.module.id}
-            />
-          )} */}
         </div>
       </div>
     </div>
   );
 };
+
 export default LessonCard;

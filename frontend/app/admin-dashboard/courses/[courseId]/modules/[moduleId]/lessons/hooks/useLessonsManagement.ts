@@ -46,12 +46,12 @@ export const useLessonsManagement = () => {
       if (courseRes.data) setCourse(courseRes.data);
       if (moduleRes.data) setModule(moduleRes.data);
       
-      const lessonsData = lessonsRes.data?.results || lessonsRes.data || [];
+      const lessonsData = lessonsRes.data
       
       const organizedLessons = await Promise.all(
         lessonsData.map(async (lesson: any) => {
           const sectionsRes = await coursesApi.getLessonSections(courseId, moduleId, lesson.id);
-          const sections = sectionsRes.data?.results || sectionsRes.data || [];
+          const sections = sectionsRes.data?.results
           
           const isQuiz = lesson.content_type === 'QUIZ';
           let hasQuiz = false;
@@ -59,7 +59,8 @@ export const useLessonsManagement = () => {
           if (isQuiz) {
             try {
               const quizRes = await assessmentsApi.getQuestions(lesson.id);
-              hasQuiz = quizRes.data.results && (quizRes.data.results || quizRes.data).length > 0;
+              hasQuiz = quizRes.data?.results?.length > 0;
+              // hasQuiz = quizRes.data.results && (quizRes.data.results || quizRes.data).length > 0;
             } catch (error) {
               console.error('Error checking quiz questions:', error);
               hasQuiz = false;
@@ -181,6 +182,7 @@ export const useLessonsManagement = () => {
         content_type: item.content_type || 'TEXT',
         duration_minutes: item.duration_minutes ?? 0,
         order: item.order ?? 0,
+        video_url: item.video_url || '',
         is_required: item.is_required ?? true,
         is_subsection: false,
         parent_section: '',
@@ -208,6 +210,7 @@ export const useLessonsManagement = () => {
         content_type: 'QUIZ',
         duration_minutes: item.duration_minutes ?? 0,
         order: item.order ?? 0,
+        video_url: item.video_url || '',
         is_required: item.is_required ?? true,
         is_subsection: false,
         parent_section: '',

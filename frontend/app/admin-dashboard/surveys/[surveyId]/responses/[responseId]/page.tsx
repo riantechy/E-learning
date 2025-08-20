@@ -1,4 +1,3 @@
-// app/admin-dashboard/surveys/[surveyId]/responses/[responseId]/page.tsx
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -8,47 +7,12 @@ import DashboardLayout from '@/components/DashboardLayout'
 import AdminSidebar from '@/components/AdminSidebar'
 import { Card, Alert, Spinner, Button, Badge, Row, Col } from 'react-bootstrap'
 import Link from 'next/link'
-
-interface Answer {
-  id: number;
-  question: number;
-  text_answer?: string;
-  choice_answer?: {
-    id: number;
-    choice_text: string;
-  };
-  scale_answer?: number;
-}
-
-interface SurveyResponse {
-  id: number;
-  survey: {
-    id: string;
-    title: string;
-    module: {
-      id: string;
-      title: string;
-    };
-  };
-  user: {
-    id: string;
-    email: string;
-    name: string;
-  };
-  submitted_at: string;
-  answers: Answer[];
-}
-
-interface Question {
-  id: number;
-  question_text: string;
-  question_type: string;
-}
+import { SurveyQuestion, SurveyResponse, SurveyAnswer, SurveyChoice } from '@/lib/api' 
 
 export default function SurveyResponseDetail() {
   const { surveyId, responseId } = useParams()
   const [response, setResponse] = useState<SurveyResponse | null>(null)
-  const [questions, setQuestions] = useState<Question[]>([])
+  const [questions, setQuestions] = useState<SurveyQuestion[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [questionsLoading, setQuestionsLoading] = useState(false)
@@ -58,12 +22,12 @@ export default function SurveyResponseDetail() {
       setLoading(true)
       setError('')
       
-      if (!responseId || isNaN(Number(responseId))) {
+      if (!responseId || typeof responseId !== 'string') {
         setError('Invalid response ID format')
         return
       }
 
-      const responseRes = await assessmentsApi.getSurveyResponse(responseId as string)
+      const responseRes = await assessmentsApi.getSurveyResponse(responseId)
       
       if (responseRes.error) {
         setError(responseRes.error)
@@ -92,25 +56,38 @@ export default function SurveyResponseDetail() {
       
       if (questionsRes.error) {
         console.error('Failed to fetch questions:', questionsRes.error)
+        setError('Failed to fetch survey questions')
         return
       }
 
+      console.log('Fetched questions:', questionsRes.data) // Debug: Log questions
       setQuestions(questionsRes.data || [])
     } catch (err) {
       console.error('Fetch questions error:', err)
+      setError('Failed to fetch survey questions')
     } finally {
       setQuestionsLoading(false)
     }
   }
 
-  const getQuestionText = (questionId: number) => {
-    const question = questions.find(q => q.id === questionId)
-    return question?.question_text || `Question ${questionId}`
+  const getQuestionText = (questionId: string) => {
+    const question = questions.find(q => String(q.id) === String(questionId))
+    console.log(`Looking for question ID ${questionId}:`, question) // Debug: Log question lookup
+    return question?.question_text || `Question ${questionId} (Not Found)`
   }
 
-  const getQuestionType = (questionId: number) => {
-    const question = questions.find(q => q.id === questionId)
+  const getQuestionType = (questionId: string) => {
+    const question = questions.find(q => String(q.id) === String(questionId))
+    console.log(`Looking for question type ID ${questionId}:`, question) // Debug: Log type lookup
     return question?.question_type || 'Unknown'
+  }
+
+  const getChoiceText = (questionId: string, choiceId: string | null) => {
+    if (!choiceId) return 'No choice selected'
+    const question = questions.find(q => String(q.id) === String(questionId))
+    const choice = question?.choices?.find(c => String(c.id) === String(choiceId))
+    console.log(`Looking for choice ID ${choiceId} in question ${questionId}:`, choice) // Debug: Log choice lookup
+    return choice?.choice_text || 'No choice selected'
   }
 
   useEffect(() => {
@@ -214,13 +191,13 @@ export default function SurveyResponseDetail() {
               <Alert variant="info">No answers found for this response</Alert>
             ) : (
               <div className="list-group">
-                {response.answers.map((answer) => (
-                  <div key={answer.question} className="list-group-item mb-3">
+                {response.answers.map((answer: SurveyAnswer) => (
+                  <div key={String(answer.question)} className="list-group-item mb-3">
                     <div className="d-flex justify-content-between align-items-start">
                       <div>
-                        <h6 className="mb-2">{getQuestionText(answer.question)}</h6>
+                        <h6 className="mb-2">{getQuestionText(String(answer.question))}</h6>
                         <Badge bg="info" className="mb-2">
-                          {getQuestionType(answer.question)}
+                          {getQuestionType(String(answer.question))}
                         </Badge>
                       </div>
                     </div>
@@ -239,13 +216,12 @@ export default function SurveyResponseDetail() {
                         <div className="mb-2">
                           <strong>Selected Choice:</strong>
                           <div className="p-2 bg-white rounded mt-1">
-                            {answer.choice_answer.choice_text || 'No choice selected'}
+                            {getChoiceText(String(answer.question), String(answer.choice_answer))}
                           </div>
                         </div>
                       )}
                       
-                      {/* Only show rating for SCALE type questions */}
-                      {getQuestionType(answer.question) === 'SCALE' && answer.scale_answer !== undefined && (
+                      {getQuestionType(String(answer.question)) === 'SCALE' && answer.scale_answer !== undefined && (
                         <div className="mb-2">
                           <strong>Rating:</strong>
                           <div className="d-flex align-items-center mt-1">

@@ -2,7 +2,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { assessmentsApi } from '@/lib/api'
+import { assessmentsApi, Survey, SurveyResponse } from '@/lib/api'
 import { useParams } from 'next/navigation'
 import DashboardLayout from '@/components/DashboardLayout'
 import AdminSidebar from '@/components/AdminSidebar'
@@ -10,13 +10,20 @@ import { Table, Card, Alert, Spinner, Button } from 'react-bootstrap'
 import Link from 'next/link'
 
 export default function AdminSurveyResponses() {
-  const { surveyId } = useParams()
-  const [survey, setSurvey] = useState<any>(null)
-  const [responses, setResponses] = useState<any[]>([])
+  const params = useParams()
+  const surveyId = Array.isArray(params.surveyId) ? params.surveyId[0] : params.surveyId
+  const [survey, setSurvey] = useState<Survey | null>(null)
+  const [responses, setResponses] = useState<SurveyResponse[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
   const fetchData = async () => {
+    if (!surveyId) {
+      setError('Invalid survey ID')
+      setLoading(false)
+      return
+    }
+
     try {
       setLoading(true)
       const [surveyRes, responsesRes] = await Promise.all([
@@ -30,14 +37,21 @@ export default function AdminSurveyResponses() {
       }
 
       setSurvey(surveyRes.data)
-      // Make sure we're setting the responses array correctly
-      setResponses(responsesRes.data?.data || []) // Note the .data.data here
+      // Debug the response to inspect its structure
+      console.log('Survey Response:', surveyRes)
+      console.log('Responses Response:', responsesRes)
+
+      // Extract the nested data array, ensure it's an array
+      const responseData = Array.isArray(responsesRes.data?.data) ? responsesRes.data.data : []
+      setResponses(responseData)
     } catch (err) {
+      console.error('Fetch error:', err)
       setError('An error occurred while fetching survey data')
     } finally {
       setLoading(false)
     }
   }
+
   useEffect(() => {
     fetchData()
   }, [surveyId])

@@ -1,52 +1,60 @@
+// components/Survey/QuestionForm.tsx
 import { useState, useEffect } from 'react';
 import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button';
-import { Question } from '@/lib/api';
-
+import { SurveyQuestion, SurveyChoice } from '@/lib/api';
 
 type QuestionFormProps = {
-  question: Question;
-  onSave: (data: Question) => void;
+  question: SurveyQuestion;
+  onSave: (data: SurveyQuestion) => void;
   onCancel: () => void;
   loading: boolean;
 };
 
 export const QuestionForm = ({ question, onSave, onCancel, loading }: QuestionFormProps) => {
-  const [formData, setFormData] = useState<Question>({ ...question });
+  const [formData, setFormData] = useState<SurveyQuestion>({ ...question });
   const [newChoice, setNewChoice] = useState('');
 
   useEffect(() => {
     setFormData({ ...question });
   }, [question]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, checked } = e.target;
-    setFormData(prev => ({ ...prev, [name]: checked }));
+    setFormData((prev) => ({ ...prev, [name]: checked }));
   };
 
   const handleAddChoice = () => {
-    if (newChoice.trim() && formData.choices) {
-      setFormData(prev => ({
+    if (newChoice.trim()) {
+      setFormData((prev) => ({
         ...prev,
         choices: [
-          ...prev.choices!,
-          { choice_text: newChoice, order: prev.choices!.length }
-        ]
+          ...(prev.choices || []),
+          { id: '', question: prev.id || '', choice_text: newChoice, order: prev.choices?.length || 0 },
+        ],
       }));
       setNewChoice('');
     }
   };
 
   const handleRemoveChoice = (index: number) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      choices: prev.choices?.filter((_, i) => i !== index)
+      choices: prev.choices?.filter((_, i) => i !== index),
     }));
+  };
+
+  const handleChoiceChange = (index: number, value: string) => {
+    const newChoices = [...(formData.choices || [])];
+    newChoices[index] = { ...newChoices[index], choice_text: value };
+    setFormData((prev) => ({ ...prev, choices: newChoices }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -96,15 +104,11 @@ export const QuestionForm = ({ question, onSave, onCancel, loading }: QuestionFo
         <Form.Group className="mb-3">
           <Form.Label>Choices</Form.Label>
           {formData.choices?.map((choice, index) => (
-            <div key={index} className="d-flex align-items-center gap-2 mb-2">
+            <div key={choice.id || index} className="d-flex align-items-center gap-2 mb-2">
               <Form.Control
                 type="text"
                 value={choice.choice_text}
-                onChange={(e) => {
-                  const newChoices = [...formData.choices!];
-                  newChoices[index].choice_text = e.target.value;
-                  setFormData(prev => ({ ...prev, choices: newChoices }));
-                }}
+                onChange={(e) => handleChoiceChange(index, e.target.value)}
                 required
               />
               <Button

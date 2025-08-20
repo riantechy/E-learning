@@ -5,15 +5,17 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Dropdown, Image } from 'react-bootstrap';
-import { usersApi } from '@/lib/api';
+import { useAuth } from '@/context/AuthContext'; // Import useAuth
+import { User } from '@/lib/api'; // Import User type
 
-export default function ProfileDropdown({ user }: { user: any }) {
+export default function ProfileDropdown({ user }: { user: User }) {
   const [showDropdown, setShowDropdown] = useState(false);
   const router = useRouter();
+  const { logout } = useAuth(); // Use logout from useAuth
 
   const handleLogout = async () => {
     try {
-      await usersApi.logout();
+      logout(); // Call logout from AuthContext
       router.push('/login');
     } catch (error) {
       console.error('Logout failed:', error);
@@ -24,7 +26,7 @@ export default function ProfileDropdown({ user }: { user: any }) {
     <Dropdown show={showDropdown} onToggle={(isOpen) => setShowDropdown(isOpen)}>
       <Dropdown.Toggle variant="light" id="dropdown-profile" className="d-flex align-items-center">
         <Image
-          src={user?.profileImage || '/images/default-profile.png'}
+          src={user?.profile_image || '/images/default-profile.png'} // Use profile_image
           roundedCircle
           width={40}
           height={40}

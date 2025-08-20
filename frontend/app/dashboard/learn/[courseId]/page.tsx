@@ -41,7 +41,7 @@ export default function CourseOverviewPage() {
                 ...module,
                 is_completed: moduleProgressRes.data?.is_completed || false,
                 lessons: lessonsRes.data?.results || [],
-                total_lessons: lessonsRes.data?.length || 0
+                total_lessons: lessonsRes.data?.results.length || 0
               }
             })
           )

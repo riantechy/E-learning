@@ -9,6 +9,10 @@ import Link from 'next/link'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import { Tab, Tabs } from 'react-bootstrap'
 
+interface EnrollmentResponse {
+  enrolled: boolean;
+}
+
 export default function CourseDetailPage() {
   const { id } = useParams()
   const [course, setCourse] = useState<any>(null)
@@ -28,7 +32,8 @@ export default function CourseDetailPage() {
 
         if (courseRes.data) setCourse(courseRes.data)
         if (modulesRes.data?.results) setModules(modulesRes.data.results)
-        if (enrollmentRes.data) setEnrolled(enrollmentRes.data.enrolled)
+        if (enrollmentRes.data) setEnrolled((enrollmentRes.data as EnrollmentResponse).enrolled)
+        // if (enrollmentRes.data) setEnrolled(enrollmentRes.data.enrolled)
         if (progressRes.data) setProgress(progressRes.data)
       } catch (error) {
         console.error('Error fetching course data:', error)

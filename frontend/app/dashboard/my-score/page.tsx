@@ -1,9 +1,9 @@
+
 // app/dashboard/scores/page.tsx
 'use client'
 
 import { useAuth } from '@/context/AuthContext'
 import { assessmentsApi } from '@/lib/api'
-import { UserAttempt } from '@/lib/api'
 import { useEffect, useState } from 'react'
 import { Card, Table, ProgressBar, Badge, Spinner, Alert } from 'react-bootstrap'
 import ProtectedRoute from '@/components/ProtectedRoute'
@@ -13,7 +13,7 @@ import { Menu } from 'lucide-react'
 
 interface CleanAttempt {
   id: string;
-  score: number;
+  score: number; // Score is always a number after parsing
   passed: boolean;
   attempt_date: string;
   lesson?: {
@@ -39,19 +39,21 @@ export default function MyScoresPage() {
       try {
         setLoading(true)
         const response = await assessmentsApi.getUserAttempts()
-        
+
         if (response.data) {
           // Convert the object response to array and clean the data
           const attemptsArray = Object.values(response.data)
-            .filter(attempt => attempt !== null && attempt !== undefined)
+            .filter((attempt): attempt is NonNullable<typeof attempt> => attempt !== null && attempt !== undefined)
             .map(attempt => ({
               id: attempt.id || 'unknown-id',
-              score: attempt.score?.parsedValue || 0,
+              score: typeof attempt.score === 'number'
+                ? attempt.score
+                : attempt.score ?? 0, // Extract parsedValue or fallback to 0
               passed: attempt.passed || false,
               attempt_date: attempt.attempt_date || new Date().toISOString(),
               lesson: attempt.lesson || null
             }))
-          
+
           setAttempts(attemptsArray)
         } else if (response.error) {
           setError(response.error)
@@ -79,15 +81,14 @@ export default function MyScoresPage() {
         minute: '2-digit'
       })
     } catch {
-      return 'N/A'
+      return 'Unknown'
     }
   }
 
   const validAttempts = attempts.filter(attempt => 
     attempt !== null && 
     attempt !== undefined && 
-    attempt.id && 
-    typeof attempt.score === 'number'
+    attempt.id
   )
 
   const passedCount = validAttempts.filter(a => a.passed).length
@@ -173,9 +174,9 @@ export default function MyScoresPage() {
                         </thead>
                         <tbody>
                           {validAttempts.map((attempt) => {
-                            const courseTitle = attempt.lesson?.module?.course?.title || 'N/A'
-                            const moduleTitle = attempt.lesson?.module?.title || 'N/A'
-                            const lessonTitle = attempt.lesson?.title || 'N/A'
+                            const courseTitle = attempt.lesson?.module?.course?.title ?? 'Unknown'
+                            const moduleTitle = attempt.lesson?.module?.title ?? 'Unknown'
+                            const lessonTitle = attempt.lesson?.title ?? 'Unknown'
 
                             return (
                               <tr key={attempt.id}>
@@ -188,7 +189,7 @@ export default function MyScoresPage() {
                                   <div className="d-flex align-items-center">
                                     <ProgressBar
                                       now={attempt.score}
-                                      label={`${attempt.score}%`}
+                                      label={`${Math.round(attempt.score)}%`}
                                       variant={attempt.score >= 70 ? 'success' : 'danger'}
                                       style={{ width: '100px' }}
                                       className="me-2"

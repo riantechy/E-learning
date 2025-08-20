@@ -420,19 +420,15 @@ class UserAttemptsListView(APIView):
         for idx, attempt in enumerate(attempts, start=1):
             attempts_data[str(idx)] = {
                 'id': str(attempt.id),
-                'score': {
-                    'source': str(attempt.score),
-                    'parsedValue': attempt.score if isinstance(attempt.score, (int, float)) 
-                                  else attempt.score.get('parsedValue', 0)
-                },
+                'score': float(attempt.score),  # Ensure score is a number
                 'passed': attempt.passed,
                 'attempt_date': attempt.attempt_date.isoformat(),
                 'lesson': {
-                    'title': attempt.lesson.title if attempt.lesson else 'N/A',
+                    'title': attempt.lesson.title if attempt.lesson else 'Unknown',
                     'module': {
-                        'title': attempt.lesson.module.title if attempt.lesson and attempt.lesson.module else 'N/A',
+                        'title': attempt.lesson.module.title if attempt.lesson and attempt.lesson.module else 'Unknown',
                         'course': {
-                            'title': attempt.lesson.module.course.title if attempt.lesson and attempt.lesson.module and attempt.lesson.module.course else 'N/A'
+                            'title': attempt.lesson.module.course.title if attempt.lesson and attempt.lesson.module and attempt.lesson.module.course else 'Unknown'
                         }
                     }
                 }

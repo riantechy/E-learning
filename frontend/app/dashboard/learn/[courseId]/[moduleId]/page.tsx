@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from 'next/navigation'
 import { useState, useEffect, useRef } from 'react'
-import { coursesApi, assessmentsApi } from '@/lib/api'
+import { coursesApi, assessmentsApi, usersApi, SurveyResponse } from '@/lib/api'
 import TopNavbar from '@/components/TopNavbar'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import LearnerSidebar from '@/components/LearnerSidebar'
@@ -12,14 +12,14 @@ import Link from 'next/link'
 // Helper function to convert YouTube URLs to embed format
 const convertToEmbedUrl = (url: string) => {
   if (url.includes('youtube.com/watch')) {
-    const videoId = new URL(url).searchParams.get('v');
-    return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
+    const videoId = new URL(url).searchParams.get('v')
+    return videoId ? `https://www.youtube.com/embed/${videoId}` : url
   } else if (url.includes('youtu.be')) {
-    const videoId = url.split('/').pop();
-    return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
+    const videoId = url.split('/').pop()
+    return videoId ? `https://www.youtube.com/embed/${videoId}` : url
   }
-  return url;
-};
+  return url
+}
 
 export default function ModulePage() {
   const params = useParams()
@@ -48,24 +48,26 @@ export default function ModulePage() {
     const fetchData = async () => {
       try {
         setLoading(true)
-        
-        const [courseRes, moduleRes, lessonsRes, modulesRes] = await Promise.all([
+
+        const [courseRes, moduleRes, lessonsRes, modulesRes, userRes] = await Promise.all([
           coursesApi.getCourse(courseId),
           coursesApi.getModule(courseId, moduleId),
           coursesApi.getLessons(courseId, moduleId),
-          coursesApi.getModules(courseId)
+          coursesApi.getModules(courseId),
+          usersApi.getProfile(),
         ])
-  
+        const user = userRes.data
+
         if (moduleRes.data) setModule(moduleRes.data)
         if (courseRes.data) setCourse(courseRes.data)
-        if (modulesRes.data?.results) setModules(modulesRes.data.results) 
-        if (lessonsRes.data?.results) { 
-          setLessons(lessonsRes.data.results) 
-          
+        if (modulesRes.data?.results) setModules(modulesRes.data.results)
+        if (lessonsRes.data?.results) {
+          setLessons(lessonsRes.data.results)
+
           const expanded: Record<string, boolean> = {}
           const progressData: Record<string, any> = {}
           const interactionData: Record<string, boolean> = {}
-          
+
           await Promise.all(
             lessonsRes.data.results.map(async (lesson: any) => {
               expanded[lesson.id] = true
@@ -80,24 +82,21 @@ export default function ModulePage() {
               }
             })
           )
-          
+
           setExpandedLessons(expanded)
           setLessonProgress(progressData)
           setContentInteraction(interactionData)
         }
-  
+
         // Check if this module has a survey
         const surveyRes = await assessmentsApi.getModuleSurveys(courseId, moduleId)
         if (surveyRes.data && surveyRes.data.length > 0) {
           setHasSurvey(true)
-          
+
           // Check if user has already completed the survey
           const responsesRes = await assessmentsApi.getSurveyResponses(surveyRes.data[0].id)
-          if (responsesRes.data && responsesRes.data.length > 0) {
-            // Check if current user has submitted a response
-            const userResponse = responsesRes.data.find((r: any) => 
-              r.user.id === user?.id
-            );
+          if (responsesRes.data?.data && Array.isArray(responsesRes.data.data) && responsesRes.data.data.length > 0) {
+            const userResponse = responsesRes.data.data.find((r: SurveyResponse) => r.user.id === user?.id)
             setSurveyCompleted(!!userResponse)
           }
         }
@@ -107,7 +106,7 @@ export default function ModulePage() {
         setLoading(false)
       }
     }
-  
+
     fetchData()
   }, [courseId, moduleId])
 
@@ -115,9 +114,9 @@ export default function ModulePage() {
     const checkModuleCompletion = async () => {
       if (lessons.length > 0) {
         const requiredLessons = lessons.filter(lesson => lesson.is_required)
-        const allRequiredLessonsCompleted = requiredLessons.length > 0 && 
+        const allRequiredLessonsCompleted = requiredLessons.length > 0 &&
           requiredLessons.every(lesson => lessonProgress[lesson.id]?.is_completed)
-        
+
         const surveyRequired = hasSurvey && !surveyCompleted
         const isCompleted = allRequiredLessonsCompleted && !surveyRequired
 
@@ -143,7 +142,7 @@ export default function ModulePage() {
       return (e: Event) => {
         const element = e.target as HTMLElement
         const scrollPercentage = (element.scrollTop + element.clientHeight) / element.scrollHeight
-        
+
         // Mark as completed if scrolled 90% and not already completed
         if (scrollPercentage > 0.9 && !lessonProgress[lessonId]?.is_completed) {
           handleLessonCompleted(lessonId)
@@ -191,7 +190,7 @@ export default function ModulePage() {
               }))
               handleLessonCompleted(lesson.id)
             }
-      }
+          }
         }
       })
     }
@@ -285,7 +284,9 @@ export default function ModulePage() {
       return (
         <div className="ratio ratio-16x9 mb-3">
           <iframe 
-            ref={(el) => iframeRefs.current[lesson.id] = el}
+            ref={(el: HTMLIFrameElement | null) => {
+              iframeRefs.current[lesson.id] = el
+            }}
             src={lesson.content} 
             title={lesson.title}
             allowFullScreen
@@ -300,29 +301,29 @@ export default function ModulePage() {
       const baseUrl = process.env.NEXT_PUBLIC_API_BASE_HOST
       const pdfUrl = lesson.content.startsWith('http') 
         ? lesson.content 
-        : `${baseUrl}${lesson.content}`; 
-        return (
-          <div className="mb-3">
-            <iframe 
-              ref={(el) => iframeRefs.current[lesson.id] = el}
-              src={pdfUrl}
-              className="w-100" 
-              style={{ height: '500px' }}
-              title={lesson.title}
-              onLoad={() => {
-                setContentInteraction(prev => ({...prev, [lesson.id]: true}))
-                handlePdfLoaded(lesson.id)
-              }}
-            />
-          </div>
-        )
-      }
+        : `${baseUrl}${lesson.content}`
+      return (
+        <div className="mb-3">
+          <iframe 
+            ref={(el) => { iframeRefs.current[lesson.id] = el }}
+            src={pdfUrl}
+            className="w-100" 
+            style={{ height: '500px' }}
+            title={lesson.title}
+            onLoad={() => {
+              setContentInteraction(prev => ({...prev, [lesson.id]: true}))
+              handlePdfLoaded(lesson.id)
+            }}
+          />
+        </div>
+      )
+    }
 
     // For TEXT content with sections
     return (
       <>
         <div 
-          ref={(el) => contentRefs.current[lesson.id] = el}
+          ref={(el) => { contentRefs.current[lesson.id] = el }}
           className="lesson-content" 
           dangerouslySetInnerHTML={{ __html: lesson.content }}
           style={{ maxHeight: '500px', overflowY: 'auto' }}
@@ -356,7 +357,6 @@ export default function ModulePage() {
                     {section.subsections.map((sub: any) => (
                       <div key={sub.id} className="subsection mb-3">
                         <h6 className="fs-6">{sub.title}</h6>
-
                         
                         {/* Handle subsection content based on content_type */}
                         {sub.content_type === 'VIDEO' ? (
@@ -447,80 +447,80 @@ export default function ModulePage() {
         )}
 
         <div className="flex-1 flex flex-col overflow-hidden">
-        <TopNavbar toggleSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)} />
-        <main 
-          className="flex-grow-1 p-4 overflow-auto"
-          style={{
-            width: 'calc(100%)',
-            transition: 'margin-left 0.3s ease'
-          }}
-        >
-          <div className="container py-5">
-            <nav aria-label="breadcrumb">
-              <ol className="breadcrumb">
-                <li className="breadcrumb-item">
-                  <Link href="/dashboard">Dashboard</Link>
-                </li>
-                <li className="breadcrumb-item">
-                  <Link href="/dashboard/learn">My Courses</Link>
-                </li>
-                <li className="breadcrumb-item">
-                  <Link href={`/dashboard/learn/${courseId}`}>{course.title}</Link>
-                </li>
-                <li className="breadcrumb-item active" aria-current="page">
-                  {module.title}
-                </li>
-              </ol>
-            </nav>
+          <TopNavbar toggleSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)} />
+          <main 
+            className="flex-grow-1 p-4 overflow-auto"
+            style={{
+              width: 'calc(100%)',
+              transition: 'margin-left 0.3s ease'
+            }}
+          >
+            <div className="container py-5">
+              <nav aria-label="breadcrumb">
+                <ol className="breadcrumb">
+                  <li className="breadcrumb-item">
+                    <Link href="/dashboard">Dashboard</Link>
+                  </li>
+                  <li className="breadcrumb-item">
+                    <Link href="/dashboard/learn">My Courses</Link>
+                  </li>
+                  <li className="breadcrumb-item">
+                    <Link href={`/dashboard/learn/${courseId}`}>{course.title}</Link>
+                  </li>
+                  <li className="breadcrumb-item active" aria-current="page">
+                    {module.title}
+                  </li>
+                </ol>
+              </nav>
 
-            <div className="row">
-              <div className="col-md-8">
-                <div className="card mb-4">
-                  <div className="card-header">
-                    <h5>{module.title}</h5>
-                    <p className="mb-0">{module.description}</p>
-                  </div>
-                  <div className="card-body">
-                    <div className="accordion" id="lessonsAccordion" style={{ maxWidth: '100%', overflowX: 'hidden' }}>
-                      {lessons.map((lesson) => (
-                        <div key={lesson.id} className="lesson-section" style={{ wordBreak: 'break-word' }}>
-                          <div 
-                            className="d-flex justify-content-between align-items-center p-3 border-bottom cursor-pointer"
-                            onClick={() => toggleLesson(lesson.id)}
-                          >
-                            <h6 className="mb-0">
-                              {lesson.title}
-                              {lessonProgress[lesson.id]?.is_completed && (
-                                <span className="badge bg-success ms-2">✓</span>
-                              )}
-                            </h6>
-                            <span>
-                              {expandedLessons[lesson.id] ? <ChevronUp /> : <ChevronDown />}
-                            </span>
-                          </div>
-                          {expandedLessons[lesson.id] && (
-                            <div className="p-3">
-                              {renderLessonContent(lesson)}
-                              {contentInteraction[lesson.id] && !lessonProgress[lesson.id]?.is_completed && (
-                                <div className="mt-2 text-end">
-                                  <button 
-                                    onClick={() => handleLessonCompleted(lesson.id)}
-                                    className="btn btn-sm btn-outline-primary"
-                                  >
-                                    Mark as Completed
-                                  </button>
-                                </div>
-                              )}
+              <div className="row">
+                <div className="col-md-8">
+                  <div className="card mb-4">
+                    <div className="card-header">
+                      <h5>{module.title}</h5>
+                      <p className="mb-0">{module.description}</p>
+                    </div>
+                    <div className="card-body">
+                      <div className="accordion" id="lessonsAccordion" style={{ maxWidth: '100%', overflowX: 'hidden' }}>
+                        {lessons.map((lesson) => (
+                          <div key={lesson.id} className="lesson-section" style={{ wordBreak: 'break-word' }}>
+                            <div 
+                              className="d-flex justify-content-between align-items-center p-3 border-bottom cursor-pointer"
+                              onClick={() => toggleLesson(lesson.id)}
+                            >
+                              <h6 className="mb-0">
+                                {lesson.title}
+                                {lessonProgress[lesson.id]?.is_completed && (
+                                  <span className="badge bg-success ms-2">✓</span>
+                                )}
+                              </h6>
+                              <span>
+                                {expandedLessons[lesson.id] ? <ChevronUp /> : <ChevronDown />}
+                              </span>
                             </div>
-                          )}
-                        </div>
-                      ))}
+                            {expandedLessons[lesson.id] && (
+                              <div className="p-3">
+                                {renderLessonContent(lesson)}
+                                {contentInteraction[lesson.id] && !lessonProgress[lesson.id]?.is_completed && (
+                                  <div className="mt-2 text-end">
+                                    <button 
+                                      onClick={() => handleLessonCompleted(lesson.id)}
+                                      className="btn btn-sm btn-outline-primary"
+                                    >
+                                      Mark as Completed
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="card mt-4">
-                  <div className="card-body text-center">
+                  <div className="card mt-4">
+                    <div className="card-body text-center">
                       {hasSurvey && (
                         <div className="mt-3">
                           <Link 
@@ -536,95 +536,94 @@ export default function ModulePage() {
                           </p>
                         </div>
                       )}
-                    <div className="d-flex flex-column flex-sm-row justify-content-between gap-2 mt-3">
-                      {getPreviousModule() && (
-                        <Link
-                          href={`/dashboard/learn/${courseId}/${getPreviousModule().id}`}
-                          className="btn btn-outline-primary flex-grow-1 flex-sm-grow-0"
-                        >
-                          <ChevronLeft className="me-1" />
-                          Previous Module
-                        </Link>
-                      )}
-                      {!getPreviousModule() && <div></div>}
-                      
-                      {!isLastModule ? (
-                        <Link
-                          href={`/dashboard/learn/${courseId}/${getNextModule()?.id}`}
-                          className="btn btn-outline-primary"
-                          disabled={!moduleCompleted}
-                        >
-                          Next Module
-                          <ChevronRight className="ms-1" />
-                        </Link>
-                      ) : (
-                        moduleCompleted && (
+                      <div className="d-flex flex-column flex-sm-row justify-content-between gap-2 mt-3">
+                        {getPreviousModule() && (
                           <Link
-                            href={`/dashboard/learn/${courseId}/complete`}
-                            className="btn btn-success"
+                            href={`/dashboard/learn/${courseId}/${getPreviousModule().id}`}
+                            className="btn btn-outline-primary flex-grow-1 flex-sm-grow-0"
                           >
-                            Complete Course
+                            <ChevronLeft className="me-1" />
+                            Previous Module
+                          </Link>
+                        )}
+                        {!getPreviousModule() && <div></div>}
+                        
+                        {!isLastModule ? (
+                          <Link
+                            href={`/dashboard/learn/${courseId}/${getNextModule()?.id}`}
+                            className="btn btn-outline-primary"
+                          >
+                            Next Module
                             <ChevronRight className="ms-1" />
                           </Link>
-                        )
+                        ) : (
+                          moduleCompleted && (
+                            <Link
+                              href={`/dashboard/learn/${courseId}/complete`}
+                              className="btn btn-success"
+                            >
+                              Complete Course
+                              <ChevronRight className="ms-1" />
+                            </Link>
+                          )
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="col-md-4">
+                  <div className="card mb-4">
+                    <div className="card-header">
+                      <h6>Module Progress</h6>
+                    </div>
+                    <div className="card-body">
+                      <div className="progress mb-3">
+                        <div 
+                          className="progress-bar" 
+                          role="progressbar" 
+                          style={{ 
+                            width: `${(Object.values(lessonProgress).filter(p => p?.is_completed).length / lessons.length * 100 || 0)}%` 
+                          }}
+                        ></div>
+                      </div>
+                      <p>
+                        {Object.values(lessonProgress).filter(p => p?.is_completed).length} of {lessons.length} lessons completed
+                      </p>
+                      {moduleCompleted && (
+                        <div className="alert alert-success">
+                          Module completed!
+                        </div>
                       )}
                     </div>
                   </div>
-                </div>
-              </div>
 
-              <div className="col-md-4">
-                <div className="card mb-4">
-                  <div className="card-header">
-                    <h6>Module Progress</h6>
-                  </div>
-                  <div className="card-body">
-                    <div className="progress mb-3">
-                      <div 
-                        className="progress-bar" 
-                        role="progressbar" 
-                        style={{ 
-                          width: `${(Object.values(lessonProgress).filter(p => p?.is_completed).length / lessons.length * 100 || 0)}%` 
-                        }}
-                      ></div>
+                  <div className="card">
+                    <div className="card-header">
+                      <h6>Module Navigation</h6>
                     </div>
-                    <p>
-                      {Object.values(lessonProgress).filter(p => p?.is_completed).length} of {lessons.length} lessons completed
-                    </p>
-                    {moduleCompleted && (
-                      <div className="alert alert-success">
-                        Module completed!
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="card">
-                  <div className="card-header">
-                    <h6>Module Navigation</h6>
-                  </div>
-                  <div className="list-group list-group-flush">
-                    {modules.map((mod: any) => (
-                      <Link
-                        key={mod.id}
-                        href={`/dashboard/learn/${courseId}/${mod.id}`}
-                        className={`list-group-item list-group-item-action ${mod.id === moduleId ? 'active' : ''}`}
-                      >
-                        <div className="d-flex justify-content-between">
-                          <span>{mod.title}</span>
-                          {mod.is_completed && (
-                            <span className="badge bg-success">✓</span>
-                          )}
-                        </div>
-                      </Link>
-                    ))}
+                    <div className="list-group list-group-flush">
+                      {modules.map((mod: any) => (
+                        <Link
+                          key={mod.id}
+                          href={`/dashboard/learn/${courseId}/${mod.id}`}
+                          className={`list-group-item list-group-item-action ${mod.id === moduleId ? 'active' : ''}`}
+                        >
+                          <div className="d-flex justify-content-between">
+                            <span>{mod.title}</span>
+                            {mod.is_completed && (
+                              <span className="badge bg-success">✓</span>
+                            )}
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        </main>
-      </div>
+          </main>
+        </div>
       </div>
     </ProtectedRoute>
   )

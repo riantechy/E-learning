@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { assessmentsApi, coursesApi } from '@/lib/api';
+import { assessmentsApi, coursesApi, SurveyQuestion, SurveyChoice, SurveyQuestionPayload } from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
 import AdminSidebar from '@/components/AdminSidebar';
 import Modal from 'react-bootstrap/Modal';
@@ -16,18 +16,6 @@ import ListGroup from 'react-bootstrap/ListGroup';
 import { QuestionTypeBadge } from '@/components/Survey/QuestionTypeBadge';
 import { QuestionForm } from '@/components/Survey/QuestionForm';
 
-type Question = {
-  id?: string;
-  question_text: string;
-  question_type: 'MCQ' | 'TEXT' | 'SCALE';
-  is_required: boolean;
-  order: number;
-  choices?: {
-    choice_text: string;
-    order: number;
-  }[];
-};
-
 export default function ModuleSurveyPage() {
   const { courseId, moduleId } = useParams() as { courseId: string; moduleId: string };
   const router = useRouter();
@@ -36,8 +24,8 @@ export default function ModuleSurveyPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showQuestionModal, setShowQuestionModal] = useState(false);
-  const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
-  const [questions, setQuestions] = useState<Question[]>([]);
+  const [currentQuestion, setCurrentQuestion] = useState<SurveyQuestion | null>(null);
+  const [questions, setQuestions] = useState<SurveyQuestion[]>([]);
 
   const [showCreateSurveyModal, setShowCreateSurveyModal] = useState(false);
   const [surveyTitle, setSurveyTitle] = useState('');
@@ -59,13 +47,12 @@ export default function ModuleSurveyPage() {
         coursesApi.getModule(courseId, moduleId),
         assessmentsApi.getModuleSurveys(courseId, moduleId),
       ]);
-  
+
       if (moduleRes.data) setModule(moduleRes.data);
-      
+
       if (surveyRes.data && surveyRes.data.length > 0) {
-        // Updated find condition
-        const surveyData = surveyRes.data.find((s: any) => s.module.id === moduleId);
-        
+        const surveyData = surveyRes.data.find((s: any) => s.module === moduleId || s.module.id === moduleId);
+
         if (surveyData) {
           setSurvey(surveyData);
           const questionsRes = await assessmentsApi.getSurveyQuestions(surveyData.id);
@@ -82,7 +69,7 @@ export default function ModuleSurveyPage() {
         setSurvey(null);
         setQuestions([]);
       }
-      
+
       if (moduleRes.error || surveyRes.error) {
         setError(moduleRes.error || surveyRes.error || 'Failed to fetch data');
       }
@@ -93,14 +80,12 @@ export default function ModuleSurveyPage() {
     }
   };
 
-  // Helper function to show success messages
   const showSuccess = (message: string) => {
     setSuccessMessage(message);
     setShowSuccessAlert(true);
     setTimeout(() => setShowSuccessAlert(false), 5000);
   };
 
-  // Helper function to show error messages
   const showError = (message: string) => {
     setError(message);
     setShowErrorAlert(true);
@@ -110,16 +95,12 @@ export default function ModuleSurveyPage() {
   const handleCreateSurvey = async () => {
     try {
       setCreatingSurvey(true);
-      const response = await assessmentsApi.createModuleSurvey(
-        courseId,
-        moduleId,
-        {
-          title: surveyTitle || `${module?.title} Survey`,
-          description: surveyDescription || `Survey for ${module?.title} module`,
-          module: moduleId 
-        }
-      );
-  
+      const response = await assessmentsApi.createModuleSurvey(courseId, moduleId, {
+        title: surveyTitle || `${module?.title} Survey`,
+        description: surveyDescription || `Survey for ${module?.title} module`,
+        // is_active is optional; backend defaults to true
+      });
+
       if (response.error) {
         showError(response.error);
       } else {
@@ -140,11 +121,7 @@ export default function ModuleSurveyPage() {
     if (confirm('Are you sure you want to delete this survey?')) {
       try {
         setLoading(true);
-        const response = await assessmentsApi.deleteModuleSurvey(
-          courseId,
-          moduleId,
-          survey.id
-        );
+        const response = await assessmentsApi.deleteModuleSurvey(courseId, moduleId, survey.id);
 
         if (response.error) {
           showError(response.error);
@@ -160,17 +137,22 @@ export default function ModuleSurveyPage() {
     }
   };
 
-  const handleSaveQuestion = async (questionData: Question) => {
+  const handleSaveQuestion = async (questionData: SurveyQuestion) => {
     try {
       setLoading(true);
-      const payload: Question = {
+      const payload: SurveyQuestionPayload = {
         question_text: questionData.question_text,
         question_type: questionData.question_type,
         is_required: questionData.is_required,
         order: questionData.order,
       };
       if (questionData.question_type === 'MCQ' && questionData.choices) {
-        payload.choices = questionData.choices.filter(choice => choice.choice_text.trim() !== '');
+        payload.choices = questionData.choices
+          .filter((choice) => choice.choice_text.trim() !== '')
+          .map((choice) => ({
+            choice_text: choice.choice_text,
+            order: choice.order,
+          }));
       }
       console.log('Saving question with payload:', JSON.stringify(payload, null, 2));
 
@@ -199,10 +181,7 @@ export default function ModuleSurveyPage() {
     if (confirm('Are you sure you want to delete this question?')) {
       try {
         setLoading(true);
-        const response = await assessmentsApi.deleteSurveyQuestion(
-          survey.id,
-          questionId
-        );
+        const response = await assessmentsApi.deleteSurveyQuestion(survey.id, questionId);
 
         if (response.error) {
           showError(response.error);
@@ -220,19 +199,21 @@ export default function ModuleSurveyPage() {
 
   const handleAddQuestion = () => {
     setCurrentQuestion({
+      id: '',
+      survey: survey?.id || '',
       question_text: '',
       question_type: 'MCQ',
       is_required: true,
       order: questions.length,
       choices: [
-        { choice_text: '', order: 0 },
-        { choice_text: '', order: 1 },
+        { id: '', question: '', choice_text: '', order: 0 },
+        { id: '', question: '', choice_text: '', order: 1 },
       ],
     });
     setShowQuestionModal(true);
   };
 
-  const handleEditQuestion = (question: Question) => {
+  const handleEditQuestion = (question: SurveyQuestion) => {
     setCurrentQuestion(question);
     setShowQuestionModal(true);
   };
@@ -263,7 +244,6 @@ export default function ModuleSurveyPage() {
             {successMessage}
           </Alert>
         )}
-
         {showErrorAlert && (
           <Alert variant="danger" onClose={() => setShowErrorAlert(false)} dismissible>
             {error}
@@ -285,9 +265,9 @@ export default function ModuleSurveyPage() {
                   <p className="text-muted mb-4">
                     This module doesn't have a survey yet. Click below to create one.
                   </p>
-                  <Button 
-                    variant="primary" 
-                    onClick={handleCreateSurvey} 
+                  <Button
+                    variant="primary"
+                    onClick={() => setShowCreateSurveyModal(true)}
                     disabled={creatingSurvey}
                   >
                     {creatingSurvey ? 'Creating...' : 'Create Survey'}
@@ -306,8 +286,8 @@ export default function ModuleSurveyPage() {
                   <div className="card-body">
                     <p>{survey.description}</p>
                     <div className="d-flex gap-2">
-                      <Button 
-                        variant="primary" 
+                      <Button
+                        variant="primary"
                         size="sm"
                         onClick={handleAddQuestion}
                       >
@@ -336,22 +316,25 @@ export default function ModuleSurveyPage() {
                     ) : (
                       <ListGroup variant="flush">
                         {questions.sort((a, b) => a.order - b.order).map((question) => (
-                          <ListGroup.Item key={question.id} className="d-flex justify-content-between align-items-center">
+                          <ListGroup.Item
+                            key={question.id}
+                            className="d-flex justify-content-between align-items-center"
+                          >
                             <div>
                               <div className="d-flex align-items-center gap-2 mb-1">
                                 <QuestionTypeBadge type={question.question_type} />
-                                {question.is_required && (
-                                  <Badge bg="danger">Required</Badge>
-                                )}
+                                {question.is_required && <Badge bg="danger">Required</Badge>}
                               </div>
                               <div>{question.question_text}</div>
                               {question.question_type === 'MCQ' && question.choices && (
                                 <div className="mt-2">
                                   <small className="text-muted">Options:</small>
                                   <ul className="mb-0">
-                                    {question.choices.sort((a, b) => a.order - b.order).map((choice, idx) => (
-                                      <li key={idx}>{choice.choice_text}</li>
-                                    ))}
+                                    {question.choices
+                                      .sort((a, b) => a.order - b.order)
+                                      .map((choice, idx) => (
+                                        <li key={choice.id || idx}>{choice.choice_text}</li>
+                                      ))}
                                   </ul>
                                 </div>
                               )}
@@ -433,8 +416,8 @@ export default function ModuleSurveyPage() {
             <Button variant="secondary" onClick={() => setShowCreateSurveyModal(false)}>
               Cancel
             </Button>
-            <Button variant="primary" onClick={handleCreateSurvey} disabled={loading}>
-              {loading ? 'Creating...' : 'Create Survey'}
+            <Button variant="primary" onClick={handleCreateSurvey} disabled={creatingSurvey}>
+              {creatingSurvey ? 'Creating...' : 'Create Survey'}
             </Button>
           </Modal.Footer>
         </Modal>

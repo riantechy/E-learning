@@ -9,14 +9,17 @@ import 'react-datepicker/dist/react-datepicker.css';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
-export default function UserActivityTab({ timeRange, setTimeRange }: { 
+export default function UserActivityTab({
+  timeRange,
+  setTimeRange,
+}: {
   timeRange: string;
   setTimeRange: (range: string) => void;
 }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
-  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
   const [userActivityData, setUserActivityData] = useState<any>(null);
 
   useEffect(() => {
@@ -24,7 +27,11 @@ export default function UserActivityTab({ timeRange, setTimeRange }: {
       try {
         setLoading(true);
         setError('');
-        const response = await analyticsApi.getUserActivity(timeRange);
+        let query = timeRange;
+        if (timeRange === 'custom' && startDate && endDate) {
+          query = `custom&start=${startDate.toISOString()}&end=${endDate.toISOString()}`;
+        }
+        const response = await analyticsApi.getUserActivity(query);
         if (response.error) throw new Error(response.error);
         setUserActivityData(response.data);
       } catch (err) {
@@ -35,14 +42,14 @@ export default function UserActivityTab({ timeRange, setTimeRange }: {
     };
 
     fetchData();
-  }, [timeRange]);
+  }, [timeRange, startDate, endDate]);
 
   return (
     <div>
       <div className="mb-4 d-flex justify-content-between align-items-center">
         <h5>User Activity Analytics</h5>
-        <Form.Select 
-          style={{ width: '200px' }} 
+        <Form.Select
+          style={{ width: '200px' }}
           value={timeRange}
           onChange={(e) => setTimeRange(e.target.value)}
         >
@@ -62,11 +69,12 @@ export default function UserActivityTab({ timeRange, setTimeRange }: {
                 <Form.Label>Start Date</Form.Label>
                 <DatePicker
                   selected={startDate}
-                  onChange={(date) => setStartDate(date ?? undefined)}
+                  onChange={(date: Date | null) => setStartDate(date)}
                   selectsStart
                   startDate={startDate}
                   endDate={endDate}
                   className="form-control"
+                  placeholderText="Select start date"
                 />
               </Form.Group>
             </Col>
@@ -75,12 +83,13 @@ export default function UserActivityTab({ timeRange, setTimeRange }: {
                 <Form.Label>End Date</Form.Label>
                 <DatePicker
                   selected={endDate}
-                  onChange={(date) => setEndDate(date ?? undefined)}
+                  onChange={(date: Date | null) => setEndDate(date)}
                   selectsEnd
                   startDate={startDate}
                   endDate={endDate}
                   minDate={startDate}
                   className="form-control"
+                  placeholderText="Select end date"
                 />
               </Form.Group>
             </Col>

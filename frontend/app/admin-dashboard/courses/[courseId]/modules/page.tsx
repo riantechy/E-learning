@@ -15,7 +15,6 @@ import Badge from 'react-bootstrap/Badge';
 import Link from 'next/link';
 
 export default function ModulesPage() {
-  // const { courseId } = useParams();
   const { courseId } = useParams() as { courseId: string };
   const router = useRouter();
   const [modules, setModules] = useState<any[]>([]);
@@ -42,7 +41,7 @@ export default function ModulesPage() {
         coursesApi.getModules(courseId as string),
       ]);
 
-      if (courseRes.data?.results) setCourse(courseRes.data?.results);
+      if (courseRes.data) setCourse(courseRes.data);
       if (modulesRes.data?.results) setModules(modulesRes.data?.results);
       if (courseRes.error || modulesRes.error) {
         setError(courseRes.error || modulesRes.error || 'Failed to fetch data');
@@ -111,7 +110,7 @@ export default function ModulesPage() {
   };
 
   const handleDelete = async (moduleId: string) => {
-    if (confirm('Are you sure you want to delete this module? All lessons in this module will also be deleted.')) {
+    if (confirm('Are you sure you want to delete this module? This will also delete all associated lessons and content.')) {
       try {
         setLoading(true);
         const response = await coursesApi.deleteModule(courseId as string, moduleId);
@@ -129,44 +128,51 @@ export default function ModulesPage() {
     }
   };
 
-  const handleReorder = async (direction: 'up' | 'down', moduleId: string, currentOrder: number) => {
-    try {
-      setLoading(true);
-      const targetOrder = direction === 'up' ? currentOrder - 1 : currentOrder + 1;
-      const targetModule = modules.find(m => m.order === targetOrder);
+  // const handleReorder = async (direction: 'up' | 'down', moduleId: string, currentOrder: number) => {
+  //   try {
+  //     const modulesCopy = [...modules];
+  //     const index = modulesCopy.findIndex(m => m.id === moduleId);
+  //     if (index < 0) return;
 
-      if (!targetModule) return;
+  //     const swapIndex = direction === 'up' ? index - 1 : index + 1;
+  //     if (swapIndex < 0 || swapIndex >= modulesCopy.length) return;
 
-      // Swap orders
-      await Promise.all([
-        coursesApi.updateModule(courseId as string, moduleId, { order: targetOrder }),
-        coursesApi.updateModule(courseId as string, targetModule.id, { order: currentOrder }),
-      ]);
+  //     // Swap orders
+  //     const temp = modulesCopy[index].order;
+  //     modulesCopy[index].order = modulesCopy[swapIndex].order;
+  //     modulesCopy[swapIndex].order = temp;
 
-      fetchData();
-    } catch (err) {
-      setError('Failed to reorder modules');
-    } finally {
-      setLoading(false);
-    }
-  };
+  //     // Update both modules
+  //     await Promise.all([
+  //       coursesApi.updateModule(courseId as string, modulesCopy[index].id, { order: modulesCopy[index].order }),
+  //       coursesApi.updateModule(courseId as string, modulesCopy[swapIndex].id, { order: modulesCopy[swapIndex].order }),
+  //     ]);
+
+  //     fetchData();
+  //   } catch (err) {
+  //     setError('Failed to reorder modules');
+  //   }
+  // };
 
   return (
     <DashboardLayout sidebar={<AdminSidebar />}>
       <div className="container-fluid">
         <div className="d-flex justify-content-between align-items-center mb-4">
           <div>
-            <h1 className="h2 mb-0">Manage Modules</h1>
-            {course && (
-              <p className="text-muted mb-0">Course: {course.title}</p>
-            )}
+            <h2>Course Modules</h2>
+            {course && <p className="text-muted mb-0">Course: {course.title}</p>}
           </div>
-          <Button variant="primary" onClick={handleNewModule}>
-            Add New Module
-          </Button>
+          <div className="d-flex gap-2">
+            <Button variant="primary" onClick={handleNewModule}>
+              Add Module
+            </Button>
+            <Link href={`/admin-dashboard/courses`} className="btn btn-secondary">
+              Back to Courses
+            </Link>
+          </div>
         </div>
 
-        {error && <Alert variant="danger">{error}</Alert>}
+        {error && <Alert variant="danger" onClose={() => setError('')} dismissible>{error}</Alert>}
 
         {loading ? (
           <div className="text-center py-5">
@@ -178,41 +184,35 @@ export default function ModulesPage() {
           <Table striped bordered hover responsive>
             <thead>
               <tr>
-                <th style={{ width: '50px' }}>Order</th>
+                <th>Order</th>
                 <th>Title</th>
                 <th>Description</th>
                 <th>Lessons</th>
-                <th style={{ width: '150px' }}>Actions</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {modules.sort((a, b) => a.order - b.order).map((module) => (
+              {modules.map((module) => (
                 <tr key={module.id}>
-                  <td className="text-center">{module.order + 1}</td>
+                  <td>{module.order}</td>
                   <td>{module.title}</td>
-                  <td>{module.description || '-'}</td>
-                  <td>
-                    <Badge bg="info" pill>
-                      {module.lessons_count || 0}
-                    </Badge>
-                  </td>
+                  <td>{module.description}</td>
+                  <td>{module.lesson_count || 0}</td>
                   <td>
                     <div className="d-flex gap-2">
-                      <Button 
-                        variant="info" 
-                        size="sm" 
+                      <Button
+                        variant="outline-primary"
+                        size="sm"
                         onClick={() => handleEdit(module)}
-                        title="Edit"
                       >
-                        ✏️
+                        Edit
                       </Button>
                       <Button
-                        variant="danger"
+                        variant="outline-danger"
                         size="sm"
                         onClick={() => handleDelete(module.id)}
-                        title="Delete"
                       >
-                        🗑️
+                        Delete
                       </Button>
                       <Link
                         href={`/admin-dashboard/courses/${courseId}/modules/${module.id}/lessons`}

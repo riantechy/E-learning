@@ -9,14 +9,23 @@ import styles from './SettingsPage.module.css';
 import { certificatesApi } from '@/lib/api';
 import { CertificateTemplate } from '@/lib/api';
 
+// Define interface for formData
+interface SettingsFormData {
+  siteName: string;
+  siteLogo: string;
+  timezone: string;
+  dateFormat: string;
+  maintenanceMode: boolean;
+}
+
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('general');
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<SettingsFormData>({
     siteName: 'Learning Platform',
     siteLogo: '',
     timezone: 'UTC',
     dateFormat: 'MM/DD/YYYY',
-    maintenanceMode: false,
+    maintenanceMode: false, // Fixed: Use boolean value instead of type
   });
   const [isSaving, setIsSaving] = useState(false);
   const [success, setSuccess] = useState('');
@@ -51,8 +60,9 @@ export default function SettingsPage() {
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value, type } = e.target;
+    const checked = (e.target as HTMLInputElement).checked; // Safe for inputs, undefined for select/textarea
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value

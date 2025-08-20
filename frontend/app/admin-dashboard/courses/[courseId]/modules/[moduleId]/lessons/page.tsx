@@ -10,6 +10,7 @@ import { useLessonsManagement } from './hooks/useLessonsManagement';
 import LessonCard from './components/LessonCard';
 import LessonFormModal from './components/LessonForm';
 import QuestionsManager from './components/QuestionsManager';
+import { Lesson } from '@/lib/api';
 
 export default function LessonsPage() {
   const {

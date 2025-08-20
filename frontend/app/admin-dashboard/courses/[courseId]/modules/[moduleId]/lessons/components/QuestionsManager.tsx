@@ -11,6 +11,7 @@ import Alert from 'react-bootstrap/Alert';
 import Badge from 'react-bootstrap/Badge';
 import Accordion from 'react-bootstrap/Accordion';
 import Spinner from 'react-bootstrap/Spinner';
+import { Lesson, Question, Answer } from '@/lib/api';
 
 export default function QuestionsManager({
   show,
@@ -25,18 +26,18 @@ export default function QuestionsManager({
   courseId: string;
   moduleId: string;
 }) {
-  const [questions, setQuestions] = useState<any[]>([]);
-  const [lesson, setLesson] = useState<any>(null);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [lesson, setLesson] = useState<Lesson | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [showQuestionModal, setShowQuestionModal] = useState(false);
-  const [currentQuestion, setCurrentQuestion] = useState<any>(null);
+  const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [openQuestionId, setOpenQuestionId] = useState<string | null>(null);
   
   const [questionForm, setQuestionForm] = useState({
     question_text: '',
-    question_type: 'MCQ',
+    question_type: 'MCQ' as 'MCQ' | 'TF' | 'SA',
     points: 1,
     order: 0,
     answers: [] as { answer_text: string; is_correct: boolean }[]
@@ -55,18 +56,16 @@ export default function QuestionsManager({
         coursesApi.getLesson(courseId as string, moduleId as string, lessonId as string),
         assessmentsApi.getQuestions(lessonId as string),
       ]);
-  
-      if (lessonRes.data?.results) setLesson(lessonRes.data);
-      if (questionsRes.data) {
-        const questionsData = questionsRes.data.results || questionsRes.data;
-        
+
+      if (lessonRes.data) setLesson(lessonRes.data);
+      if (questionsRes.data?.results) {
         const questionsWithAnswers = await Promise.all(
-          questionsData.map(async (question: any) => {
+          questionsRes.data.results.map(async (question: Question) => {
             const answersRes = await assessmentsApi.getAnswers(question.id);
-            const answersData = answersRes.data.results || answersRes.data || [];
+            const answersData = Array.isArray(answersRes.data) ? answersRes.data : answersRes.data.results || [];
             return {
               ...question,
-              answers: answersData
+              answers: answersData as Answer[],
             };
           })
         );
@@ -100,7 +99,7 @@ export default function QuestionsManager({
       setQuestionForm(prev => ({
         ...prev,
         answers: prev.answers.map((answer, i) =>
-          i === index ? { ...answer, is_correct: checked } : answer
+          i === index ? { ...answer, is_correct: checked! } : answer
         )
       }));
     } else {
@@ -186,7 +185,7 @@ export default function QuestionsManager({
       if (currentQuestion && questionForm.question_type !== 'SA') {
         const existingAnswers = currentQuestion.answers || [];
         await Promise.all(
-          existingAnswers.map((answer: any) =>
+          existingAnswers.map((answer: Answer) =>
             assessmentsApi.deleteAnswer(questionId, answer.id)
           )
         );
@@ -223,11 +222,11 @@ export default function QuestionsManager({
     }
   };
 
-  const handleQuestionEdit = (question: any) => {
+  const handleQuestionEdit = (question: Question) => {
     setCurrentQuestion(question);
     setQuestionForm({
       question_text: question.question_text,
-      question_type: question.question_type,
+      question_type: question.question_type as 'MCQ' | 'TF' | 'SA',
       points: question.points,
       order: question.order,
       answers: question.question_type === 'SA' ? [] : question.answers || []
@@ -239,7 +238,7 @@ export default function QuestionsManager({
     setCurrentQuestion(null);
     setQuestionForm({
       question_text: '',
-      question_type: 'MCQ',
+      question_type: 'MCQ' as 'MCQ' | 'TF' | 'SA',
       points: 1,
       order: questions.length > 0 ? Math.max(...questions.map(q => q.order)) + 1 : 0,
       answers: [{ answer_text: '', is_correct: false }]
@@ -419,7 +418,7 @@ export default function QuestionsManager({
                         </tr>
                       </thead>
                       <tbody>
-                        {question.answers.map((answer: any) => (
+                        {question.answers.map((answer: Answer) => (
                           <tr key={answer.id}>
                             <td>{answer.answer_text}</td>
                             <td>{answer.is_correct ? '✅' : '❌'}</td>

@@ -13,8 +13,8 @@ export default function ModuleCoverageTab() {
   const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
   const [moduleCoverage, setModuleCoverage] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize] = useState(20); // Number of learners per page
-  const [searchQuery, setSearchQuery] = useState(''); // Search query state
+  const [pageSize] = useState(20); 
+  const [searchQuery, setSearchQuery] = useState(''); 
 
   // Fetch all courses on component mount
   useEffect(() => {

@@ -12,7 +12,28 @@ import Alert from 'react-bootstrap/Alert';
 import Badge from 'react-bootstrap/Badge';
 import Pagination from 'react-bootstrap/Pagination';
 
-const defaultForm = {
+// Define the type for formData based on the User interface
+interface UserFormData {
+  email: string;
+  first_name: string;
+  last_name: string;
+  gender: string;
+  phone: string;
+  date_of_birth: string;
+  county: string;
+  education: string;
+  innovation: string;
+  innovation_stage: string;
+  innovation_in_whitebox: string;
+  innovation_industry: string;
+  training: string;
+  training_institution: string;
+  agreed_to_terms: boolean;
+  status: string;
+  role: 'LEARNER' | 'CONTENT_MANAGER' | 'ADMIN';
+}
+
+const defaultForm: UserFormData = {
   email: '',
   first_name: '',
   last_name: '',
@@ -33,13 +54,13 @@ const defaultForm = {
 };
 
 export default function UsersPage() {
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<any[]>([]); // Consider typing this as User[] if possible
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [showModal, setShowModal] = useState(false);
-  const [currentUser, setCurrentUser] = useState<any>(null);
-  const [formData, setFormData] = useState(defaultForm);
+  const [currentUser, setCurrentUser] = useState<any>(null); // Consider typing as User | null
+  const [formData, setFormData] = useState<UserFormData>(defaultForm);
   const [pagination, setPagination] = useState({
     page: 1,
     pageSize: 10,
@@ -53,13 +74,13 @@ export default function UsersPage() {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const response = await usersApi.getNonLearners(pagination.page, pagination.pageSize);
+      const response = await usersApi.getNonLearners();
 
       if (response.data) {
-        setUsers(response.data.results || response.data);
+        setUsers(response.data.results);
         setPagination(prev => ({
           ...prev,
-          total: response.data?.count || response.data?.length || 0
+          total: response.data.count,
         }));
       }
       if (response.error) setError(response.error);
@@ -89,11 +110,11 @@ export default function UsersPage() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
-    const target = e.target as HTMLInputElement; 
+    const target = e.target as HTMLInputElement;
     
-    setFormData(prev => ({ 
-      ...prev, 
-      [name]: type === 'checkbox' ? target.checked : value 
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? target.checked : name === 'role' ? value as 'LEARNER' | 'CONTENT_MANAGER' | 'ADMIN' : value,
     }));
   };
 
@@ -127,7 +148,7 @@ export default function UsersPage() {
 
   const handleEdit = (user: any) => {
     setCurrentUser(user);
-    setFormData({ ...defaultForm, ...user });
+    setFormData({ ...defaultForm, ...user, role: user.role as 'LEARNER' | 'CONTENT_MANAGER' | 'ADMIN' });
     setShowModal(true);
   };
 
@@ -147,7 +168,6 @@ export default function UsersPage() {
           setError(response.error);
         } else {
           setSuccess('User deleted successfully');
-          // If we're on a page that would become empty after deletion, go back one page
           if (users.length === 1 && pagination.page > 1) {
             setPagination(prev => ({ ...prev, page: prev.page - 1 }));
           } else {
@@ -242,7 +262,6 @@ export default function UsersPage() {
                     onClick={() => handlePageChange(pagination.page - 1)} 
                   />
                   
-                  {/* Always show first page if not in current range */}
                   {getVisiblePages()[0] > 1 && (
                     <>
                       <Pagination.Item onClick={() => handlePageChange(1)}>
@@ -252,7 +271,6 @@ export default function UsersPage() {
                     </>
                   )}
                   
-                  {/* Visible page numbers */}
                   {getVisiblePages().map(page => (
                     <Pagination.Item
                       key={page}
@@ -263,7 +281,6 @@ export default function UsersPage() {
                     </Pagination.Item>
                   ))}
                   
-                  {/* Always show last page if not in current range */}
                   {getVisiblePages().slice(-1)[0] < Math.ceil(pagination.total / pagination.pageSize) && (
                     <>
                       {getVisiblePages().slice(-1)[0] < Math.ceil(pagination.total / pagination.pageSize) - 1 && (
