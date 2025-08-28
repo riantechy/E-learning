@@ -53,8 +53,25 @@ async function apiRequest<T>(
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || errorData.message || `HTTP error! status: ${response.status}`);
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch {
+        errorData = {};
+      }
+      
+      let errorMsg = errorData.detail || errorData.message || '';
+      if (!errorMsg && Object.keys(errorData).length > 0) {
+        // Handle field-specific validation errors (e.g., {"email": ["error message"]})
+        errorMsg = Object.entries(errorData)
+          .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(', ') : value}`)
+          .join('; ');
+      }
+      if (!errorMsg) {
+        errorMsg = `HTTP error! status: ${response.status}`;
+      }
+      
+      throw new Error(errorMsg);
     }
 
     if (isBinary) {

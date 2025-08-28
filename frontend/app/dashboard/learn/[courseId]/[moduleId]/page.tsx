@@ -40,8 +40,6 @@ export default function ModulePage() {
   const [expandedLessons, setExpandedLessons] = useState<Record<string, boolean>>({})
   const [hasSurvey, setHasSurvey] = useState(false)
   const [surveyCompleted, setSurveyCompleted] = useState(false)
-
-  // Track if user has interacted with the content
   const [contentInteraction, setContentInteraction] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
@@ -88,12 +86,9 @@ export default function ModulePage() {
           setContentInteraction(interactionData)
         }
 
-        // Check if this module has a survey
         const surveyRes = await assessmentsApi.getModuleSurveys(courseId, moduleId)
         if (surveyRes.data && surveyRes.data.length > 0) {
           setHasSurvey(true)
-
-          // Check if user has already completed the survey
           const responsesRes = await assessmentsApi.getSurveyResponses(surveyRes.data[0].id)
           if (responsesRes.data?.data && Array.isArray(responsesRes.data.data) && responsesRes.data.data.length > 0) {
             const userResponse = responsesRes.data.data.find((r: SurveyResponse) => r.user.id === user?.id)
@@ -137,20 +132,17 @@ export default function ModulePage() {
   }, [lessons, lessonProgress, hasSurvey, surveyCompleted, moduleId, courseId])
 
   useEffect(() => {
-    // Setup scroll event listeners for all lesson content elements
     const handleScroll = (lessonId: string) => {
       return (e: Event) => {
         const element = e.target as HTMLElement
         const scrollPercentage = (element.scrollTop + element.clientHeight) / element.scrollHeight
 
-        // Mark as completed if scrolled 90% and not already completed
         if (scrollPercentage > 0.9 && !lessonProgress[lessonId]?.is_completed) {
           handleLessonCompleted(lessonId)
         }
       }
     }
 
-    // Add event listeners
     Object.keys(contentRefs.current).forEach(lessonId => {
       const element = contentRefs.current[lessonId]
       if (element) {
@@ -158,7 +150,6 @@ export default function ModulePage() {
       }
     })
 
-    // Cleanup
     return () => {
       Object.keys(contentRefs.current).forEach(lessonId => {
         const element = contentRefs.current[lessonId]
@@ -169,7 +160,6 @@ export default function ModulePage() {
     }
   }, [lessonProgress])
 
-  // Handle page scroll for non-scrollable content
   useEffect(() => {
     const handlePageScroll = () => {
       lessons.forEach(lesson => {
@@ -225,7 +215,6 @@ export default function ModulePage() {
       [lessonId]: !prev[lessonId]
     }))
 
-    // Mark lesson as interacted with when expanded
     if (!expandedLessons[lessonId]) {
       setContentInteraction(prev => ({
         ...prev,
@@ -287,7 +276,7 @@ export default function ModulePage() {
             ref={(el: HTMLIFrameElement | null) => {
               iframeRefs.current[lesson.id] = el
             }}
-            src={lesson.content} 
+            src={convertToEmbedUrl(lesson.content)} 
             title={lesson.title}
             allowFullScreen
             onEnded={() => handleVideoEnded(lesson.id)}
@@ -299,27 +288,53 @@ export default function ModulePage() {
 
     if (lesson.content_type === 'PDF') {
       const baseUrl = process.env.NEXT_PUBLIC_API_BASE_HOST
-      const pdfUrl = lesson.content.startsWith('http') 
-        ? lesson.content 
-        : `${baseUrl}${lesson.content}`
+      const pdfUrl = lesson.pdf_file?.startsWith('http') 
+        ? lesson.pdf_file 
+        : `${baseUrl}${lesson.pdf_file}`
       return (
         <div className="mb-3">
-          <iframe 
-            ref={(el) => { iframeRefs.current[lesson.id] = el }}
-            src={pdfUrl}
-            className="w-100" 
-            style={{ height: '500px' }}
-            title={lesson.title}
-            onLoad={() => {
-              setContentInteraction(prev => ({...prev, [lesson.id]: true}))
-              handlePdfLoaded(lesson.id)
-            }}
-          />
+          <div className="card">
+            <div className="card-body">
+              <h6>PDF Document: {lesson.title}</h6>
+              <p className="text-muted small">
+                Click below to view or download the document.
+              </p>
+              <div className="d-flex gap-2">
+                <a 
+                  href={pdfUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-sm btn-primary"
+                  onClick={() => {
+                    setContentInteraction(prev => ({...prev, [lesson.id]: true}))
+                    handlePdfLoaded(lesson.id)
+                  }}
+                >
+                  View 
+                </a>
+                <a 
+                  href={pdfUrl}
+                  download
+                  className="btn btn-sm btn-outline-primary"
+                  onClick={() => {
+                    setContentInteraction(prev => ({...prev, [lesson.id]: true}))
+                    handlePdfLoaded(lesson.id)
+                  }}
+                >
+                  Download 
+                </a>
+              </div>
+              {lesson.pdf_file ? null : (
+                <div className="alert alert-warning mt-2">
+                  PDF file is not available. Please contact support.
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )
     }
 
-    // For TEXT content with sections
     return (
       <>
         <div 
@@ -335,7 +350,6 @@ export default function ModulePage() {
               <div key={section.id} className="section mb-4">
                 <h5>{section.title}</h5>
                 
-                {/* Handle section content based on content_type */}
                 {section.content_type === 'VIDEO' ? (
                   <div className="ratio ratio-16x9 mb-3">
                     <iframe 
@@ -356,9 +370,8 @@ export default function ModulePage() {
                   <div className="subsections ms-4">
                     {section.subsections.map((sub: any) => (
                       <div key={sub.id} className="subsection mb-3">
-                        <h6 className="fs-6">{sub.title}</h6>
+                        <p className="fs-6 mb-1">{sub.title}</p>
                         
-                        {/* Handle subsection content based on content_type */}
                         {sub.content_type === 'VIDEO' ? (
                           <div className="ratio ratio-16x9 mb-3">
                             <iframe 
