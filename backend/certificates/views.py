@@ -14,21 +14,23 @@ from django.core.files.base import ContentFile
 from courses.models import Course, ModuleProgress, Module
 from users.models import User
 import uuid
+from PyPDF2 import PdfReader, PdfWriter
+from reportlab.lib.units import inch
 from django.urls import reverse
 from django.conf import settings
 class GenerateCertificateView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated]
-    
+
     def post(self, request, course_id):
         user = request.user
         try:
             course = Course.objects.get(id=course_id)
         except Course.DoesNotExist:
             return Response(
-                {"detail": "Course not found"}, 
+                {"detail": "Course not found"},
                 status=status.HTTP_404_NOT_FOUND
             )
-        
+
         # Check if user has completed course requirements
         from courses.models import UserProgress
         progress = UserProgress.get_course_progress(user, course)
@@ -41,71 +43,75 @@ class GenerateCertificateView(generics.GenericAPIView):
 
         if progress['percentage'] < 100 or module_progress < total_modules:
             return Response(
-                {"detail": "Course not completed"}, 
+                {"detail": "Course not completed"},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
-        if progress['percentage'] < 100:
-            return Response(
-                {"detail": "Course not completed"}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
+
         # Check if certificate already exists
         if Certificate.objects.filter(user=user, course=course).exists():
             certificate = Certificate.objects.get(user=user, course=course)
             serializer = CertificateSerializer(certificate)
             return Response(serializer.data)
-        
-        # Get default template or first available template
+
+        # Get the certificate template
         template = CertificateTemplate.objects.first()
         if not template:
             return Response(
-                {"detail": "No certificate templates available"}, 
+                {"detail": "No certificate templates available"},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
-        # Generate certificate
+
+        # Generate certificate by overlaying the student's name on the template
         buffer = BytesIO()
-        c = canvas.Canvas(buffer, pagesize=letter)
-        
-        # Certificate design
-        c.setFont("Helvetica-Bold", 28)
-        c.drawCentredString(300, 700, "CERTIFICATE OF ACHIEVEMENT")
+        pdf_reader = PdfReader(template.template_file.open('rb'))
+        pdf_writer = PdfWriter()
 
-        c.setFont("Helvetica", 16)
-        c.drawCentredString(300, 650, "This is to certify that")
-
-        c.setFont("Helvetica-Bold", 24)
-        # Combine first and last names
+        # Create a canvas to draw the student's name
+        name_buffer = BytesIO()
+        c = canvas.Canvas(name_buffer, pagesize=letter)
         full_name = f"{user.first_name} {user.last_name}"
-        c.drawCentredString(300, 620, full_name)  # Display full name
 
-        c.setFont("Helvetica", 16)
-        c.drawCentredString(300, 580, "has successfully completed the course")
+        # Customize position and styling for the student's name
+        # Adjust x, y coordinates based on the template's layout
+        # Assuming "Awarded to" section is centered around y=400 (adjust after testing)
+        c.setFont("Helvetica-Bold", 24)
+        c.drawCentredString(420, 300, full_name)  # Adjust coordinates as needed
+        c.save()
 
-        c.setFont("Helvetica-Bold", 22)
-        c.drawCentredString(300, 540, f'"{course.title}"')
+        # Merge the name with the template
+        name_pdf = PdfReader(BytesIO(name_buffer.getvalue()))
+        for page_num in range(len(pdf_reader.pages)):
+            page = pdf_reader.pages[page_num]
+            if page_num == 0:  # Only add name to the first page
+                page.merge_page(name_pdf.pages[0])
+            pdf_writer.add_page(page)
 
-        c.setFont("Helvetica", 14)
-        c.drawCentredString(300, 500, f"on {timezone.now().strftime('%B %d, %Y')}")
-                
-        # Add certificate number
+        # Add certificate number and verification URL to the PDF
         cert_number = str(uuid.uuid4())[:8].upper()
-        c.setFont("Helvetica", 12)
-        c.drawString(50, 100, f"Certificate ID: {cert_number}")
-        
-        # Add verification URL
         verification_url = request.build_absolute_uri(
             reverse('verify-certificate', kwargs={'certificate_number': cert_number})
         )
-        c.drawString(50, 80, f"Verify at: {verification_url}")
-        
-        # Add decorative border
-        c.rect(20, 20, 550, 750)
-        
+
+        # Create a new canvas for certificate number and verification URL
+        final_buffer = BytesIO()
+        c = canvas.Canvas(final_buffer, pagesize=letter)
+        c.setFont("Helvetica", 12)
+        c.drawString(45, 80, f"Certificate ID: {cert_number}")
+        # c.drawString(50, 80, f"Verify at: {verification_url}")
         c.save()
-        
+
+        # Merge certificate number and verification URL
+        final_pdf = PdfReader(BytesIO(final_buffer.getvalue()))
+        final_writer = PdfWriter()
+        for page_num in range(len(pdf_writer.pages)):
+            page = pdf_writer.pages[page_num]
+            if page_num == 0:
+                page.merge_page(final_pdf.pages[0])
+            final_writer.add_page(page)
+
+        # Save the final PDF to buffer
+        final_writer.write(buffer)
+
         # Create certificate record
         certificate, created = Certificate.objects.get_or_create(
             user=user,
@@ -113,29 +119,22 @@ class GenerateCertificateView(generics.GenericAPIView):
             defaults={
                 'template': template,
                 'certificate_number': cert_number,
-                'verification_url': verification_url
+                'verification_url': verification_url,
+                'issued_date': timezone.now()
             }
         )
         if not created:
             serializer = CertificateSerializer(certificate)
             return Response(serializer.data)
-    
-        # certificate = Certificate.objects.create(
-        #     user=user,
-        #     course=course,
-        #     template=template,
-        #     certificate_number=cert_number,
-        #     verification_url=verification_url
-        # )
-        
-        # Save PDF
+
+        # Save PDF to certificate
         pdf = buffer.getvalue()
         certificate.pdf_file.save(
-            f"certificate_{certificate.certificate_number}.pdf", 
+            f"certificate_{certificate.certificate_number}.pdf",
             ContentFile(pdf)
         )
         certificate.save()
-        
+
         serializer = CertificateSerializer(certificate)
         return Response(serializer.data)
 

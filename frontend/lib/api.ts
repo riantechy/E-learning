@@ -74,6 +74,10 @@ async function apiRequest<T>(
       throw new Error(errorMsg);
     }
 
+    if (response.status === 204 || response.headers.get('content-length') === '0') {
+      return { data: undefined as T }; 
+    }
+
     if (isBinary) {
       const data = await response.blob();
       return { data: data as unknown as T };

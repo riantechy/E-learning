@@ -101,6 +101,26 @@ export default function CoursesPage() {
     setShowModal(true);
   };
 
+  const handleDelete = async (courseId: string) => {
+    if (!confirm('Are you sure you want to delete this course? This action cannot be undone.')) {
+      return;
+    }
+    try {
+      setLoading(true);
+      const response = await coursesApi.deleteCourse(courseId);
+      if (response.error) {
+        setError(response.error);
+      } else {
+        setCourses(courses.filter(course => course.id !== courseId)); // Optimistically update the UI
+        setError(''); // Clear any previous errors
+      }
+    } catch (err) {
+      setError('Failed to delete course');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleNewCourse = () => {
     setCurrentCourse(null);
     setFormData({
@@ -194,6 +214,14 @@ export default function CoursesPage() {
           >
             Manage
           </Button>
+                    <Button 
+                      variant="danger" 
+                      size="sm" 
+                      className="me-2" 
+                      onClick={() => handleDelete(course.id)}
+                    >
+                      Delete
+                    </Button>
                     {course.status === 'PENDING_REVIEW' && (
                       <>
                         <Button variant="success" size="sm" className="me-2" onClick={() => handleStatusAction(course.id, 'approve')}>

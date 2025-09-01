@@ -1,8 +1,10 @@
 // app/admin-dashboard/page.tsx
-'use client'
+'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { coursesApi, usersApi } from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
 import DashboardLayout from '@/components/DashboardLayout';
 import AdminSidebar from '@/components/AdminSidebar';
 import Card from 'react-bootstrap/Card';
@@ -15,25 +17,49 @@ import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Toolti
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
 
 export default function AdminDashboard() {
+  const { user, loading: authLoading } = useAuth(); // Get user and loading state from AuthContext
+  const router = useRouter();
   const [stats, setStats] = useState({
     totalLearners: 0,
     activeCourses: 0,
     enrollments: 0,
     completionRate: 0,
   });
-  
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  
-  // Mock data for charts and activity
   const [recentActivities, setRecentActivities] = useState<any[]>([]);
-  const [courseEnrollments, setCourseEnrollments] = useState<{course: string; enrollments: number}[]>([]);
-  const [userDistribution, setUserDistribution] = useState<{role: string; count: number}[]>([]);
+  const [courseEnrollments, setCourseEnrollments] = useState<{ course: string; enrollments: number }[]>([]);
+  const [userDistribution, setUserDistribution] = useState<{ role: string; count: number }[]>([]);
+
+  // Role-based access control
+  useEffect(() => {
+    if (!authLoading && user) {
+      // Redirect non-ADMIN users to their appropriate dashboard
+      if (user.role !== 'ADMIN') {
+        switch (user.role) {
+          case 'CONTENT_MANAGER':
+            router.push('/content-manager-dashboard');
+            break;
+          case 'LEARNER':
+            router.push('/dashboard');
+            break;
+          default:
+            router.push('/login');
+        }
+      }
+    } else if (!authLoading && !user) {
+      // Redirect to login if no user is authenticated
+      router.push('/login');
+    }
+  }, [user, authLoading, router]);
 
   useEffect(() => {
-    fetchDashboardData();
-    loadMockData();
-  }, []);
+    // Only fetch data if user is authenticated and has ADMIN role
+    if (user && user.role === 'ADMIN') {
+      fetchDashboardData();
+      loadMockData();
+    }
+  }, [user]);
 
   const fetchDashboardData = async () => {
     try {
@@ -41,22 +67,23 @@ export default function AdminDashboard() {
       const [learnersRes, coursesRes, enrollmentsRes, completionRes] = await Promise.all([
         usersApi.getLearnersCount(),
         coursesApi.getAllCourses(),
-        coursesApi.getTotalEnrollments(), 
+        coursesApi.getTotalEnrollments(),
         coursesApi.getCompletionRates(),
       ]);
 
       if (learnersRes.error || coursesRes.error || enrollmentsRes.error || completionRes.error) {
-        const errorMsg = learnersRes.error || coursesRes.error || enrollmentsRes.error || completionRes.error || 'Failed to fetch data';
+        const errorMsg =
+          learnersRes.error || coursesRes.error || enrollmentsRes.error || completionRes.error || 'Failed to fetch data';
         setError(errorMsg);
         return;
       }
 
       const activeCourses = coursesRes.data?.results?.filter((c: any) => c.status === 'PUBLISHED').length || 0;
-      
+
       setStats({
         totalLearners: learnersRes.data?.count || 0,
         activeCourses,
-        enrollments: enrollmentsRes.data?.total_enrollments || 0, 
+        enrollments: enrollmentsRes.data?.total_enrollments || 0,
         completionRate: completionRes.data?.overall_completion_rate || 0,
       });
     } catch (err) {
@@ -68,22 +95,19 @@ export default function AdminDashboard() {
 
   // Load mock data for charts and activity (replace with real API calls later)
   const loadMockData = () => {
-    // Mock recent activities
     setRecentActivities([
       // { id: 1, user: 'John Doe', action: 'completed the course "Introduction to Programming"', time: '2 hours ago' },
       // { id: 2, user: 'Jane Smith', action: 'enrolled in the course "Data Science Fundamentals"', time: '4 hours ago' },
       // { id: 3, user: 'Admin', action: 'added a new course "Advanced React"', time: '1 day ago' },
     ]);
-    
-    // Mock course enrollment data
+
     setCourseEnrollments([
       { course: 'Introduction to Programming', enrollments: 120 },
       { course: 'Data Science Fundamentals', enrollments: 85 },
       { course: 'Web Development Basics', enrollments: 64 },
       { course: 'Advanced React', enrollments: 45 },
     ]);
-    
-    // Mock user distribution data
+
     setUserDistribution([
       { role: 'Learners', count: 1500 },
       { role: 'Content Managers', count: 15 },
@@ -100,11 +124,11 @@ export default function AdminDashboard() {
 
   // Chart data configurations
   const enrollmentChartData = {
-    labels: courseEnrollments.map(item => item.course),
+    labels: courseEnrollments.map((item) => item.course),
     datasets: [
       {
         label: 'Enrollments',
-        data: courseEnrollments.map(item => item.enrollments),
+        data: courseEnrollments.map((item) => item.enrollments),
         backgroundColor: 'rgba(54, 162, 235, 0.5)',
         borderColor: 'rgba(54, 162, 235, 1)',
         borderWidth: 1,
@@ -113,20 +137,12 @@ export default function AdminDashboard() {
   };
 
   const userDistributionData = {
-    labels: userDistribution.map(item => item.role),
+    labels: userDistribution.map((item) => item.role),
     datasets: [
       {
-        data: userDistribution.map(item => item.count),
-        backgroundColor: [
-          'rgba(255, 99, 132, 0.5)',
-          'rgba(54, 162, 235, 0.5)',
-          'rgba(255, 206, 86, 0.5)',
-        ],
-        borderColor: [
-          'rgba(255, 99, 132, 1)',
-          'rgba(54, 162, 235, 1)',
-          'rgba(255, 206, 86, 1)',
-        ],
+        data: userDistribution.map((item) => item.count),
+        backgroundColor: ['rgba(255, 99, 132, 0.5)', 'rgba(54, 162, 235, 0.5)', 'rgba(255, 206, 86, 0.5)'],
+        borderColor: ['rgba(255, 99, 132, 1)', 'rgba(54, 162, 235, 1)', 'rgba(255, 206, 86, 1)'],
         borderWidth: 1,
       },
     ],
@@ -160,12 +176,23 @@ export default function AdminDashboard() {
     },
   };
 
+  // Render loading state if authentication is still in progress or user is not authorized
+  if (authLoading || !user || user.role !== 'ADMIN') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="spinner-border" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <DashboardLayout sidebar={<AdminSidebar />}>
       <div className="container-fluid">
         <h1 className="h2 mb-4">Admin Dashboard</h1>
         <p className="text-muted mb-4">Monitor courses, users, and content from this control panel.</p>
-        
+
         {error && <Alert variant="danger">{error}</Alert>}
 
         <div className="row mb-4">
@@ -189,7 +216,7 @@ export default function AdminDashboard() {
             </div>
           ))}
         </div>
-        
+
         {/* Recent Activity Section */}
         <div className="card mb-4">
           <div className="card-header">
@@ -204,7 +231,7 @@ export default function AdminDashboard() {
               </div>
             ) : recentActivities.length > 0 ? (
               <ListGroup variant="flush">
-                {recentActivities.map(activity => (
+                {recentActivities.map((activity) => (
                   <ListGroup.Item key={activity.id}>
                     <div className="d-flex justify-content-between">
                       <div>
@@ -220,7 +247,7 @@ export default function AdminDashboard() {
             )}
           </div>
         </div>
-        
+
         <div className="row">
           <div className="col-md-6 mb-4">
             <div className="card h-100">
