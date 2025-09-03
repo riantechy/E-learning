@@ -385,19 +385,33 @@ class UserAttemptViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         return UserAttempt.objects.filter(
-            user=self.request.user
+            user=self.request.user,
+            lesson__isnull=False,
+            lesson__module__isnull=False,
+            lesson__module__course__isnull=False
         ).select_related(
             'lesson__module__course'
         ).order_by('-attempt_date')
 
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
-        serializer = self.get_serializer(queryset, many=True)
-        
-        # Convert to dictionary format if needed
-        data = {
-            str(idx): item for idx, item in enumerate(serializer.data, start=1)
-        }
+        data = {}
+        for idx, attempt in enumerate(queryset, start=1):
+            data[str(idx)] = {
+                'id': str(attempt.id),
+                'score': round(attempt.score, 2),
+                'passed': attempt.passed,
+                'attempt_date': attempt.attempt_date.isoformat(),
+                'lesson': {
+                    'title': (attempt.lesson.title or 'Unknown') if attempt.lesson else 'Unknown',
+                    'module': {
+                        'title': (attempt.lesson.module.title or 'Unknown') if attempt.lesson and attempt.lesson.module else 'Unknown',
+                        'course': {
+                            'title': (attempt.lesson.module.course.title or 'Unknown') if attempt.lesson and attempt.lesson.module and attempt.lesson.module.course else 'Unknown'
+                        }
+                    }
+                }
+            }
         
         return Response({
             'status': 'success',
@@ -410,25 +424,27 @@ class UserAttemptsListView(APIView):
 
     def get(self, request):
         attempts = UserAttempt.objects.filter(
-            user=request.user
+            user=request.user,
+            lesson__isnull=False,
+            lesson__module__isnull=False,
+            lesson__module__course__isnull=False
         ).select_related(
             'lesson__module__course'
         ).order_by('-attempt_date')
 
-        # Format the data to match what frontend expects
         attempts_data = {}
         for idx, attempt in enumerate(attempts, start=1):
             attempts_data[str(idx)] = {
                 'id': str(attempt.id),
-                'score': float(attempt.score),  # Ensure score is a number
+                'score': round(attempt.score, 2),  
                 'passed': attempt.passed,
                 'attempt_date': attempt.attempt_date.isoformat(),
                 'lesson': {
-                    'title': attempt.lesson.title if attempt.lesson else 'Unknown',
+                    'title': (attempt.lesson.title or 'Unknown') if attempt.lesson else 'Unknown',
                     'module': {
-                        'title': attempt.lesson.module.title if attempt.lesson and attempt.lesson.module else 'Unknown',
+                        'title': (attempt.lesson.module.title or 'Unknown') if attempt.lesson and attempt.lesson.module else 'Unknown',
                         'course': {
-                            'title': attempt.lesson.module.course.title if attempt.lesson and attempt.lesson.module and attempt.lesson.module.course else 'Unknown'
+                            'title': (attempt.lesson.module.course.title or 'Unknown') if attempt.lesson and attempt.lesson.module and attempt.lesson.module.course else 'Unknown'
                         }
                     }
                 }

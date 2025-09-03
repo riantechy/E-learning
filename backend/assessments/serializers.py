@@ -15,7 +15,7 @@ class QuestionSerializer(serializers.ModelSerializer):
 
 class UserAttemptSerializer(serializers.ModelSerializer):
     lesson = serializers.SerializerMethodField()
-    score = serializers.SerializerMethodField()
+    score = serializers.FloatField()
 
     class Meta:
         model = UserAttempt
@@ -23,26 +23,15 @@ class UserAttemptSerializer(serializers.ModelSerializer):
 
     def get_lesson(self, obj):
         return {
-            'title': obj.lesson.title if obj.lesson else None,
+            'title': (obj.lesson.title or 'Unknown') if obj.lesson else 'Unknown',
             'module': {
-                'title': obj.lesson.module.title if obj.lesson and obj.lesson.module else None,
+                'title': (obj.lesson.module.title or 'Unknown') if obj.lesson and obj.lesson.module else 'Unknown',
                 'course': {
-                    'title': obj.lesson.module.course.title if obj.lesson and obj.lesson.module and obj.lesson.module.course else None
+                    'title': (obj.lesson.module.course.title or 'Unknown') if obj.lesson and obj.lesson.module and obj.lesson.module.course else 'Unknown'
                 }
             }
         }
 
-    def get_score(self, obj):
-        # Handle both direct score (float) and nested score object
-        if isinstance(obj.score, dict):
-            return {
-                'source': str(obj.score.get('source', '0.0')),
-                'parsedValue': float(obj.score.get('parsedValue', 0))
-            }
-        return {
-            'source': str(obj.score),
-            'parsedValue': float(obj.score)
-        }
 
 class UserResponseSerializer(serializers.ModelSerializer):
     class Meta:

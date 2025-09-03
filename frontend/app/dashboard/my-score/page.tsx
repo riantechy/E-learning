@@ -1,11 +1,10 @@
-
 // app/dashboard/scores/page.tsx
 'use client'
 
 import { useAuth } from '@/context/AuthContext'
 import { assessmentsApi } from '@/lib/api'
 import { useEffect, useState } from 'react'
-import { Card, Table, ProgressBar, Badge, Spinner, Alert } from 'react-bootstrap'
+import { Card, Table, ProgressBar, Badge, Spinner, Alert, Form } from 'react-bootstrap'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import LearnerSidebar from '@/components/LearnerSidebar'
 import TopNavbar from '@/components/TopNavbar'
@@ -13,15 +12,15 @@ import { Menu } from 'lucide-react'
 
 interface CleanAttempt {
   id: string;
-  score: number; // Score is always a number after parsing
+  score: number;
   passed: boolean;
   attempt_date: string;
-  lesson?: {
-    title?: string;
-    module?: {
-      title?: string;
-      course?: {
-        title?: string;
+  lesson: {
+    title: string;
+    module: {
+      title: string;
+      course: {
+        title: string;
       };
     };
   } | null;
@@ -33,6 +32,7 @@ export default function MyScoresPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
+  const [selectedModule, setSelectedModule] = useState<string>('All')
 
   useEffect(() => {
     const fetchScores = async () => {
@@ -41,35 +41,43 @@ export default function MyScoresPage() {
         const response = await assessmentsApi.getUserAttempts()
 
         if (response.data) {
-          // Convert the object response to array and clean the data
-          const attemptsArray = Object.values(response.data)
-            .filter((attempt): attempt is NonNullable<typeof attempt> => attempt !== null && attempt !== undefined)
-            .map(attempt => ({
-              id: attempt.id || 'unknown-id',
-              score: typeof attempt.score === 'number'
-                ? attempt.score
-                : attempt.score ?? 0, // Extract parsedValue or fallback to 0
-              passed: attempt.passed || false,
-              attempt_date: attempt.attempt_date || new Date().toISOString(),
-              lesson: attempt.lesson || null
-            }))
+          const attemptsArray: CleanAttempt[] = Object.values(response.data.data || {})
+            .filter((attempt): attempt is NonNullable<typeof attempt> => !!attempt)
+            .map(attempt => {
+              let scoreValue = 0;
+              if (typeof attempt.score === 'number') {
+                scoreValue = attempt.score;
+              } else if (attempt.score && typeof attempt.score === 'object') {
+                scoreValue = typeof attempt.score.parsedValue === 'number' 
+                  ? attempt.score.parsedValue 
+                  : parseFloat(attempt.score.source) || 0;
+              }
 
-          setAttempts(attemptsArray)
+              return {
+                id: attempt.id,
+                score: scoreValue,
+                passed: attempt.passed,
+                attempt_date: attempt.attempt_date,
+                lesson: attempt.lesson,
+              };
+            });
+
+          setAttempts(attemptsArray);
         } else if (response.error) {
-          setError(response.error)
+          setError(response.error);
         }
       } catch (err) {
-        setError('Failed to fetch scores. Please try again later.')
-        console.error('Error fetching scores:', err)
+        setError('Failed to fetch scores. Please try again later.');
+        console.error('Error fetching scores:', err);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
     if (user?.id) {
-      fetchScores()
+      fetchScores();
     }
-  }, [user?.id])
+  }, [user?.id]);
 
   const formatDate = (dateString: string) => {
     try {
@@ -78,46 +86,56 @@ export default function MyScoresPage() {
         month: 'short',
         day: 'numeric',
         hour: '2-digit',
-        minute: '2-digit'
-      })
+        minute: '2-digit',
+      });
     } catch {
-      return 'Unknown'
+      return 'Unknown';
     }
-  }
+  };
 
-  const validAttempts = attempts.filter(attempt => 
-    attempt !== null && 
-    attempt !== undefined && 
-    attempt.id
+  const validAttempts = attempts.filter(
+    (attempt) => attempt !== null && attempt !== undefined && attempt.id
   )
 
-  const passedCount = validAttempts.filter(a => a.passed).length
-  const totalCount = validAttempts.length
-  const averageScore = totalCount > 0 
-    ? Math.round(validAttempts.reduce((sum, a) => sum + a.score, 0) / totalCount)
-    : 0
+  // Get unique modules
+  const uniqueModules = Array.from(
+    new Set(validAttempts.map((a) => a.lesson?.module?.title || 'Unknown'))
+  )
+
+  // Filter attempts
+  const filteredAttempts =
+    selectedModule === 'All'
+      ? validAttempts
+      : validAttempts.filter((a) => (a.lesson?.module?.title || 'Unknown') === selectedModule)
+
+  const passedCount = filteredAttempts.filter((a) => a.passed).length
+  const totalCount = filteredAttempts.length
+  const averageScore =
+    totalCount > 0
+      ? Math.round(filteredAttempts.reduce((sum, a) => sum + a.score, 0) / totalCount)
+      : 0
 
   return (
     <ProtectedRoute>
       <div className="d-flex vh-100 bg-light position-relative">
         {/* Mobile Sidebar Toggle Button */}
-        <button 
+        <button
           className="d-lg-none btn btn-light position-fixed top-2 start-2 z-3"
           onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
-          style={{zIndex: 1000}}
+          style={{ zIndex: 1000 }}
         >
           <Menu className="bi bi-list" />
         </button>
 
         {/* Sidebar */}
-        <div 
+        <div
           className={`d-flex flex-column flex-shrink-0 p-3 bg-white shadow-sm h-100 
             ${mobileSidebarOpen ? 'd-block position-fixed' : 'd-none d-lg-block'}`}
           style={{
             width: '280px',
             zIndex: 999,
             left: mobileSidebarOpen ? '0' : '-280px',
-            transition: 'left 0.3s ease'
+            transition: 'left 0.3s ease',
           }}
         >
           <LearnerSidebar />
@@ -125,9 +143,9 @@ export default function MyScoresPage() {
 
         {/* Overlay for mobile */}
         {mobileSidebarOpen && (
-          <div 
+          <div
             className="d-lg-none position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50"
-            style={{zIndex: 998}}
+            style={{ zIndex: 998 }}
             onClick={() => setMobileSidebarOpen(false)}
           />
         )}
@@ -139,7 +157,20 @@ export default function MyScoresPage() {
           <main className="flex-grow-1 p-4 overflow-auto">
             <div className="container-fluid">
               <div className="d-flex justify-content-between align-items-center mb-4">
-                <h1 className="h2 mb-0">My Quiz Scores</h1>
+                <h6 className="h4 mb-0">My Quiz Scores</h6>
+                {/* Module Filter */}
+                <Form.Select
+                  style={{ width: '250px' }}
+                  value={selectedModule}
+                  onChange={(e) => setSelectedModule(e.target.value)}
+                >
+                  <option value="All">All Modules</option>
+                  {uniqueModules.map((mod) => (
+                    <option key={mod} value={mod}>
+                      {mod}
+                    </option>
+                  ))}
+                </Form.Select>
               </div>
 
               {loading ? (
@@ -149,7 +180,7 @@ export default function MyScoresPage() {
                 </div>
               ) : error ? (
                 <Alert variant="danger">{error}</Alert>
-              ) : validAttempts.length === 0 ? (
+              ) : filteredAttempts.length === 0 ? (
                 <Card>
                   <Card.Body className="text-center py-5">
                     <i className="bi bi-clipboard2-x fs-1 text-muted mb-3"></i>
@@ -173,10 +204,11 @@ export default function MyScoresPage() {
                           </tr>
                         </thead>
                         <tbody>
-                          {validAttempts.map((attempt) => {
-                            const courseTitle = attempt.lesson?.module?.course?.title ?? 'Unknown'
-                            const moduleTitle = attempt.lesson?.module?.title ?? 'Unknown'
-                            const lessonTitle = attempt.lesson?.title ?? 'Unknown'
+                          {filteredAttempts.map((attempt) => {
+                            const courseTitle =
+                              attempt.lesson?.module?.course?.title || 'Unknown';
+                            const moduleTitle = attempt.lesson?.module?.title || 'Unknown';
+                            const lessonTitle = attempt.lesson?.title || 'Unknown';
 
                             return (
                               <tr key={attempt.id}>
@@ -203,7 +235,7 @@ export default function MyScoresPage() {
                                 </td>
                                 <td>{formatDate(attempt.attempt_date)}</td>
                               </tr>
-                            )
+                            );
                           })}
                         </tbody>
                       </Table>
@@ -225,7 +257,10 @@ export default function MyScoresPage() {
                             <Card.Body>
                               <h6 className="card-title">Pass Rate</h6>
                               <p className="display-6">
-                                {totalCount > 0 ? Math.round((passedCount / totalCount) * 100) : 0}%
+                                {totalCount > 0
+                                  ? Math.round((passedCount / totalCount) * 100)
+                                  : 0}
+                                %
                               </p>
                             </Card.Body>
                           </Card>
@@ -250,5 +285,5 @@ export default function MyScoresPage() {
         </div>
       </div>
     </ProtectedRoute>
-  )
+  );
 }

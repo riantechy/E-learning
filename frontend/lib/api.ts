@@ -284,7 +284,9 @@ getQuestions: (lessonId: string) => apiRequest<PaginatedResponse<Question>>(`/as
     apiRequest<Question>(`/assessments/lessons/${lessonId}/questions/${questionId}/`, 'PUT', question),
   deleteQuestion: (lessonId: string, questionId: string) => 
     apiRequest(`/assessments/lessons/${lessonId}/questions/${questionId}/`, 'DELETE'),
-  getUserAttempts: () => apiRequest<UserAttempt[]>(`/assessments/user-attempts/`),
+  getUserAttempts: () => apiRequest<{ status: string; data: { [key: string]: UserAttempt }; count: number }>(`/assessments/user-attempts/`),
+
+
 
   // Answers
   getAnswers: (questionId: string) => apiRequest<PaginatedResponse<Answer>>(`/assessments/questions/${questionId}/answers/`),
@@ -721,7 +723,7 @@ export interface UserAttempt {
       };
     };
   };
-  score: number;
+  score: number | { source: string; parsedValue: number };
   max_score: number;
   passed: boolean;
   attempt_date: string;
