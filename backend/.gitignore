@@ -1,4 +1,4 @@
 .env
 *.env
 # Ignore media uploads
-backend/media/*
+media/*
