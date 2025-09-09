@@ -2,16 +2,12 @@
 'use client'
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { usersApi } from '@/lib/api';
 import { EyeIcon, EyeSlashIcon, CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline';
 
-interface ResetPasswordPageProps {
-  params: { token: string };
-}
-
-export default function ResetPasswordPage({ params }: ResetPasswordPageProps) {
+export default function ResetPasswordPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -20,8 +16,9 @@ export default function ResetPasswordPage({ params }: ResetPasswordPageProps) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
+  const [token, setToken] = useState<string | null>(null);
   const router = useRouter();
-  const token = params.token;
+  const params = useParams();
 
   // Password validation criteria
   const passwordRequirements = [
@@ -31,6 +28,13 @@ export default function ResetPasswordPage({ params }: ResetPasswordPageProps) {
     { id: 'number', text: 'At least one number', validator: (p: string) => /[0-9]/.test(p) },
     { id: 'special', text: 'At least one special character', validator: (p: string) => /[!@#$%^&*(),.?":{}|<>]/.test(p) },
   ];
+
+  // Extract token from params
+  useEffect(() => {
+    if (params?.token) {
+      setToken(params.token as string);
+    }
+  }, [params]);
 
   // Validate password against all criteria
   const validatePassword = (p: string) => {
@@ -52,6 +56,11 @@ export default function ResetPasswordPage({ params }: ResetPasswordPageProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!token) {
+      setError('Invalid reset token');
+      return;
+    }
+
     // Validation
     if (!password || !confirmPassword) {
       setError('Please fill in all fields');
@@ -65,11 +74,6 @@ export default function ResetPasswordPage({ params }: ResetPasswordPageProps) {
     
     if (password !== confirmPassword) {
       setError('Passwords do not match');
-      return;
-    }
-
-    if (!token) {
-      setError('Invalid reset token');
       return;
     }
 
@@ -101,6 +105,18 @@ export default function ResetPasswordPage({ params }: ResetPasswordPageProps) {
   const isRequirementMet = (requirementText: string) => {
     return !passwordErrors.includes(requirementText);
   };
+
+  if (!token) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md mx-auto">
+          <div className="bg-white shadow-xl rounded-lg overflow-hidden p-8 text-center">
+            <p>Loading...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
