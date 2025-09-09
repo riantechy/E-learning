@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.core.files.storage import default_storage
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from django.core.files.base import ContentFile
 from django.utils import timezone
 from datetime import timedelta
@@ -148,6 +149,29 @@ class UserUpdateView(generics.UpdateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]  # Add JSONParser
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        
+        # Handle both JSON and form data
+        if request.content_type == 'application/json':
+            # For JSON data, we need to handle the profile_image field specially
+            data = request.data.copy()
+            if 'profile_image' in data and isinstance(data['profile_image'], str):
+                # If profile_image is a string (URL), remove it from update data
+                # as we don't want to change the image when it's just a URL reference
+                del data['profile_image']
+            serializer = self.get_serializer(instance, data=data, partial=partial)
+        else:
+            # For form data, use the data as is
+            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        
+        return Response(serializer.data)
 
 class UserDeleteView(generics.DestroyAPIView):
     queryset = User.objects.all()
@@ -164,27 +188,41 @@ class UserDeleteView(generics.DestroyAPIView):
 
 class ChangePasswordView(generics.UpdateAPIView):
     serializer_class = ChangePasswordSerializer
-    model = User
     permission_classes = [IsAuthenticated]
 
-    def get_object(self, queryset=None):
-        return self.request.user
+    def get_object(self):
+        return self.request.user  
 
     def update(self, request, *args, **kwargs):
         self.object = self.get_object()
         serializer = self.get_serializer(data=request.data)
 
         if serializer.is_valid():
+            # Check old password
             if not self.object.check_password(serializer.data.get("old_password")):
-                return Response({"old_password": "Wrong password."}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"old_password": "Wrong old password."}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
-            self.object.set_password(serializer.data.get("new_password"))
+            new_password = serializer.data.get("new_password")
+            
+            # Check if new password matches any of the last 3 passwords
+            if self.object.check_password_history(new_password):
+                return Response(
+                    {"new_password": "You cannot use any of your last 3 passwords."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            self.object.set_password(new_password)
             self.object.save()
-            return Response({"detail": "Password updated successfully"}, status=status.HTTP_200_OK)
+            return Response(
+                {"detail": "Password updated successfully"}, 
+                status=status.HTTP_200_OK
+            )
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-# Add this new view class
 class UserCreateView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -200,7 +238,7 @@ class UserCreateView(generics.CreateAPIView):
             password=request.data.get('password', 'defaultpassword'),  
             first_name=serializer.validated_data['first_name'],
             last_name=serializer.validated_data['last_name'],
-            # Add other fields as needed
+            profile_image=serializer.validated_data.get('profile_image'),
         )
         
         return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
@@ -281,15 +319,41 @@ class PasswordResetConfirmView(APIView):
             user = User.objects.get(password_reset_token=token)
             
             if user.password_reset_token_expires < timezone.now():
-                return Response({'error': 'Password reset link has expired'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {'error': 'Password reset link has expired'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
                 
             new_password = request.data.get('new_password')
+            
+            # Validate password complexity
+            try:
+                validate_password_complexity(new_password)
+            except ValidationError as e:
+                return Response(
+                    {'error': e.message}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Check password history
+            if user.check_password_history(new_password):
+                return Response(
+                    {'error': 'Cannot use any of your last 3 passwords.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+                
             user.set_password(new_password)
             user.password_reset_token = None
             user.password_reset_token_expires = None
             user.save()
             
-            return Response({'message': 'Password successfully reset'}, status=status.HTTP_200_OK)
+            return Response(
+                {'message': 'Password successfully reset'}, 
+                status=status.HTTP_200_OK
+            )
             
         except User.DoesNotExist:
-            return Response({'error': 'Invalid password reset token'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {'error': 'Invalid password reset token'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )

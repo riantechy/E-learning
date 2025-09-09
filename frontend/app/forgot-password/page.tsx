@@ -25,7 +25,7 @@ export default function ForgotPasswordPage() {
         throw new Error(response.error);
       }
       
-      setMessage('If an account with that email exists, we have sent a password reset link.');
+      setMessage('We have sent a password reset link to your email account.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to send reset link');
     } finally {
@@ -69,9 +69,9 @@ export default function ForgotPasswordPage() {
 
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div className="text-center mb-8">
-              <h2 className="text-3xl font-extrabold text-gray-900">
+              <h4 className="text-3xl font-extrabold text-gray-900">
                 Forgot your password?
-              </h2>
+              </h4>
               <p className="mt-2 text-sm text-gray-600">
                 Enter your email and we'll send you a link to reset your password
               </p>

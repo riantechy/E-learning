@@ -2,16 +2,19 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { usersApi } from '@/lib/api';
+import { Menu, Eye, EyeOff, CheckCircle, XCircle, Upload, Edit3 } from 'lucide-react'
 import DashboardLayout from '@/components/DashboardLayout';
 import AdminSidebar from '@/components/AdminSidebar';
 import { useRouter } from 'next/navigation';
+import styles from './profile.module.css';
 
-export default function ProfilePage() {
+export default function ProfilePage() {  
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [editMode, setEditMode] = useState(false);
   const [activeTab, setActiveTab] = useState('profile');
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const [passwordForm, setPasswordForm] = useState({
     old_password: '',
     new_password: '',
@@ -20,11 +23,21 @@ export default function ProfilePage() {
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
   const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
+  const [imageUpdated, setImageUpdated] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
+  // Password validation criteria
+  const passwordRequirements = [
+    { id: 'length', text: 'At least 8 characters', validator: (p: string) => p.length >= 8 },
+    { id: 'uppercase', text: 'At least one uppercase letter', validator: (p: string) => /[A-Z]/.test(p) },
+    { id: 'lowercase', text: 'At least one lowercase letter', validator: (p: string) => /[a-z]/.test(p) },
+    { id: 'number', text: 'At least one number', validator: (p: string) => /[0-9]/.test(p) },
+    { id: 'special', text: 'At least one special character', validator: (p: string) => /[!@#$%^&*(),.?":{}|<>]/.test(p) },
+  ];
+
   useEffect(() => {
-    console.log('handleSubmitPassword defined:', typeof handleSubmitPassword);
     fetchProfile();
   }, []);
 
@@ -38,6 +51,7 @@ export default function ProfilePage() {
       }
       setUser(response.data);
       setProfileImage(response.data.profile_image || '/images/profile.JPG');
+      setImageUpdated(false); // Reset image update flag
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch profile');
     } finally {
@@ -45,28 +59,35 @@ export default function ProfilePage() {
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setUser((prev: any) => ({ ...prev, [name]: value }));
-  };
-
-  const [showPassword, setShowPassword] = useState({
-    old_password: false,
-    new_password: false,
-    confirm_password: false,
-  });
-  
-  // Add this function to toggle password visibility
-  const togglePasswordVisibility = (field: keyof typeof showPassword) => {
-    setShowPassword(prev => ({
-      ...prev,
-      [field]: !prev[field]
-    }));
   };
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setPasswordForm(prev => ({ ...prev, [name]: value }));
+    
+    // Validate password when new_password changes
+    if (name === 'new_password') {
+      validatePassword(value);
+    }
+  };
+
+  // Validate password against all criteria
+  const validatePassword = (p: string) => {
+    const errors = passwordRequirements
+      .filter(req => !req.validator(p))
+      .map(req => req.text);
+    setPasswordErrors(errors);
+    return errors.length === 0;
+  };
+
+  // Calculate max date for 18 years ago
+  const getMaxBirthDate = () => {
+    const today = new Date();
+    const minAgeDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
+    return minAgeDate.toISOString().split('T')[0];
   };
 
   const handleSubmitProfile = async (e: React.FormEvent) => {
@@ -84,11 +105,6 @@ export default function ProfilePage() {
         date_of_birth: user.date_of_birth,
         county: user.county,
         education: user.education,
-        innovation: user.innovation,
-        innovation_stage: user.innovation_stage,
-        innovation_in_whitebox: user.innovation_in_whitebox,
-        innovation_industry: user.innovation_industry,
-        training: user.training,
         training_institution: user.training_institution,
       });
       if (response.error) {
@@ -104,12 +120,34 @@ export default function ProfilePage() {
     }
   };
 
+  // Add this state to your existing state declarations
+  const [showPassword, setShowPassword] = useState({
+    old_password: false,
+    new_password: false,
+    confirm_password: false,
+  });
+
+  // Add this function to toggle password visibility
+  const togglePasswordVisibility = (field: keyof typeof showPassword) => {
+    setShowPassword(prev => ({
+      ...prev,
+      [field]: !prev[field]
+    }));
+  };
+
   const handleSubmitPassword = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (passwordForm.new_password !== passwordForm.confirm_password) {
       setPasswordError("New passwords don't match");
       return;
     }
+    
+    if (passwordErrors.length > 0) {
+      setPasswordError('Please fix password validation errors');
+      return;
+    }
+
     try {
       setLoading(true);
       setPasswordError('');
@@ -127,6 +165,7 @@ export default function ProfilePage() {
         new_password: '',
         confirm_password: '',
       });
+      setPasswordErrors([]);
       setTimeout(() => setPasswordSuccess(''), 3000);
     } catch (err) {
       setPasswordError(err instanceof Error ? err.message : 'Failed to change password');
@@ -148,8 +187,11 @@ export default function ProfilePage() {
         return;
       }
       if (response.data) {
-        setProfileImage(response.data.profile_image_url);
-        setUser((prev: any) => ({ ...prev, profile_image: response.data?.profile_image_url }));
+        // Force image reload by adding a timestamp query parameter
+        const newImageUrl = `${response.data.profile_image_url}?t=${new Date().getTime()}`;
+        setProfileImage(newImageUrl);
+        setUser((prev: any) => ({ ...prev, profile_image: newImageUrl }));
+        setImageUpdated(true); // Set flag to indicate image was updated
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to upload image');
@@ -160,6 +202,10 @@ export default function ProfilePage() {
 
   const triggerFileInput = () => {
     fileInputRef.current?.click();
+  };
+
+  const isRequirementMet = (requirementText: string) => {
+    return !passwordErrors.includes(requirementText);
   };
 
   return (
@@ -178,228 +224,186 @@ export default function ProfilePage() {
             <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-blue-500 border-solid"></div>
           </div>
         ) : (
-          <div className="bg-white shadow-lg rounded-lg overflow-hidden">
-            <div className="border-b border-gray-200">
-              <nav className="-mb-px flex space-x-8 px-6" aria-label="Tabs">
-                <button
-                  className={`${
-                    activeTab === 'profile'
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
-                  onClick={() => setActiveTab('profile')}
-                >
-                  Profile
-                </button>
-                <button
-                  className={`${
-                    activeTab === 'password'
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
-                  onClick={() => setActiveTab('password')}
-                >
-                  Change Password
-                </button>
-              </nav>
+          <div className="card shadow-sm">
+            <div className="card-header bg-white">
+              <ul className="nav nav-tabs card-header-tabs">
+                <li className="nav-item">
+                  <button
+                    className={`nav-link ${activeTab === 'profile' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('profile')}
+                  >
+                    Profile
+                  </button>
+                </li>
+                <li className="nav-item">
+                  <button
+                    className={`nav-link ${activeTab === 'password' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('password')}
+                  >
+                    Change Password
+                  </button>
+                </li>
+              </ul>
             </div>
 
-            <div className="p-6">
+            <div className="card-body">
               {activeTab === 'profile' && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="flex flex-col items-center">
-                    <div className="relative">
+                <div className="row">
+                  <div className="col-md-4 text-center mb-4 mb-md-0">
+                    <div className={styles.profileImageContainer}>
                       <img
                         src={profileImage || '/images/default-profile.png'}
                         alt="Profile"
-                        className="w-32 h-32 rounded-full object-cover border-4 border-gray-100 shadow-md"
+                        className={`${styles.profileImage} rounded-circle`}
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/images/default-profile.png';
+                        }}
                       />
-                      <div
-                        className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-300 cursor-pointer"
-                        onClick={triggerFileInput}
-                      >
-                        <span className="text-white text-sm">Change Photo</span>
+                      <div className={styles.imageOverlay} onClick={triggerFileInput}>
+                        <Upload size={24} />
                       </div>
                       <input
                         type="file"
                         ref={fileInputRef}
                         onChange={handleImageUpload}
                         accept="image/*"
-                        className="hidden"
+                        className="d-none"
                       />
                     </div>
                     <button
-                      className="mt-4 px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors duration-200"
+                      className="btn btn-outline-primary mt-3"
                       onClick={triggerFileInput}
                     >
+                      <Upload size={16} className="me-2" />
                       Upload Photo
                     </button>
                   </div>
 
-                  <div className="md:col-span-2">
+                  <div className="col-md-8">
                     {editMode ? (
-                      <form onSubmit={handleSubmitProfile} className="space-y-6">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700">First Name</label>
+                      <form onSubmit={handleSubmitProfile}>
+                        <div className="row mb-3">
+                          <div className="col-md-6">
+                            <label className="form-label">First Name</label>
                             <input
                               type="text"
                               name="first_name"
-                              value={user.first_name}
+                              value={user.first_name || ''}
                               onChange={handleInputChange}
-                              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                              className="form-control"
                               required
                             />
                           </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700">Last Name</label>
+                          <div className="col-md-6">
+                            <label className="form-label">Last Name</label>
                             <input
                               type="text"
                               name="last_name"
-                              value={user.last_name}
+                              value={user.last_name || ''}
                               onChange={handleInputChange}
-                              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                              className="form-control"
                               required
                             />
                           </div>
                         </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">Email</label>
+                        
+                        <div className="mb-3">
+                          <label className="form-label">Email</label>
                           <input
                             type="email"
                             name="email"
-                            value={user.email}
+                            value={user.email || ''}
                             onChange={handleInputChange}
-                            className="mt-1 block w-full rounded-md border-gray-300 bg-gray-100 cursor-not-allowed"
+                            className="form-control"
                             disabled
                           />
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700">Phone</label>
+                        
+                        <div className="row mb-3">
+                          <div className="col-md-6">
+                            <label className="form-label">Phone</label>
                             <input
                               type="text"
                               name="phone"
-                              value={user.phone}
+                              value={user.phone || ''}
                               onChange={handleInputChange}
-                              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                              className="form-control"
                             />
                           </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700">Gender</label>
-                            <input
-                              type="text"
+                          <div className="col-md-6">
+                            <label className="form-label">Gender</label>
+                            <select
                               name="gender"
-                              value={user.gender}
+                              value={user.gender || ''}
                               onChange={handleInputChange}
-                              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
-                            />
+                              className="form-select"
+                            >
+                              <option value="">Select Gender</option>
+                              <option value="male">Male</option>
+                              <option value="female">Female</option>
+                            </select>
                           </div>
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700">Date of Birth</label>
+                        
+                        <div className="row mb-3">
+                          <div className="col-md-6">
+                            <label className="form-label">Date of Birth</label>
                             <input
-                              type="text"
+                              type="date"
                               name="date_of_birth"
-                              value={user.date_of_birth}
+                              value={user.date_of_birth || ''}
                               onChange={handleInputChange}
-                              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                              className="form-control"
+                              max={getMaxBirthDate()}
                             />
+                            <div className="form-text">You must be at least 18 years old</div>
                           </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700">County</label>
+                          <div className="col-md-6">
+                            <label className="form-label">County</label>
                             <input
                               type="text"
                               name="county"
-                              value={user.county}
+                              value={user.county || ''}
                               onChange={handleInputChange}
-                              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                              className="form-control"
                             />
                           </div>
                         </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">Education</label>
+                        
+                        <div className="mb-3">
+                          <label className="form-label">Education</label>
                           <textarea
                             name="education"
-                            value={user.education}
+                            value={user.education || ''}
                             onChange={handleInputChange}
-                            rows={4}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                            rows={3}
+                            className="form-control"
                           />
                         </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">Innovation</label>
-                          <textarea
-                            name="innovation"
-                            value={user.innovation}
-                            onChange={handleInputChange}
-                            rows={4}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">Innovation Stage</label>
-                          <textarea
-                            name="innovation_stage"
-                            value={user.innovation_stage}
-                            onChange={handleInputChange}
-                            rows={4}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">Innovation in Whitebox</label>
-                          <textarea
-                            name="innovation_in_whitebox"
-                            value={user.innovation_in_whitebox}
-                            onChange={handleInputChange}
-                            rows={4}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">Innovation Industry</label>
-                          <textarea
-                            name="innovation_industry"
-                            value={user.innovation_industry}
-                            onChange={handleInputChange}
-                            rows={4}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">Training</label>
-                          <textarea
-                            name="training"
-                            value={user.training}
-                            onChange={handleInputChange}
-                            rows={4}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">Training Institution</label>
+                        
+                        <div className="mb-4">
+                          <label className="form-label">Training Institution</label>
                           <textarea
                             name="training_institution"
-                            value={user.training_institution}
+                            value={user.training_institution || ''}
                             onChange={handleInputChange}
-                            rows={4}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                            rows={3}
+                            className="form-control"
                           />
                         </div>
-                        <div className="flex space-x-4">
+                        
+                        <div className="d-flex gap-2">
                           <button
                             type="submit"
                             disabled={loading}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-blue-300 transition-colors duration-200"
+                            className="btn btn-primary"
                           >
                             {loading ? 'Saving...' : 'Save Changes'}
                           </button>
                           <button
                             type="button"
                             onClick={() => setEditMode(false)}
-                            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors duration-200"
+                            className="btn btn-outline-secondary"
                           >
                             Cancel
                           </button>
@@ -407,36 +411,42 @@ export default function ProfilePage() {
                       </form>
                     ) : (
                       <div>
-                        <div className="flex justify-between items-center mb-6">
-                          <h2 className="text-2xl font-semibold text-gray-800">{user.first_name} {user.last_name}</h2>
+                        <div className="d-flex justify-content-between align-items-center mb-4">
+                          <h5 className="card-title">{user.first_name} {user.last_name}</h5>
                           <button
                             onClick={() => setEditMode(true)}
-                            className="px-4 py-2 bg-blue-100 text-blue-600 rounded-md hover:bg-blue-200 transition-colors duration-200"
+                            className="btn btn-outline-primary"
                           >
+                            <Edit3 size={16} className="me-2" />
                             Edit Profile
                           </button>
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                          <div>
-                            <p className="text-sm text-gray-600"><strong>Email:</strong> {user.email}</p>
-                            <p className="text-sm text-gray-600"><strong>Phone:</strong> {user.phone || 'Not provided'}</p>
-                            <p className="text-sm text-gray-600"><strong>Gender:</strong> {user.gender || 'Not provided'}</p>
-                            <p className="text-sm text-gray-600"><strong>Date of Birth:</strong> {user.date_of_birth || 'Not provided'}</p>
-                            <p className="text-sm text-gray-600"><strong>County:</strong> {user.county || 'Not provided'}</p>
-                            <p className="text-sm text-gray-600"><strong>Education:</strong> {user.education || 'Not provided'}</p>
-                            <p className="text-sm text-gray-600"><strong>Role:</strong> {user.role}</p>
+                        
+                        <div className="row">
+                          <div className="col-md-6">
+                            <p><strong>Email:</strong> {user.email}</p>
+                            <p><strong>Phone:</strong> {user.phone || 'Not provided'}</p>
+                            <p><strong>Gender:</strong> {user.gender || 'Not provided'}</p>
+                            <p><strong>Date of Birth:</strong> {user.date_of_birth || 'Not provided'}</p>
                           </div>
-                          <div>
-                            <p className="text-sm text-gray-600"><strong>Innovation:</strong> {user.innovation || 'Not provided'}</p>
-                            <p className="text-sm text-gray-600"><strong>Innovation Stage:</strong> {user.innovation_stage || 'Not provided'}</p>
-                            <p className="text-sm text-gray-600"><strong>Innovation in Whitebox:</strong> {user.innovation_in_whitebox || 'Not provided'}</p>
-                            <p className="text-sm text-gray-600"><strong>Innovation Industry:</strong> {user.innovation_industry || 'Not provided'}</p>
-                            <p className="text-sm text-gray-600"><strong>Training:</strong> {user.training || 'Not provided'}</p>
-                            <p className="text-sm text-gray-600"><strong>Training Institution:</strong> {user.training_institution || 'Not provided'}</p>
-                            <p className="text-sm text-gray-600"><strong>Status:</strong> {user.status || 'Not provided'}</p>
-                            <p className="text-sm text-gray-600"><strong>Joined:</strong> {new Date(user.date_joined).toLocaleDateString()}</p>
-                            <p className="text-sm text-gray-600"><strong>Registered:</strong> {user.date_registered || 'Not provided'}</p>
-                            <p className="text-sm text-gray-600"><strong>Last Login:</strong> {user.last_login ? new Date(user.last_login).toLocaleString() : 'Never'}</p>
+                          <div className="col-md-6">
+                            <p><strong>County:</strong> {user.county || 'Not provided'}</p>
+                            <p><strong>Education:</strong> {user.education || 'Not provided'}</p>
+                            <p><strong>Training Institution:</strong> {user.training_institution || 'Not provided'}</p>
+                            <p><strong>Role:</strong> {user.role}</p>
+                          </div>
+                        </div>
+                        
+                        <hr className="my-4" />
+                        
+                        <div className="row">
+                          <div className="col-md-6">
+                            <p><strong>Status:</strong> {user.status || 'Not provided'}</p>
+                            <p><strong>Joined:</strong> {new Date(user.date_joined).toLocaleDateString()}</p>
+                          </div>
+                          <div className="col-md-6">
+                            <p><strong>Registered:</strong> {user.date_registered || 'Not provided'}</p>
+                            <p><strong>Last Login:</strong> {user.last_login ? new Date(user.last_login).toLocaleString() : 'Never'}</p>
                           </div>
                         </div>
                       </div>
@@ -446,82 +456,130 @@ export default function ProfilePage() {
               )}
 
               {activeTab === 'password' && (
-                <div className="max-w-lg">
-                  <form onSubmit={handleSubmitPassword} className="space-y-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Current Password</label>
-                      <div className="relative">
-                        <input
-                          type={showPassword.old_password ? "text" : "password"}
-                          name="old_password"
-                          value={passwordForm.old_password}
-                          onChange={handlePasswordChange}
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 pr-10"
-                          required
-                        />
+                <div className="row justify-content-center">
+                  <div className="col-md-8 col-lg-6">
+                    <h5 className="card-title text-center mb-4">Change Password</h5>
+                    
+                    {passwordError && (
+                      <div className="alert alert-danger alert-dismissible fade show" role="alert">
+                        {passwordError}
+                        <button type="button" className="btn-close" onClick={() => setPasswordError('')}></button>
+                      </div>
+                    )}
+                    
+                    {passwordSuccess && (
+                      <div className="alert alert-success alert-dismissible fade show" role="alert">
+                        {passwordSuccess}
+                        <button type="button" className="btn-close" onClick={() => setPasswordSuccess('')}></button>
+                      </div>
+                    )}
+                    
+                    <form onSubmit={handleSubmitPassword}>
+                      <div className="mb-3">
+                        <label className="form-label">Current Password</label>
+                        <div className="input-group">
+                          <input
+                            type={showPassword.old_password ? "text" : "password"}
+                            name="old_password"
+                            value={passwordForm.old_password}
+                            onChange={handlePasswordChange}
+                            className="form-control"
+                            required
+                          />
+                          <button
+                            type="button"
+                            className="btn btn-outline-secondary"
+                            onClick={() => togglePasswordVisibility('old_password')}
+                          >
+                            {showPassword.old_password ? <EyeOff size={18} /> : <Eye size={18} />}
+                          </button>
+                        </div>
+                      </div>
+                      
+                      <div className="mb-3">
+                        <label className="form-label">New Password</label>
+                        <div className="input-group">
+                          <input
+                            type={showPassword.new_password ? "text" : "password"}
+                            name="new_password"
+                            value={passwordForm.new_password}
+                            onChange={handlePasswordChange}
+                            className="form-control"
+                            required
+                          />
+                          <button
+                            type="button"
+                            className="btn btn-outline-secondary"
+                            onClick={() => togglePasswordVisibility('new_password')}
+                          >
+                            {showPassword.new_password ? <EyeOff size={18} /> : <Eye size={18} />}
+                          </button>
+                        </div>
+                        
+                        {/* Password Requirements */}
+                        {passwordForm.new_password && (
+                          <div className="mt-3 p-3 bg-light rounded">
+                            <p className="fw-bold mb-2">Password must contain:</p>
+                            <ul className="list-unstyled mb-0">
+                              {passwordRequirements.map((req) => (
+                                <li key={req.id} className="d-flex align-items-center mb-1">
+                                  {isRequirementMet(req.text) ? (
+                                    <CheckCircle size={16} className="text-success me-2" />
+                                  ) : (
+                                    <XCircle size={16} className="text-muted me-2" />
+                                  )}
+                                  <span className={isRequirementMet(req.text) ? 'text-success' : 'text-muted'}>
+                                    {req.text}
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="mb-4">
+                        <label className="form-label">Confirm New Password</label>
+                        <div className="input-group">
+                          <input
+                            type={showPassword.confirm_password ? "text" : "password"}
+                            name="confirm_password"
+                            value={passwordForm.confirm_password}
+                            onChange={handlePasswordChange}
+                            className="form-control"
+                            required
+                          />
+                          <button
+                            type="button"
+                            className="btn btn-outline-secondary"
+                            onClick={() => togglePasswordVisibility('confirm_password')}
+                          >
+                            {showPassword.confirm_password ? <EyeOff size={18} /> : <Eye size={18} />}
+                          </button>
+                        </div>
+                        {passwordForm.confirm_password && passwordForm.new_password !== passwordForm.confirm_password && (
+                          <div className="text-danger small mt-1">
+                            Passwords do not match
+                          </div>
+                        )}
+                        {passwordForm.confirm_password && passwordForm.new_password === passwordForm.confirm_password && (
+                          <div className="text-success small mt-1">
+                            Passwords match
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="d-grid">
                         <button
-                          type="button"
-                          onClick={() => togglePasswordVisibility('old_password')}
-                          className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-600 hover:text-gray-800"
+                          type="submit"
+                          disabled={loading || passwordErrors.length > 0 || passwordForm.new_password !== passwordForm.confirm_password}
+                          className="btn btn-primary"
                         >
-                          {showPassword.old_password ? (
-                            <i className="bi bi-eye-slash"></i>
-                          ) : (
-                            <i className="bi bi-eye"></i>
-                          )}
+                          {loading ? 'Changing Password...' : 'Change Password'}
                         </button>
                       </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">New Password</label>
-                      <div className="relative">
-                        <input
-                          type={showPassword.new_password ? "text" : "password"}
-                          name="new_password"
-                          value={passwordForm.new_password}
-                          onChange={handlePasswordChange}
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 pr-10"
-                          required
-                        />
-                        <button
-                          type="button"
-                          onClick={() => togglePasswordVisibility('new_password')}
-                          className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-600 hover:text-gray-800"
-                        >
-                          {showPassword.new_password ? (
-                            <i className="bi bi-eye-slash"></i>
-                          ) : (
-                            <i className="bi bi-eye"></i>
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Confirm New Password</label>
-                      <div className="relative">
-                        <input
-                          type={showPassword.confirm_password ? "text" : "password"}
-                          name="confirm_password"
-                          value={passwordForm.confirm_password}
-                          onChange={handlePasswordChange}
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 pr-10"
-                          required
-                        />
-                        <button
-                          type="button"
-                          onClick={() => togglePasswordVisibility('confirm_password')}
-                          className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-600 hover:text-gray-800"
-                        >
-                          {showPassword.confirm_password ? (
-                            <i className="bi bi-eye-slash"></i>
-                          ) : (
-                            <i className="bi bi-eye"></i>
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                    {/* Rest of your password form code remains the same */}
-                  </form>
+                    </form>
+                  </div>
                 </div>
               )}
             </div>

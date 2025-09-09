@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@heroicons/react": "^2.2.0",
     "@popperjs/core": "^2.11.8",
     "@radix-ui/react-dialog": "^1.1.15",
     "axios": "^1.9.0",

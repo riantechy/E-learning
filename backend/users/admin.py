@@ -17,7 +17,7 @@ class UserAdmin(BaseUserAdmin):
                 'first_name', 'last_name', 'gender', 'phone', 'date_of_birth',
                 'county', 'education', 'innovation', 'innovation_stage',
                 'innovation_in_whitebox', 'innovation_industry',
-                'training', 'training_institution', 'status', 'date_registered', 'role'
+                'training', 'training_institution', 'role'
             )
         }),
         ('Permissions', {

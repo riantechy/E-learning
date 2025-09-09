@@ -1,22 +1,45 @@
 from rest_framework import serializers
 from .models import User
 from django.contrib.auth import authenticate
+from django.core.exceptions import ValidationError
+import re
+
+def validate_password_complexity(password):
+    """
+    Validate password meets complexity requirements:
+    - At least 8 characters
+    - At least 1 digit
+    - At least 1 letter
+    - At least 1 special character
+    """
+    if len(password) < 8:
+        raise ValidationError("Password must be at least 8 characters long")
+    if not re.search(r'\d', password):
+        raise ValidationError("Password must contain at least 1 digit")
+    if not re.search(r'[A-Za-z]', password):
+        raise ValidationError("Password must contain at least 1 letter")
+    if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
+        raise ValidationError("Password must contain at least 1 special character")
 
 class UserSerializer(serializers.ModelSerializer):
+    profile_image = serializers.ImageField(required=False, allow_null=True)
     class Meta:
         model = User
         fields = [
             'id', 'email', 'first_name', 'last_name', 'role', 'gender', 'phone',
             'date_of_birth', 'county', 'education', 'innovation', 'innovation_stage',
             'innovation_in_whitebox', 'innovation_industry', 'training', 'training_institution',
-            'status', 'date_registered', 'date_joined', 'profile_image', 'is_verified'
+            'date_joined', 'profile_image', 'is_verified'
         ]
         read_only_fields = ['id', 'date_joined', 'is_verified']
 
 
 class RegisterSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True, required=True)
-    agreed_to_terms = serializers.BooleanField(required=True)
+    password = serializers.CharField(
+        write_only=True, 
+        required=True,
+        validators=[validate_password_complexity]
+    )
 
     class Meta:
         model = User
@@ -61,4 +84,7 @@ class LoginSerializer(serializers.Serializer):
 
 class ChangePasswordSerializer(serializers.Serializer):
     old_password = serializers.CharField(required=True)
-    new_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(
+        required=True,
+        validators=[validate_password_complexity]
+    )

@@ -7,6 +7,15 @@ interface ApiResponse<T> {
   error?: string;
 }
 
+const extractErrorMessage = (error: string): string => {
+  // Handle field-specific errors (e.g., "field: error message")
+  const colonIndex = error.indexOf(':');
+  if (colonIndex > -1) {
+    return error.slice(colonIndex + 1).trim();
+  }
+  return error;
+};
+
 async function apiRequest<T>(
   endpoint: string,
   method: string = 'GET',
@@ -87,7 +96,8 @@ async function apiRequest<T>(
     return { data };
   } catch (error) {
     console.error('API request failed:', error);
-    return { error: error instanceof Error ? error.message : 'Unknown error occurred' };
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    return { error: extractErrorMessage(errorMessage) };
   }
 }
 
@@ -125,7 +135,7 @@ export const usersApi = {
   updateUser: (id: string, user: Partial<User>) => apiRequest<User>(`/auth/users/update/${id}/`, 'PUT', user),
   deleteUser: (id: string) => apiRequest(`/auth/users/delete/${id}/`, 'DELETE'),
   changePassword: (data: { old_password: string; new_password: string }) => 
-    apiRequest('/auth/change-password/', 'POST', data),
+    apiRequest('/auth/change-password/', 'PUT', data),
 
   uploadProfileImage: (formData: FormData) => {
     return apiRequest<{ profile_image_url: string }>(

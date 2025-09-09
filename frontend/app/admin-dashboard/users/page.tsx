@@ -25,14 +25,8 @@ const defaultForm: FormData = {
   date_of_birth: '',
   county: '',
   education: '',
-  innovation: '',
-  innovation_stage: '',
-  innovation_in_whitebox: '',
-  innovation_industry: '',
-  training: '',
   training_institution: '',
   agreed_to_terms: false,
-  status: '',
   role: 'LEARNER',
   date_registered: '',
 };
@@ -236,7 +230,7 @@ export default function ManageUsers() {
                   <th>Date of Birth</th>
                   <th>County</th>
                   {/* <th>Education</th>
-                  <th>Innovation</th> */}
+                  <th>Innovation</th> 
                   <th>Role</th>
                   {/* <th>Status</th> */}
                   <th>Actions</th>
@@ -253,7 +247,7 @@ export default function ManageUsers() {
                     <td>{user.date_of_birth}</td>
                     <td>{user.county}</td>
                     {/* <td>{user.education}</td>
-                    <td>{user.innovation}</td> */}
+                    <td>{user.innovation}</td> 
                     <td>{getRoleBadge(user.role)}</td>
                     {/* <td>{user.status}</td> */}
                     <td>
@@ -371,15 +365,15 @@ export default function ManageUsers() {
                   <Form.Label>County</Form.Label>
                   <Form.Control type="text" name="county" value={formData.county} onChange={handleInputChange} required />
                 </div>
-                <div className="col-md-6 mb-3">
+                {/* <div className="col-md-6 mb-3">
                   <Form.Label>Status</Form.Label>
                   <Form.Control type="text" name="status" value={formData.status} onChange={handleInputChange} required />
-                </div>
+                </div> */}
                 <div className="col-md-12 mb-3">
                   <Form.Label>Education</Form.Label>
                   <Form.Control as="textarea" rows={2} name="education" value={formData.education} onChange={handleInputChange} />
                 </div>
-                <div className="col-md-12 mb-3">
+                {/* <div className="col-md-12 mb-3">
                   <Form.Label>Innovation</Form.Label>
                   <Form.Control as="textarea" rows={2} name="innovation" value={formData.innovation} onChange={handleInputChange} />
                 </div>
@@ -398,7 +392,7 @@ export default function ManageUsers() {
                 <div className="col-md-6 mb-3">
                   <Form.Label>Training</Form.Label>
                   <Form.Control type="text" name="training" value={formData.training} onChange={handleInputChange} />
-                </div>
+                </div> */}
                 <div className="col-md-6 mb-3">
                   <Form.Label>Training Institution</Form.Label>
                   <Form.Control type="text" name="training_institution" value={formData.training_institution} onChange={handleInputChange} />
