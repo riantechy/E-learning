@@ -136,6 +136,10 @@ class GenerateCertificateView(generics.GenericAPIView):
         certificate.save()
 
         serializer = CertificateSerializer(certificate)
+        # return Response(serializer.data)
+        from notifications.signals import create_certificate_notification
+        create_certificate_notification(certificate)
+        
         return Response(serializer.data)
 
 class CertificateTemplateListCreateView(generics.ListCreateAPIView):
@@ -159,7 +163,7 @@ class UserCertificateListView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        queryset = Certificate.objects.filter(user=self.request.user)
+        queryset = Certificate.objects.filter(user=self.request.user).select_related('course')
         course_id = self.request.query_params.get('course_id')
         if course_id:
             queryset = queryset.filter(course_id=course_id)

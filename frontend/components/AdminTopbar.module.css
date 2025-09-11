@@ -1,0 +1,236 @@
+.topbar {
+ background-color: white;
+  border-bottom: 1px solid #e2e8f0; 
+  padding: 0.75rem 0; 
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  /* box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);  */
+}
+
+.topbarContent {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 2rem; 
+  max-width: 100%;
+}
+
+.leftSection {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem; 
+}
+
+.menuToggle {
+  background: none;
+  border: none;
+  font-size: 1.3rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  color: #2d3748; 
+  transition: color 0.3s ease;
+}
+
+.menuToggle:hover {
+  color: #4b5e7a; 
+}
+
+.brand h4 {
+  margin: 0;
+  font-size: 1.6rem; 
+  color: #2d3748;
+  font-weight: 600;
+}
+
+.rightSection {
+  display: flex;
+  align-items: center;
+  gap: 2rem; /* More spacing for clarity */
+}
+
+.notificationWrapper {
+  position: relative;
+}
+
+.notificationButton {
+  background: none;
+  border: none;
+  font-size: 1.3rem;
+  cursor: pointer;
+  position: relative;
+  padding: 0.5rem;
+  color: #2d3748;
+  transition: color 0.3s ease;
+}
+
+.notificationButton:hover {
+  color: #4b5e7a; /* Subtle hover effect */
+}
+
+.notificationBadge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background-color: #f56565; /* Softer red */
+  color: white;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notificationDropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: 360px; /* Slightly wider for readability */
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px; /* Softer corners */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 1001;
+}
+
+.notificationHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.notificationHeader h6 {
+  margin: 0;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.markAllReadButton {
+  background: none;
+  border: none;
+  color: #4b5e7a; /* Matches sidebar theme */
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: color 0.3s ease;
+}
+
+.markAllReadButton:hover {
+  color: #2d3748; /* Subtle hover */
+}
+
+.notificationList {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.notificationItem {
+  display: flex;
+  padding: 1.25rem;
+  border-bottom: 1px solid #edf2f7; /* Softer border */
+}
+
+.notificationItem.unread {
+  background-color: #f7fafc; /* Very light background for unread */
+}
+
+.notificationContent h6 {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.95rem;
+  color: #2d3748;
+}
+
+.notificationContent p {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.85rem;
+  color: #4a5568;
+}
+
+.notificationContent small {
+  color: #718096;
+}
+
+.markAsReadButton {
+  background: none;
+  border: none;
+  color: #48bb78; /* Softer green */
+  cursor: pointer;
+  font-size: 1rem;
+  align-self: flex-start;
+  transition: color 0.3s ease;
+}
+
+.markAsReadButton:hover {
+  color: #2f855a; /* Subtle hover */
+}
+
+.noNotifications {
+  padding: 1.25rem;
+  text-align: center;
+  color: #718096;
+  margin: 0;
+}
+
+.notificationFooter {
+  padding: 1.25rem;
+  border-top: 1px solid #e2e8f0;
+  text-align: center;
+}
+
+.notificationFooter a {
+  color: #4b5e7a;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.notificationFooter a:hover {
+  color: #2d3748; /* Subtle hover */
+}
+
+.userInfo {
+  font-weight: 500;
+  color: #2d3748;
+}
+
+.logoutButton {
+  background-color: #f56565; /* Softer red */
+  color: white;
+  border: none;
+  padding: 0.5rem 1.25rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+}
+
+.logoutButton:hover {
+  background-color: #e53e3e; /* Slightly darker red */
+}
+
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: transparent;
+  z-index: 999;
+}
+
+@media (max-width: 768px) {
+  .topbarContent {
+      padding: 0 1.5rem;
+  }
+  
+  .notificationDropdown {
+      width: 320px;
+      right: -20px;
+  }
+  
+  .userInfo {
+      display: none;
+  }
+}

@@ -308,8 +308,14 @@ getQuestions: (lessonId: string) => apiRequest<PaginatedResponse<Question>>(`/as
     apiRequest(`/assessments/questions/${questionId}/answers/${answerId}/`, 'DELETE'),
 
   getQuiz: (lessonId: string) => apiRequest<{ lesson: Lesson; questions: Question[] }>(`/assessments/lessons/${lessonId}/quiz/`),
-  submitQuiz: (lessonId: string, answers: { answers: Record<string, string> }) =>
-    apiRequest<{ score: number; passed: boolean; correct_answers: number; total_questions: number }>(
+  getAttemptResponses: (attemptId: string) => 
+    apiRequest<UserResponse[]>(`/assessments/user-attempts/${attemptId}/responses/`, 'GET'),
+
+  // submitQuiz: (lessonId: string, answers: { answers: Record<string, string | string[]> }) => 
+  //   apiRequest<QuizSubmitResponse>(`/assessments/lessons/${lessonId}/quiz/`, 'POST', answers),
+  
+  submitQuiz: (lessonId: string, answers:  { answers: Record<string, string | string[]> }) =>
+    apiRequest<{ score: number; passed: boolean; correct_answers: number; total_questions: number; attempt_id: string; }>(
       `/assessments/lessons/${lessonId}/quiz/`, 
       'POST', 
       { answers }
@@ -472,6 +478,30 @@ export const analyticsApi = {
     }>(`/analytics/module-coverage/${courseId}/`),
 };
 
+// Notifications API
+export const notificationsApi = {
+  // Get all notifications
+  getNotifications: () => apiRequest<PaginatedResponse<Notification>>('/notifications/notifications/'),
+  // Get unread notifications
+  getUnreadNotifications: () => apiRequest<PaginatedResponse<Notification>>('/notifications/notifications/unread/'),
+  // Mark a notification as read
+  markAsRead: (notificationId: string) => 
+    apiRequest(`/notifications/notifications/${notificationId}/mark_as_read/`, 'POST'),
+  // Mark all notifications as read
+  markAllAsRead: () => 
+    apiRequest('/notifications/notifications/mark_all_as_read/', 'POST'),
+  // Get unread count
+  getUnreadCount: () => 
+    apiRequest<{ unread_count: number }>('/notifications/notifications/count_unread/'),
+  // Get notification preferences
+  getPreferences: () => 
+    apiRequest<NotificationPreference[]>('/notifications/preferences/'),
+  
+  // Update notification preferences
+  updatePreferences: (preferencesId: string, preferences: Partial<NotificationPreference>) => 
+    apiRequest<NotificationPreference>(`/notifications/preferences/${preferencesId}/`, 'PUT', preferences),
+};
+
 
 // Types
 export interface User {
@@ -599,6 +629,14 @@ export interface Answer {
   created_at: string;
 }
 
+export interface QuizSubmitResponse {
+  attempt_id: string;
+  score: number;
+  passed: boolean;
+  correct_answers: number;
+  questions: Question[];
+  total_questions: number;
+}
 export interface UserProgress {
   id: string;
   user: string | User;
@@ -757,4 +795,42 @@ export interface UserResponse {
   };
   text_response?: string;
   is_correct: boolean;
+}
+
+// Add to your Types section in api.ts
+
+export interface Notification {
+  id: string;
+  recipient: string | User;
+  title: string;
+  message: string;
+  notification_type: string;
+  priority: string;
+  is_read: boolean;
+  related_object_id: string | null;
+  related_content_type: string | null;
+  action_url: string | null;
+  created_at: string;
+  time_since?: string;
+}
+
+export interface NotificationPreference {
+  id: string;
+  user: string | User;
+  course_updates: boolean;
+  new_content: boolean;
+  deadline_reminders: boolean;
+  live_session_reminders: boolean;
+  forum_replies: boolean;
+  mentions: boolean;
+  certificate_issued: boolean;
+  course_completed: boolean;
+  progress_reports: boolean;
+  user_reports: boolean;
+  system_alerts: boolean;
+  course_approvals: boolean;
+  email_notifications: boolean;
+  push_notifications: boolean;
+  in_app_notifications: boolean;
+  updated_at: string;
 }

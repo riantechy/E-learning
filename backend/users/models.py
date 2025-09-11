@@ -37,6 +37,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_verified = models.BooleanField(default=False)
     verification_token = models.UUIDField(default=uuid.uuid4, editable=False)
     verification_token_expires = models.DateTimeField(default=timezone.now() + timezone.timedelta(days=1))
+    first_login_notification_sent = models.BooleanField(default=False)
     password_reset_token = models.UUIDField(null=True, blank=True, editable=False)
     password_reset_token_expires = models.DateTimeField(null=True, blank=True)
     ROLES = (

@@ -1,110 +1,132 @@
-.dashboardContainer {
-    display: flex;
-    min-height: 100vh;
-  }
-  
-  .sidebar {
-    width: 250px;
-    background-color: #121315;
-    color: white;
-    padding: 20px;
-    transition: transform 0.3s ease;
-  }
-  
-  .sidebarContent {
-    position: sticky;
-    top: 0;
-  }
-  
-  .sidebarTitle {
-    font-size: 1.5rem;
-    margin-bottom: 20px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  }
-  
-  .mainContent {
-    flex: 1;
-    padding: 20px;
-    background-color: #f8f9fa;
-  }
-  
-  .mobileToggle {
-    position: fixed;
-    top: 10px;
-    left: 10px;
-    z-index: 1050;
-    background: #0d6efd;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    padding: 5px 10px;
-  }
-  
-  @media (max-width: 992px) {
-    .sidebar {
-      position: fixed;
-      height: 100vh;
-      z-index: 1040;
-      transform: translateX(-100%);
-    }
-    
-    .sidebarOpen {
-      transform: translateX(0);
-    }
-  }
+.sidebarNav {
+  padding: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background-color: #2d3748; 
+}
 
-  .navLink {
-    color: rgba(255, 255, 255, 0.8);
-    padding: 10px 15px;
-    margin-bottom: 5px;
-    border-radius: 4px;
-    transition: all 0.3s;
-  }
-  
-  .navLink:hover {
-    color: white;
-    background-color: rgba(255, 255, 255, 0.1);
-  }
-  
-  .navLink.active {
-    color: white;
-    background-color: rgba(255, 255, 255, 0.2);
-    font-weight: 500;
-  }
+.profileSection {
+  text-align: center;
+  padding: 2rem 1.5rem; /* More padding for elegance */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15); /* Softer border */
+  background-color: #374151; /* Slightly lighter than sidebar for contrast */
+}
 
+.profileImageContainer {
+  margin-bottom: 1rem;
+}
 
-  /* Add these to your existing AdminSidebar.module.css */
+.profileImage {
+  width: 90px; /* Slightly larger for prominence */
+  height: 90px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin: 0 auto;
+  display: block;
+  border: 2px solid #e2e8f0; /* Subtle border for polish */
+}
+
+.profilePlaceholder {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background-color: #4b5e7a; /* Matches sidebar theme */
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.75rem;
+  margin: 0 auto;
+}
+
+.profileName {
+  color: #ffffff;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  font-size: 1.1rem; /* Slightly larger for readability */
+}
+
+.profileRole {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.9rem;
+}
+
+.navItem {
+  margin-bottom: 0.5rem;
+}
+
+.navLink {
+  color: rgba(255, 255, 255, 0.9) !important; /* Increased specificity */
+  padding: 0.3rem 1.0rem;
+  border-radius: 6px; /* Softer corners */
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  font-size: 0.95rem; /* Slightly larger for readability */
+}
+
+.navLink:hover {
+  color: #ffffff !important; /* Ensure hover color is applied */
+  background-color: rgba(59, 130, 246, 0.2) !important; /* Blue hover effect for visibility */
+  transform: translateX(4px); /* Slight shift for interactivity */
+}
+
+.navLink.active {
+  color: #ffffff !important;
+  background-color: #4b5e7a; /* Matches profile placeholder for consistency */
+  font-weight: 600;
+}
+
+.icon {
+  margin-right: 1rem;
+  font-size: 1.2rem;
+}
+
+.label {
+  flex-grow: 1;
+}
 
 .contextNav {
-  margin-top: 1rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  padding-top: 1rem;
+  margin-top: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  padding-top: 1.5rem;
 }
 
 .subItem {
-  padding-left: 2rem;
+  padding-left: 2.5rem;
   font-size: 0.9rem;
 }
 
 .subItem .icon {
-  font-size: 0.9rem;
+  font-size: 1rem;
 }
 
 .subMenu {
-  padding-left: 1.5rem;
+  padding-left: 2rem;
   list-style: none;
 }
 
 .subNavLink {
-  padding: 0.5rem 1rem;
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 0.9rem;
+  padding: 0.3rem 1.0rem;
+  color: rgba(255, 255, 255, 0.8) !important; /* Increased specificity */
+  font-size: 0.6rem;
   display: block;
-  border-radius: 4px;
+  border-radius: 6px;
+  transition: all 0.3s ease;
 }
 
 .subNavLink:hover, .subNavLink.active {
-  color: white;
-  background-color: rgba(255, 255, 255, 0.1);
+  color: #ffffff !important; /* Ensure hover color is applied */
+  background-color: rgba(59, 130, 246, 0.2) !important; /* Blue hover effect for visibility */
+  transform: translateX(4px); /* Consistent hover effect */
+}
+
+.logoutLink {
+  color: #ff6b6b !important;
+}
+
+.logoutLink:hover {
+  color: #ff8787 !important; /* Slightly lighter for hover */
+  background-color: rgba(255, 82, 82, 0.15) !important;
 }

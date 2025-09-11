@@ -38,8 +38,24 @@ class CourseViewSet(viewsets.ModelViewSet):
     def approve(self, request, pk=None):
         course = self.get_object()
         if course.approve(request.user):
+            # Send notification to course creator
+            from notifications.models import Notification
+            Notification.objects.create(
+                recipient=course.created_by,
+                title="Course Approved",
+                message=f"Your course '{course.title}' has been approved and published.",
+                notification_type='ADMIN',
+                related_object_id=course.id,
+                related_content_type='course',
+                action_url=reverse('course-detail', kwargs={'pk': course.id})
+            )
             return Response({'status': 'course approved'})
         return Response({'status': 'course not in pending state'}, status=status.HTTP_400_BAD_REQUEST)
+    # def approve(self, request, pk=None):
+    #     course = self.get_object()
+    #     if course.approve(request.user):
+    #         return Response({'status': 'course approved'})
+    #     return Response({'status': 'course not in pending state'}, status=status.HTTP_400_BAD_REQUEST)
     
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
     def reject(self, request, pk=None):

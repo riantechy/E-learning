@@ -52,7 +52,7 @@ class UserResponse(models.Model):
     attempt = models.ForeignKey(UserAttempt, on_delete=models.CASCADE, related_name='responses')
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
     selected_answer = models.ForeignKey(Answer, on_delete=models.SET_NULL, null=True, blank=True)
-    text_response = models.TextField(blank=True)
+    text_response = models.TextField(null=True, blank=True)
     is_correct = models.BooleanField(default=False)
     
     def __str__(self):

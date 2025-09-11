@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     'assessments',
     'certificates',
     'analytics',
+    'notifications',
 ]
 
 # REST Framework settings

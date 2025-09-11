@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
-import { coursesApi, assessmentsApi } from '@/lib/api'
+import { coursesApi, assessmentsApi, UserResponse } from '@/lib/api'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import LearnerSidebar from '@/components/LearnerSidebar'
 import { Menu, ChevronRight, ChevronLeft } from 'lucide-react'
@@ -22,10 +22,13 @@ export default function LessonPage() {
   const [loading, setLoading] = useState(true)
   const [completed, setCompleted] = useState(false)
   const [quizStarted, setQuizStarted] = useState(false)
-  const [userAnswers, setUserAnswers] = useState<Record<string, string>>({})
+  const [userAnswers, setUserAnswers] = useState<Record<string, string | string[]>>({})
   const [quizSubmitted, setQuizSubmitted] = useState(false)
   const [quizScore, setQuizScore] = useState<number | null>(null)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
+  const [attemptId, setAttemptId] = useState<string | null>(null)
+  const [userResponses, setUserResponses] = useState<UserResponse[]>([])
+  const [showReview, setShowReview] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -70,31 +73,142 @@ export default function LessonPage() {
     setQuizStarted(true)
   }
 
-  const handleAnswerSelect = (questionId: string, answerId: string) => {
-    setUserAnswers(prev => ({
-      ...prev,
-      [questionId]: answerId
-    }))
+  const handleAnswerSelect = (questionId: string, answerId: string, questionType: string) => {
+    setUserAnswers(prev => {
+      if (questionType === 'MCQ') {
+        const currentAnswers = Array.isArray(prev[questionId]) ? prev[questionId] as string[] : []
+        if (currentAnswers.includes(answerId)) {
+          // Remove answer if already selected
+          return {
+            ...prev,
+            [questionId]: currentAnswers.filter(id => id !== answerId)
+          }
+        } else {
+          // Add answer
+          return {
+            ...prev,
+            [questionId]: [...currentAnswers, answerId]
+          }
+        }
+      } else {
+        // For TF and SA, keep single answer
+        return {
+          ...prev,
+          [questionId]: answerId
+        }
+      }
+    })
   }
 
   const handleSubmitQuiz = async () => {
-    try {
-      const res = await assessmentsApi.submitQuiz(lessonId, {
-        answers: userAnswers
-      })
-      if (res.data) {
-        setQuizSubmitted(true)
-        setQuizScore(res.data.score)
-        
-        if (res.data.passed) {
-          await coursesApi.updateProgress(lessonId, true)
-          setCompleted(true)
-          router.refresh()
+  try {
+    const res = await assessmentsApi.submitQuiz(lessonId, {
+      answers: userAnswers
+    });
+    
+    if (res.data) {
+      setQuizSubmitted(true);
+      setQuizScore(res.data.score);
+      setAttemptId(res.data.attempt_id); // This should now work
+      
+      if (res.data.passed) {
+        await coursesApi.updateProgress(lessonId, true);
+        setCompleted(true);
+        router.refresh();
+      }
+
+      // Fetch responses immediately after submission
+      if (res.data.attempt_id) {
+        const responsesRes = await assessmentsApi.getAttemptResponses(res.data.attempt_id);
+        if (responsesRes.data) {
+          setUserResponses(responsesRes.data);
         }
       }
-    } catch (error) {
-      console.error('Error submitting quiz:', error)
     }
+  } catch (error) {
+    console.error('Error submitting quiz:', error);
+  }
+}
+
+  const renderReview = () => {
+    return (
+      <div className="mt-4">
+        <h5>Quiz Review</h5>
+        {questions.map((question, index) => {
+          // Find all user responses for this question
+          const responses = userResponses.filter(r => r.question === question.id);
+          
+          return (
+            <div key={question.id} className="mb-4 border-bottom pb-3">
+              <h6>Question {index + 1}: {question.question_text}</h6>
+              {question.question_type === 'MCQ' ? (
+                <div className="list-group">
+                  {question.answers.map((answer: any) => {
+                    // Check if this answer was selected by the user
+                    const isSelected = responses.some(r => r.selected_answer === answer.id);
+                    
+                    let className = "list-group-item";
+                    let statusText = "";
+                    
+                    if (isSelected) {
+                      className += answer.is_correct ? " list-group-item-success" : " list-group-item-danger";
+                      statusText = answer.is_correct ? " ✓ (Correct)" : " ✗ (Incorrect)";
+                    }
+                    
+                    return (
+                      <div key={answer.id} className={className}>
+                        {answer.answer_text}
+                        {statusText}
+                      </div>
+                    );
+                  })}
+                  {responses.length === 0 && (
+                    <div className="list-group-item list-group-item-danger">
+                      No answer selected
+                    </div>
+                  )}
+                </div>
+              ) : question.question_type === 'TF' ? (
+                <div className="list-group">
+                  {question.answers.map((answer: any) => {
+                    // Check if this answer was selected by the user
+                    const isSelected = responses.some(r => r.selected_answer === answer.id);
+                    
+                    let className = "list-group-item";
+                    let statusText = "";
+                    
+                    if (isSelected) {
+                      className += answer.is_correct ? " list-group-item-success" : " list-group-item-danger";
+                      statusText = answer.is_correct ? " ✓ (Correct)" : " ✗ (Incorrect)";
+                    }
+                    
+                    return (
+                      <div key={answer.id} className={className}>
+                        {answer.answer_text}
+                        {statusText}
+                      </div>
+                    );
+                  })}
+                  {responses.length === 0 && (
+                    <div className="list-group-item list-group-item-danger">
+                      No answer selected
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="list-group">
+                  {responses.map((response, idx) => (
+                    <div key={idx} className="list-group-item list-group-item-warning">
+                      Your response: {response.text_response || 'No response provided'}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
   }
 
   if (loading) {
@@ -221,9 +335,10 @@ export default function LessonPage() {
                           <h5>Quiz: {lesson.title}</h5>
                           <p>This quiz contains {questions.length} questions.</p>
                           <p>You need to score at least 70% to pass.</p>
+                          <p>For multiple-choice questions, select all answers that apply.</p>
                           <button 
                             onClick={handleStartQuiz} 
-                            className="btn btn-primary btn-lg"
+                            className="btn btn-primary btn-sm"
                           >
                             Start Quiz
                           </button>
@@ -241,11 +356,11 @@ export default function LessonPage() {
                                       <div className="form-check">
                                         <input
                                           className="form-check-input"
-                                          type="radio"
+                                          type="checkbox"
                                           name={`question-${question.id}`}
                                           id={`answer-${answer.id}`}
-                                          checked={userAnswers[question.id] === answer.id}
-                                          onChange={() => handleAnswerSelect(question.id, answer.id)}
+                                          checked={Array.isArray(userAnswers[question.id]) && (userAnswers[question.id] as string[]).includes(answer.id)}
+                                          onChange={() => handleAnswerSelect(question.id, answer.id, question.question_type)}
                                         />
                                         <label 
                                           className="form-check-label w-100" 
@@ -264,7 +379,7 @@ export default function LessonPage() {
                                       key={answer.id}
                                       type="button"
                                       className={`btn ${userAnswers[question.id] === answer.id ? 'btn-primary' : 'btn-outline-primary'}`}
-                                      onClick={() => handleAnswerSelect(question.id, answer.id)}
+                                      onClick={() => handleAnswerSelect(question.id, answer.id, question.question_type)}
                                     >
                                       {answer.answer_text}
                                     </button>
@@ -274,8 +389,8 @@ export default function LessonPage() {
                                 <input
                                   type="text"
                                   className="form-control"
-                                  value={userAnswers[question.id] || ''}
-                                  onChange={(e) => handleAnswerSelect(question.id, e.target.value)}
+                                  value={typeof userAnswers[question.id] === 'string' ? userAnswers[question.id] : ''}
+                                  onChange={(e) => handleAnswerSelect(question.id, e.target.value, question.question_type)}
                                 />
                               )}
                             </div>
@@ -299,6 +414,13 @@ export default function LessonPage() {
                                 : 'You did not pass the quiz. Please review the material and try again.'}
                             </p>
                           </div>
+                          <button
+                            onClick={() => setShowReview(!showReview)}
+                            className="btn btn-outline-primary mb-3"
+                          >
+                            {showReview ? 'Hide Review' : 'Review Answers'}
+                          </button>
+                          {showReview && renderReview()}
                           {quizScore && quizScore >= 70 ? (
                             <button
                               onClick={() => router.push(`/dashboard/learn/${courseId}/${moduleId}`)}
@@ -312,6 +434,8 @@ export default function LessonPage() {
                                 setQuizStarted(false)
                                 setQuizSubmitted(false)
                                 setUserAnswers({})
+                                setShowReview(false)
+                                setUserResponses([])
                               }}
                               className="btn btn-primary"
                             >
@@ -353,9 +477,7 @@ export default function LessonPage() {
                             <Link
                               key={les.id}
                               href={`/dashboard/learn/${courseId}/${mod.id}/${les.id}`}
-                              className={`list-group-item list-group-item-action ${
-                                les.id === lessonId ? 'active' : ''
-                              }`}
+                              className={`list-group-item list-group-item-action ${les.id === lessonId ? 'active' : ''}`}
                             >
                               <div className="d-flex justify-content-between">
                                 <span>{les.title}</span>

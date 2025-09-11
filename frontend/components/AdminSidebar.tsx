@@ -1,13 +1,14 @@
-// components/AdminSidebar.tsx
 'use client'
 
 import Link from 'next/link';
 import { usePathname, useParams } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 import styles from './AdminSidebar.module.css';
 
 export default function AdminSidebar() {
   const pathname = usePathname();
   const params = useParams();
+  const { user } = useAuth();
 
   const isCoursePath = pathname.startsWith('/admin-dashboard/courses');
   const isModulePath = pathname.includes('/modules/');
@@ -35,20 +36,9 @@ export default function AdminSidebar() {
     { href: '/admin-dashboard/enrollments', label: 'Enrollments', icon: '🎓' },
     { href: '/admin-dashboard/surveys', label: 'Surveys', icon: '📝' },
     { href: '/admin-dashboard/analytics', label: 'Analytics', icon: '📈' },
+    { href: '/admin-dashboard/notifications', label: 'Notifications', icon: '🔔' },
     { href: '/admin-dashboard/profile', label: 'Profile', icon: '👤' },
     { href: '/admin-dashboard/settings', label: 'Settings', icon: '⚙️' },
-    // { 
-    //   href: '/admin-dashboard/settings', 
-    //   label: 'Settings', 
-    //   icon: '⚙️',
-    //   subItems: [
-    //     { href: '/admin-dashboard/settings/general', label: 'General' },
-    //     { href: '/admin-dashboard/settings/email', label: 'Email' },
-    //     { href: '/admin-dashboard/settings/notifications', label: 'Notifications' },
-    //     { href: '/admin-dashboard/settings/security', label: 'Security' },
-    //     { href: '/admin-dashboard/settings/integrations', label: 'Integrations' },
-    //   ]
-    // },
   ];
 
   // Determine the target for Course Management
@@ -61,107 +51,104 @@ export default function AdminSidebar() {
 
   return (
     <nav className={styles.sidebarNav}>
-      <ul className="nav flex-column">
-        {menuItems.map((item) => (
-          <li key={item.href} className={`nav-item ${styles.navItem}`}>
-            <Link
-              href={item.href}
-              className={`nav-link ${
-                (item.exact ? pathname === item.href : pathname.startsWith(item.href))
-                  ? styles.active 
-                  : ''
-              } ${styles.navLink}`}
-            >
-              <span className={styles.icon}>{item.icon}</span>
-              <span className={styles.label}>{item.label}</span>
-            </Link>
-            
-            {item.subItems && item.subItems.length > 0 && (
-              <ul className={styles.subMenu}>
-                {item.subItems.map((subItem) => (
-                  <li key={subItem.href}>
-                    <Link
-                      href={subItem.href}
-                      className={`nav-link ${
-                        pathname === subItem.href ? styles.active : ''
-                      } ${styles.subNavLink}`}
-                    >
-                      {subItem.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </li>
-        ))}
+      {/* Admin Profile Section */}
+      {/* <div className={styles.profileSection}>
+        <div className={styles.profileImageContainer}>
+          {user?.profile_image ? (
+            <img 
+              src={user.profile_image} 
+              alt="Profile" 
+              className={styles.profileImage}
+            />
+          ) : (
+            <div className={styles.profilePlaceholder}>
+              {user?.first_name?.[0]}{user?.last_name?.[0]}
+            </div>
+          )}
+        </div>
+        <h6 className={styles.profileName}>{user?.first_name} {user?.last_name}</h6>
+        <small className={styles.profileRole}>{user?.role || 'Administrator'}</small>
+      </div> */}
 
-        {/* Contextual navigation - always show Course Management when in courses section */}
-        {isCoursePath && (
-          <>
-            <li className={`nav-item ${styles.navItem} ${styles.contextNav}`}>
+      {/* Menu Items */}
+      {menuItems.map((item) => (
+        <div key={item.href} className={styles.navItem}>
+          <Link
+            href={item.href}
+            className={`${styles.navLink} ${
+              (item.exact ? pathname === item.href : pathname.startsWith(item.href))
+                ? styles.active
+                : ''
+            }`}
+          >
+            <span className={styles.icon}>{item.icon}</span>
+            <span className={styles.label}>{item.label}</span>
+          </Link>
+          
+          {item.subItems && item.subItems.length > 0 && (
+            <ul className={styles.subMenu}>
+              {item.subItems.map((subItem) => (
+                <li key={subItem.href} className={styles.subItem}>
+                  <Link
+                    href={subItem.href}
+                    className={`${styles.subNavLink} ${
+                      pathname === subItem.href ? styles.active : ''
+                    }`}
+                  >
+                    {subItem.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      ))}
+
+      {/* Contextual navigation - always show Course Management when in courses section */}
+      {isCoursePath && (
+        <div className={styles.contextNav}>
+          <div className={styles.navItem}>
+            <Link
+              href={getCourseManagementLink()}
+              className={`${styles.navLink} ${
+                pathname === getCourseManagementLink() ? styles.active : ''
+              }`}
+            >
+              <span className={styles.icon}>📝</span>
+              <span className={styles.label}>Course Management</span>
+            </Link>
+          </div>
+
+          {/* Only show these if we have the specific IDs */}
+          {courseId && isModulePath && (
+            <div className={`${styles.navItem} ${styles.subItem}`}>
               <Link
-                href={getCourseManagementLink()}
-                className={`nav-link ${styles.navLink} ${
-                  pathname === getCourseManagementLink() ? styles.active : ''
+                href={`/admin-dashboard/courses/${courseId}/modules`}
+                className={`${styles.subNavLink} ${
+                  pathname.includes('/modules') && !isLessonPath ? styles.active : ''
                 }`}
               >
-                <span className={styles.icon}>📝</span>
-                <span className={styles.label}>Course Management</span>
+                <span className={styles.icon}>📦</span>
+                <span className={styles.label}>Modules</span>
               </Link>
-            </li>
+            </div>
+          )}
 
-            {/* Only show these if we have the specific IDs */}
-            {courseId && isModulePath && (
-              <li className={`nav-item ${styles.navItem}`}>
-                <Link
-                  href={`/admin-dashboard/courses/${courseId}/modules`}
-                  className={`nav-link ${
-                    pathname.includes('/modules') && !isLessonPath ? styles.active : ''
-                  } ${styles.navLink} ${styles.subItem}`}
-                >
-                  <span className={styles.icon}>📦</span>
-                  <span className={styles.label}>Modules</span>
-                </Link>
-              </li>
-            )}
-
-            {courseId && moduleId && isLessonPath && (
-              <li className={`nav-item ${styles.navItem}`}>
-                <Link
-                  href={`/admin-dashboard/courses/${courseId}/modules/${moduleId}/lessons`}
-                  className={`nav-link ${
-                    pathname.includes('/lessons') && !isQuizPath ? styles.active : ''
-                  } ${styles.navLink} ${styles.subItem}`}
-                >
-                  <span className={styles.icon}>📄</span>
-                  <span className={styles.label}>Lessons</span>
-                </Link>
-              </li>
-            )}
-
-            {/* {courseId && moduleId && lessonId && isQuizPath && (
-              <li className={`nav-item ${styles.navItem}`}>
-                <Link
-                  href={`/admin-dashboard/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}/quiz`}
-                  className={`nav-link ${
-                    pathname.includes('/quiz') ? styles.active : ''
-                  } ${styles.navLink} ${styles.subItem}`}
-                >
-                  <span className={styles.icon}>❓</span>
-                  <span className={styles.label}>Quiz</span>
-                </Link>
-              </li>
-            )} */}
-          </>
-        )}
-
-        <li className={`nav-item mt-auto ${styles.navItem}`}>
-          <Link href="/login" className={`nav-link ${styles.navLink} ${styles.logoutLink}`}>
-            <span className={styles.icon}>🚪</span>
-            <span className={styles.label}>Logout</span>
-          </Link>
-        </li>
-      </ul>
+          {courseId && moduleId && isLessonPath && (
+            <div className={`${styles.navItem} ${styles.subItem}`}>
+              <Link
+                href={`/admin-dashboard/courses/${courseId}/modules/${moduleId}/lessons`}
+                className={`${styles.subNavLink} ${
+                  pathname.includes('/lessons') && !isQuizPath ? styles.active : ''
+                }`}
+              >
+                <span className={styles.icon}>📄</span>
+                <span className={styles.label}>Lessons</span>
+              </Link>
+            </div>
+          )}
+        </div>
+      )}
     </nav>
   );
 }

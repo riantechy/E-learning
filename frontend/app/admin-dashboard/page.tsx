@@ -10,6 +10,8 @@ import AdminSidebar from '@/components/AdminSidebar';
 import Card from 'react-bootstrap/Card';
 import Alert from 'react-bootstrap/Alert';
 import ListGroup from 'react-bootstrap/ListGroup';
+import { notificationsApi } from '@/lib/api';
+import Badge from 'react-bootstrap/Badge';
 import { Bar, Pie } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement } from 'chart.js';
 
@@ -190,7 +192,7 @@ export default function AdminDashboard() {
   return (
     <DashboardLayout sidebar={<AdminSidebar />}>
       <div className="container-fluid">
-        <h1 className="h2 mb-4">Admin Dashboard</h1>
+        <h1 className="h2 mb-2">Admin Dashboard</h1>
         <p className="text-muted mb-4">Monitor courses, users, and content from this control panel.</p>
 
         {error && <Alert variant="danger">{error}</Alert>}

@@ -8,7 +8,7 @@ from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
 from .models import Question, Answer, UserAttempt, UserResponse,  Survey, SurveyQuestion, SurveyChoice, SurveyResponse, SurveyAnswer
 from .serializers import (
-    QuestionSerializer, 
+    QuestionSerializer, UserResponseSerializer,
     AnswerSerializer, UserAttemptSerializer,
     QuizSerializer,  SurveySerializer, 
     SurveyResponseSerializer,  SurveyQuestionSerializer 
@@ -110,18 +110,40 @@ class QuizView(generics.GenericAPIView):
             correct = False
             
             if question.question_type == 'MCQ':
-                # For MCQ, check if selected answer is correct
+                # For MCQ, check if all selected answers are correct
                 try:
-                    selected_answer = question.answers.get(id=user_answer)
-                    correct = selected_answer.is_correct
+                    correct_answer_ids = set(
+                        question.answers.filter(is_correct=True).values_list('id', flat=True)
+                    )
+                    # Handle multiple answers (expecting a list of answer IDs)
+                    selected_answer_ids = (
+                        [user_answer] if isinstance(user_answer, str)
+                        else user_answer if isinstance(user_answer, list)
+                        else []
+                    )
+                    selected_answer_ids = set(str(aid) for aid in selected_answer_ids)
+                    
+                    # Check if all selected answers are correct and all correct answers are selected
+                    correct = (
+                        selected_answer_ids
+                        and selected_answer_ids.issubset(correct_answer_ids)
+                        and len(selected_answer_ids) == len(correct_answer_ids)
+                    )
                     if correct:
                         correct_answers += 1
-                    UserResponse.objects.create(
-                        attempt=attempt,
-                        question=question,
-                        selected_answer=selected_answer,
-                        is_correct=correct
-                    )
+                    
+                    # Create a UserResponse for each selected answer
+                    for answer_id in selected_answer_ids:
+                        try:
+                            selected_answer = question.answers.get(id=answer_id)
+                            UserResponse.objects.create(
+                                attempt=attempt,
+                                question=question,
+                                selected_answer=selected_answer,
+                                is_correct=selected_answer.is_correct
+                            )
+                        except Answer.DoesNotExist:
+                            pass
                 except (Answer.DoesNotExist, ValueError):
                     pass
             elif question.question_type == 'TF':
@@ -136,6 +158,14 @@ class QuizView(generics.GenericAPIView):
                     selected_answer_id=user_answer,
                     is_correct=correct
                 )
+            elif question.question_type == 'SA':
+                text_response = user_answer if user_answer is not None else ''
+                UserResponse.objects.create(
+                    attempt=attempt,
+                    question=question,
+                    text_response=text_response,
+                    is_correct=False  
+                )
         
         # Calculate score percentage
         score_percentage = (correct_answers / total_questions) * 100 if total_questions > 0 else 0
@@ -148,9 +178,11 @@ class QuizView(generics.GenericAPIView):
         attempt.save()
         
         return Response({
+            'attempt_id': str(attempt.id),
             'score': score_percentage,
             'passed': passed,
             'correct_answers': correct_answers,
+            'questions': QuestionSerializer(questions, many=True).data,
             'total_questions': total_questions
         }, status=status.HTTP_200_OK)
 
@@ -392,6 +424,13 @@ class UserAttemptViewSet(viewsets.ReadOnlyModelViewSet):
         ).select_related(
             'lesson__module__course'
         ).order_by('-attempt_date')
+
+    @action(detail=True, methods=['get'])
+    def responses(self, request, pk=None):
+        attempt = self.get_object()
+        responses = attempt.responses.all().select_related('question', 'selected_answer')
+        serializer = UserResponseSerializer(responses, many=True)
+        return Response(serializer.data)
 
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())

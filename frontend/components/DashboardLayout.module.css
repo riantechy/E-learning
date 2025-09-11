@@ -1,0 +1,48 @@
+.sidebarWrapper {
+  position: sticky;
+  top: 0px; 
+  height: calc(100vh - 64px);
+  overflow-y: auto;
+  background-color: #2d3748; /* Softer, modern gray */
+  z-index: 100;
+  transition: all 0.3s ease;
+  border-right: 1px solid #e0e4e8; /* Subtle border for definition */
+}
+
+.sidebarOpen {
+  display: block !important;
+  position: fixed;
+  top: 64px;
+  left: 0;
+  height: calc(100vh - 64px);
+  width: 260px; /* Slightly wider for better spacing */
+  z-index: 1050;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+}
+
+.sidebar {
+  padding: 1.5rem; /* Increased padding for breathing room */
+}
+
+.sidebarTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #d1d5db; /* Softer border color */
+  color: #2d3748; /* Darker gray for better contrast */
+}
+
+.mainContent {
+  padding: 2rem; 
+  margin-top: 1px; /* Match navbar height */
+  min-height: calc(100vh - 64px);
+  background-color: #ffffff; /* Clean white background */
+}
+
+@media (min-width: 992px) {
+  .sidebarOpen {
+      position: sticky;
+      width: 260px; /* Consistent width */
+  }
+}

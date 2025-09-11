@@ -51,6 +51,19 @@ class LoginView(generics.GenericAPIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data
         
+        # Check if this is the first login
+        is_first_login = user.last_login is None
+        
+        # Update last login
+        user.last_login = timezone.now()
+        
+        # If first login and notification not already sent, mark for notification
+        if is_first_login and not user.first_login_notification_sent:
+            user.first_login_notification_sent = True
+            # We'll let the signal handle the actual notification creation
+        
+        user.save()
+        
         refresh = RefreshToken.for_user(user)
         return Response({
             'user': UserSerializer(user).data,
