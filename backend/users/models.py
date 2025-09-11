@@ -2,11 +2,14 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.utils import timezone
+from datetime import timedelta
 from django.db import models, transaction 
 import uuid
 from django.contrib.auth.hashers import make_password
 import bcrypt
 
+def default_verification_expiry():
+    return timezone.now() + timedelta(days=1)
 class PasswordHistory(models.Model):
     user = models.ForeignKey('User', on_delete=models.CASCADE, related_name='password_history')
     password_hash = models.CharField(max_length=128)
@@ -36,7 +39,7 @@ class UserManager(BaseUserManager):
 class User(AbstractBaseUser, PermissionsMixin):
     is_verified = models.BooleanField(default=False)
     verification_token = models.UUIDField(default=uuid.uuid4, editable=False)
-    verification_token_expires = models.DateTimeField(default=timezone.now() + timezone.timedelta(days=1))
+    verification_token_expires = models.DateTimeField(default=default_verification_expiry)
     first_login_notification_sent = models.BooleanField(default=False)
     password_reset_token = models.UUIDField(null=True, blank=True, editable=False)
     password_reset_token_expires = models.DateTimeField(null=True, blank=True)
