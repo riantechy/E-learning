@@ -16,6 +16,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from .models import User
 from .serializers import UserSerializer, RegisterSerializer, LoginSerializer, ChangePasswordSerializer
 from django.contrib.auth import authenticate
+from rest_framework.exceptions import ValidationError
 import jwt
 from django.conf import settings
 from rest_framework.views import APIView
