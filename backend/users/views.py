@@ -14,7 +14,7 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework import filters
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import User
-from .serializers import UserSerializer, RegisterSerializer, LoginSerializer, ChangePasswordSerializer
+from .serializers import UserSerializer, RegisterSerializer, LoginSerializer, ChangePasswordSerializer, AdminUserCreateSerializer
 from django.contrib.auth import authenticate
 from rest_framework.exceptions import ValidationError
 from django.contrib.auth.password_validation import validate_password
@@ -53,17 +53,11 @@ class LoginView(generics.GenericAPIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data
         
-        # Check if this is the first login
-        is_first_login = user.last_login is None
+        # Check if password change is required
+        requires_password_change = user.force_password_change
         
         # Update last login
         user.last_login = timezone.now()
-        
-        # If first login and notification not already sent, mark for notification
-        if is_first_login and not user.first_login_notification_sent:
-            user.first_login_notification_sent = True
-            # We'll let the signal handle the actual notification creation
-        
         user.save()
         
         refresh = RefreshToken.for_user(user)
@@ -71,6 +65,7 @@ class LoginView(generics.GenericAPIView):
             'user': UserSerializer(user).data,
             'access': str(refresh.access_token),
             'refresh': str(refresh),
+            'requires_password_change': requires_password_change,
         })
 
 class UserProfileView(generics.RetrieveUpdateAPIView):
@@ -240,7 +235,7 @@ class ChangePasswordView(generics.UpdateAPIView):
 
 class UserCreateView(generics.CreateAPIView):
     queryset = User.objects.all()
-    serializer_class = UserSerializer
+    serializer_class = AdminUserCreateSerializer  
     permission_classes = [IsAuthenticated]
 
     def create(self, request, *args, **kwargs):
@@ -248,15 +243,30 @@ class UserCreateView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         
         # Create the user with the validated data
-        user = User.objects.create_user(
-            email=serializer.validated_data['email'],
-            password=request.data.get('password', 'defaultpassword'),  
-            first_name=serializer.validated_data['first_name'],
-            last_name=serializer.validated_data['last_name'],
-            profile_image=serializer.validated_data.get('profile_image'),
-        )
+        user = serializer.save()
         
-        return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
+        return Response(
+            UserSerializer(user).data, 
+            status=status.HTTP_201_CREATED
+        )
+    # queryset = User.objects.all()
+    # serializer_class = UserSerializer
+    # permission_classes = [IsAuthenticated]
+
+    # def create(self, request, *args, **kwargs):
+    #     serializer = self.get_serializer(data=request.data)
+    #     serializer.is_valid(raise_exception=True)
+        
+    #     # Create the user with the validated data
+    #     user = User.objects.create_user(
+    #         email=serializer.validated_data['email'],
+    #         password=request.data.get('password', 'defaultpassword'),  
+    #         first_name=serializer.validated_data['first_name'],
+    #         last_name=serializer.validated_data['last_name'],
+    #         profile_image=serializer.validated_data.get('profile_image'),
+    #     )
+        
+    #     return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
 
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
@@ -372,3 +382,41 @@ class PasswordResetConfirmView(APIView):
                 {'error': 'Invalid password reset token'}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+class ForceChangePasswordView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        new_password = request.data.get('new_password')
+        
+        if not new_password:
+            return Response(
+                {'error': 'New password is required'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Validate password complexity
+        try:
+            validate_password(new_password, user=request.user)
+        except ValidationError as e:
+            return Response(
+                {'error': e.messages},  
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Check password history
+        if request.user.check_password_history(new_password):
+            return Response(
+                {'error': 'Cannot use any of your last 3 passwords.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Set new password and remove force change flag
+        request.user.set_password(new_password)
+        request.user.force_password_change = False
+        request.user.save()
+        
+        return Response(
+            {'message': 'Password successfully changed'}, 
+            status=status.HTTP_200_OK
+        )

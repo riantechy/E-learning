@@ -92,7 +92,7 @@ export default function ManageUsers() {
       if (currentUser) {
         response = await usersApi.updateUser(currentUser.id, formData);
       } else {
-        response = await usersApi.register(formData);
+        response = await usersApi.adminCreateUser(formData);
       }
 
       if (response.error) {
@@ -327,6 +327,14 @@ export default function ManageUsers() {
             <Modal.Body>
               <div className="row">
                 <div className="col-md-6 mb-3">
+                  <Form.Label>First Name</Form.Label>
+                  <Form.Control type="text" name="first_name" value={formData.first_name} onChange={handleInputChange} required />
+                </div>
+                <div className="col-md-6 mb-3">
+                  <Form.Label>Last Name</Form.Label>
+                  <Form.Control type="text" name="last_name" value={formData.last_name} onChange={handleInputChange} required />
+                </div>
+                <div className="col-md-6 mb-3">
                   <Form.Label>Email</Form.Label>
                   <Form.Control
                     type="email"
@@ -336,14 +344,6 @@ export default function ManageUsers() {
                     required
                     disabled={!!currentUser}
                   />
-                </div>
-                <div className="col-md-6 mb-3">
-                  <Form.Label>First Name</Form.Label>
-                  <Form.Control type="text" name="first_name" value={formData.first_name} onChange={handleInputChange} required />
-                </div>
-                <div className="col-md-6 mb-3">
-                  <Form.Label>Last Name</Form.Label>
-                  <Form.Control type="text" name="last_name" value={formData.last_name} onChange={handleInputChange} required />
                 </div>
                 <div className="col-md-6 mb-3">
                   <Form.Label>Gender</Form.Label>
@@ -371,7 +371,7 @@ export default function ManageUsers() {
                 </div> */}
                 <div className="col-md-12 mb-3">
                   <Form.Label>Education</Form.Label>
-                  <Form.Control as="textarea" rows={2} name="education" value={formData.education} onChange={handleInputChange} />
+                  <Form.Control type="text" name="education" value={formData.education} onChange={handleInputChange} />
                 </div>
                 {/* <div className="col-md-12 mb-3">
                   <Form.Label>Innovation</Form.Label>

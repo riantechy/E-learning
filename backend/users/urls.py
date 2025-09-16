@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import (
-    RegisterView, LoginView, UserProfileView,
+    RegisterView, LoginView, UserProfileView, ForceChangePasswordView,
     UserListView, UserDetailView, UserUpdateView, UserDeleteView,
     ChangePasswordView, LogoutView, LearnerListView, NonLearnerListView, 
     UserCreateView, LearnerCountView, ProfileImageView, PasswordResetConfirmView,
@@ -19,7 +19,8 @@ urlpatterns = [
 
     # User management endpoints
     path('users/', UserListView.as_view(), name='user-list'),
-    path('users/create/', UserCreateView.as_view(), name='user-create'),  
+    path('users/create/', UserCreateView.as_view(), name='user-create'), 
+    # path('users/admin/create/', AdminUserCreate.as_view(), name='user-admin-create'),   
     path('users/<uuid:pk>/', UserDetailView.as_view(), name='user-detail'),
     path('users/update/<uuid:pk>/', UserUpdateView.as_view(), name='user-update'),
     path('users/delete/<uuid:pk>/', UserDeleteView.as_view(), name='user-delete'),
@@ -33,4 +34,5 @@ urlpatterns = [
     path('resend-verification-email/', ResendVerificationEmailView.as_view(), name='resend-verification-email'),
     path('request-password-reset/', PasswordResetRequestView.as_view(), name='request-password-reset'),
     path('reset-password/<uuid:token>/', PasswordResetConfirmView.as_view(), name='reset-password-confirm'),
+    path('force-change-password/', ForceChangePasswordView.as_view(), name='force-change-password'),
 ]

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { notificationsApi } from '@/lib/api';
@@ -12,6 +12,7 @@ export default function AdminTopbar({ onMenuToggle }) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState([]);
+  const notificationRef = useRef(null);
 
   useEffect(() => {
     if (user) {
@@ -19,6 +20,20 @@ export default function AdminTopbar({ onMenuToggle }) {
       fetchRecentNotifications();
     }
   }, [user]);
+
+  // Add click outside handler
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+        setShowNotifications(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const fetchUnreadCount = async () => {
     try {
@@ -71,13 +86,18 @@ export default function AdminTopbar({ onMenuToggle }) {
     }
   };
 
+  const handleViewAllNotifications = () => {
+    setShowNotifications(false);
+    router.push('/admin-dashboard/notifications');
+  };
+
   return (
     <>
       <nav className={styles.topbar}>
         <div className={styles.topbarContent}>
           <div className={styles.leftSection}>
             <button 
-              className={`d-lg-none ${styles.menuToggle}`}
+              className={`d-sm-none ${styles.menuToggle}`}
               onClick={onMenuToggle}
             >
               ☰
@@ -88,7 +108,7 @@ export default function AdminTopbar({ onMenuToggle }) {
           </div>
           
           <div className={styles.rightSection}>
-            <div className={styles.notificationWrapper}>
+            <div className={styles.notificationWrapper} ref={notificationRef}>
               <button 
                 className={styles.notificationButton}
                 onClick={() => setShowNotifications(!showNotifications)}
@@ -142,7 +162,12 @@ export default function AdminTopbar({ onMenuToggle }) {
                   </div>
                   
                   <div className={styles.notificationFooter}>
-                    <a href="/admin-dashboard/notifications">View all notifications</a>
+                    <button 
+                      className={styles.viewAllButton}
+                      onClick={handleViewAllNotifications}
+                    >
+                      View all notifications
+                    </button>
                   </div>
                 </div>
               )}
@@ -161,14 +186,6 @@ export default function AdminTopbar({ onMenuToggle }) {
           </div>
         </div>
       </nav>
-      
-      {/* Overlay for mobile when notifications are open */}
-      {showNotifications && (
-        <div 
-          className={styles.overlay}
-          onClick={() => setShowNotifications(false)}
-        />
-      )}
     </>
   );
 }

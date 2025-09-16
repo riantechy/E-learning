@@ -40,7 +40,7 @@ def handle_first_login(sender, instance, **kwargs):
             ),
             notification_type='SYSTEM',
             priority='MEDIUM',
-            action_url=reverse('help-center')
+            # action_url=reverse('help-center')
         )
         
         # Mark notification as sent

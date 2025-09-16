@@ -54,12 +54,12 @@ const defaultForm: UserFormData = {
 };
 
 export default function UsersPage() {
-  const [users, setUsers] = useState<any[]>([]); // Consider typing this as User[] if possible
+  const [users, setUsers] = useState<any[]>([]); 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [showModal, setShowModal] = useState(false);
-  const [currentUser, setCurrentUser] = useState<any>(null); // Consider typing as User | null
+  const [currentUser, setCurrentUser] = useState<any>(null); 
   const [formData, setFormData] = useState<UserFormData>(defaultForm);
   const [pagination, setPagination] = useState({
     page: 1,
@@ -129,7 +129,7 @@ export default function UsersPage() {
       if (currentUser) {
         response = await usersApi.updateUser(currentUser.id, formData);
       } else {
-        response = await usersApi.register(formData);
+        response = await usersApi.adminCreateUser(formData);
       }
 
       if (response.error) {
@@ -312,6 +312,14 @@ export default function UsersPage() {
             <Modal.Body>
               <div className="row">
                 <div className="col-md-6 mb-3">
+                  <Form.Label>First Name</Form.Label>
+                  <Form.Control type="text" name="first_name" value={formData.first_name} onChange={handleInputChange} required />
+                </div>
+                <div className="col-md-6 mb-3">
+                  <Form.Label>Last Name</Form.Label>
+                  <Form.Control type="text" name="last_name" value={formData.last_name} onChange={handleInputChange} required />
+                </div>
+                <div className="col-md-6 mb-3">
                   <Form.Label>Email</Form.Label>
                   <Form.Control
                     type="email"
@@ -321,14 +329,6 @@ export default function UsersPage() {
                     required
                     disabled={!!currentUser}
                   />
-                </div>
-                <div className="col-md-6 mb-3">
-                  <Form.Label>First Name</Form.Label>
-                  <Form.Control type="text" name="first_name" value={formData.first_name} onChange={handleInputChange} required />
-                </div>
-                <div className="col-md-6 mb-3">
-                  <Form.Label>Last Name</Form.Label>
-                  <Form.Control type="text" name="last_name" value={formData.last_name} onChange={handleInputChange} required />
                 </div>
                 <div className="col-md-6 mb-3">
                   <Form.Label>Gender</Form.Label>
@@ -350,15 +350,15 @@ export default function UsersPage() {
                   <Form.Label>County</Form.Label>
                   <Form.Control type="text" name="county" value={formData.county} onChange={handleInputChange} required />
                 </div>
-                <div className="col-md-6 mb-3">
+                {/* <div className="col-md-6 mb-3">
                   <Form.Label>Status</Form.Label>
                   <Form.Control type="text" name="status" value={formData.status} onChange={handleInputChange} required />
-                </div>
+                </div> */}
                 <div className="col-md-12 mb-3">
                   <Form.Label>Education</Form.Label>
-                  <Form.Control as="textarea" rows={2} name="education" value={formData.education} onChange={handleInputChange} />
+                  <Form.Control type="text" name="education" value={formData.education} onChange={handleInputChange} />
                 </div>
-                <div className="col-md-12 mb-3">
+                {/* <div className="col-md-12 mb-3">
                   <Form.Label>Innovation</Form.Label>
                   <Form.Control as="textarea" rows={2} name="innovation" value={formData.innovation} onChange={handleInputChange} />
                 </div>
@@ -377,7 +377,7 @@ export default function UsersPage() {
                 <div className="col-md-6 mb-3">
                   <Form.Label>Training</Form.Label>
                   <Form.Control type="text" name="training" value={formData.training} onChange={handleInputChange} />
-                </div>
+                </div> */}
                 <div className="col-md-6 mb-3">
                   <Form.Label>Training Institution</Form.Label>
                   <Form.Control type="text" name="training_institution" value={formData.training_institution} onChange={handleInputChange} />

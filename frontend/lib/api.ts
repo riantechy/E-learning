@@ -104,10 +104,13 @@ async function apiRequest<T>(
 // Users API
 export const usersApi = {
   login: (credentials: { email: string; password: string }) => 
-    apiRequest<{ user: User; access: string; refresh: string }>('/auth/login/', 'POST', credentials),
+    apiRequest<{ user: User; access: string; refresh: string;requires_password_change?: boolean; }>('/auth/login/', 'POST', credentials),
   
   register: (user: Partial<User>) => 
     apiRequest<{ user: User; access: string; refresh: string }>('/auth/register/', 'POST', user),
+
+  adminCreateUser: (user: Partial<User>) => 
+    apiRequest<{ user: User; access: string; refresh: string }>('/auth/users/create/', 'POST', user),
   
   getProfile: () => apiRequest<User>('/auth/profile/'),
   refreshToken: (refresh: string) => 
@@ -136,6 +139,8 @@ export const usersApi = {
   deleteUser: (id: string) => apiRequest(`/auth/users/delete/${id}/`, 'DELETE'),
   changePassword: (data: { old_password: string; new_password: string }) => 
     apiRequest('/auth/change-password/', 'PUT', data),
+  forcePasswordChange: (data: { new_password: string }) => 
+    apiRequest('/auth/force-change-password/', 'POST', data),
 
   uploadProfileImage: (formData: FormData) => {
     return apiRequest<{ profile_image_url: string }>(
@@ -513,6 +518,7 @@ export interface User {
   is_active: boolean;
   date_joined: string;
   status: string;
+  requires_password_change?: boolean;
   date_registered: string;
   gender: string;
   profile_image: string | null;

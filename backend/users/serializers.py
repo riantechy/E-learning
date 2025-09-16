@@ -70,6 +70,54 @@ class RegisterSerializer(serializers.ModelSerializer):
         )
         return user
 
+class AdminUserCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = [
+            'email', 'first_name', 'last_name', 'gender', 'phone',
+            'date_of_birth', 'county', 'education', 'innovation', 
+            'innovation_stage', 'innovation_in_whitebox', 'innovation_industry',
+            'training', 'training_institution', 'agreed_to_terms', 'role'
+        ]
+
+    def create(self, validated_data):
+        # Generate a random temporary password
+        import secrets
+        import string
+        alphabet = string.ascii_letters + string.digits + string.punctuation
+        temp_password = ''.join(secrets.choice(alphabet) for i in range(12))
+        
+        # Create user with temporary password
+        user = User.objects.create_user(
+            email=validated_data['email'],
+            password=temp_password,
+            first_name=validated_data['first_name'],
+            last_name=validated_data['last_name'],
+            gender=validated_data['gender'],
+            phone=validated_data['phone'],
+            date_of_birth=validated_data['date_of_birth'],
+            county=validated_data['county'],
+            education=validated_data['education'],
+            agreed_to_terms=validated_data['agreed_to_terms'],
+            role=validated_data.get('role', 'LEARNER'),
+            is_verified=True,
+            force_password_change=True  
+        )
+        
+        # Set additional fields
+        for field in ['innovation', 'innovation_stage', 'innovation_in_whitebox', 
+                     'innovation_industry', 'training', 'training_institution']:
+            if field in validated_data:
+                setattr(user, field, validated_data[field])
+        
+        user.save()
+        
+        # Send welcome email with temporary password
+        from .email_utils import send_welcome_email
+        send_welcome_email(user, temp_password)
+        
+        return user
+
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField()

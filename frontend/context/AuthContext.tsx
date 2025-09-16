@@ -110,34 +110,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const login = async (email: string, password: string) => {
-    try {
-      setLoading(true);
-      const response = await usersApi.login({ email, password });
+  // Update the login function in AuthContext
+const login = async (email: string, password: string) => {
+  try {
+    setLoading(true);
+    const response = await usersApi.login({ email, password });
 
-      if (response.data) {
-        localStorage.setItem('access_token', response.data.access);
-        localStorage.setItem('refresh_token', response.data.refresh);
-        setUser(response.data.user);
+    if (response.data) {
+      localStorage.setItem('access_token', response.data.access);
+      localStorage.setItem('refresh_token', response.data.refresh);
+      setUser(response.data.user);
 
-        await new Promise(resolve => setTimeout(resolve, 100));
-
-        if (!response.data.user.is_verified) {
-          router.push('/verify-email');
-          return;
-        }
-
-        router.push(getDashboardPath(response.data.user.role));
-      } else if (response.error) {
-        throw new Error(response.error);
+      // Check if password change is required
+      if (response.data.requires_password_change) {
+        router.push('/change-password?first_login=true');
+        return;
       }
-    } catch (error) {
-      console.error('Login failed:', error);
-      throw error;
-    } finally {
-      setLoading(false);
+
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      if (!response.data.user.is_verified) {
+        router.push('/verify-email');
+        return;
+      }
+
+      router.push(getDashboardPath(response.data.user.role));
+    } else if (response.error) {
+      throw new Error(response.error);
     }
-  };
+  } catch (error) {
+    console.error('Login failed:', error);
+    throw error;
+  } finally {
+    setLoading(false);
+  }
+};
 
   const register = async (userData: Partial<User>) => {
     try {
