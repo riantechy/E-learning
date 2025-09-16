@@ -9,9 +9,15 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@hello-pangea/dnd": "^18.0.1",
     "@heroicons/react": "^2.2.0",
     "@popperjs/core": "^2.11.8",
     "@radix-ui/react-dialog": "^1.1.15",
+    "@tiptap/core": "^3.4.3",
+    "@tiptap/extension-image": "^3.4.3",
+    "@tiptap/extension-link": "^3.4.3",
+    "@tiptap/react": "^3.4.3",
+    "@tiptap/starter-kit": "^3.4.3",
     "axios": "^1.9.0",
     "bootstrap": "^5.3.6",
     "chart.js": "^4.5.0",

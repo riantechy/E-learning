@@ -17,6 +17,7 @@ from .models import User
 from .serializers import UserSerializer, RegisterSerializer, LoginSerializer, ChangePasswordSerializer
 from django.contrib.auth import authenticate
 from rest_framework.exceptions import ValidationError
+from django.contrib.auth.password_validation import validate_password
 import jwt
 from django.conf import settings
 from rest_framework.views import APIView
@@ -342,13 +343,13 @@ class PasswordResetConfirmView(APIView):
             
             # Validate password complexity
             try:
-                validate_password_complexity(new_password)
+                validate_password(new_password, user=user) 
             except ValidationError as e:
                 return Response(
-                    {'error': e.message}, 
+                    {'error': e.messages},  
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            
+
             # Check password history
             if user.check_password_history(new_password):
                 return Response(

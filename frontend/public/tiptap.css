@@ -1,0 +1,21 @@
+/* styles/tiptap.css */
+.ProseMirror {
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+    padding: 0.5rem;
+    min-height: 100px;
+  }
+  .ProseMirror-focused {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  }
+  .ProseMirror p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    color: #6c757d;
+    float: left;
+    height: 0;
+    pointer-events: none;
+  }
+  .is-active {
+    background-color: #e9ecef;
+  }

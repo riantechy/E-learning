@@ -22,6 +22,7 @@ export default function AdminSidebar() {
 
   const menuItems = [
     { href: '/admin-dashboard', label: 'Dashboard', icon: '📊', exact: true },
+    { href: '/admin-dashboard/categories', label: 'Categories', icon: '🏷️' },
     { 
       href: '/admin-dashboard/courses', 
       label: 'Courses', 
@@ -30,7 +31,6 @@ export default function AdminSidebar() {
         { href: '/admin-dashboard/courses', label: 'All Courses' },
       ] : []
     },
-    { href: '/admin-dashboard/categories', label: 'Categories', icon: '🏷️' },
     { href: '/admin-dashboard/users', label: 'Learners', icon: '👥' },
     { href: '/admin-dashboard/instructors', label: 'Instructors', icon: '👨‍🏫' },
     { href: '/admin-dashboard/enrollments', label: 'Enrollments', icon: '🎓' },

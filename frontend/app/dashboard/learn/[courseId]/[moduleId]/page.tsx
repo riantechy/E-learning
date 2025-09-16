@@ -6,6 +6,7 @@ import { coursesApi, assessmentsApi, usersApi, SurveyResponse } from '@/lib/api'
 import TopNavbar from '@/components/TopNavbar'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import LearnerSidebar from '@/components/LearnerSidebar'
+import 'bootstrap/dist/css/bootstrap.min.css';
 import { Menu, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
 
@@ -250,154 +251,207 @@ export default function ModulePage() {
     }
   }
 
-  const renderLessonContent = (lesson: any) => {
-    if (lesson.content_type === 'QUIZ') {
-      return (
-        <div className="alert alert-info">
-          <p>Complete this quiz to finish the lesson.</p>
-          {lessonProgress[lesson.id]?.is_completed ? (
-            <span className="badge bg-success">Completed</span>
-          ) : (
-            <button 
-              onClick={() => router.push(`/dashboard/learn/${courseId}/${moduleId}/${lesson.id}`)}
-              className="btn btn-sm btn-primary"
-            >
-              Take Quiz
-            </button>
-          )}
-        </div>
-      )
-    }
 
-    if (lesson.content_type === 'VIDEO') {
-      return (
-        <div className="ratio ratio-16x9 mb-3">
-          <iframe 
-            ref={(el: HTMLIFrameElement | null) => {
-              iframeRefs.current[lesson.id] = el
-            }}
-            src={convertToEmbedUrl(lesson.content)} 
-            title={lesson.title}
-            allowFullScreen
-            onEnded={() => handleVideoEnded(lesson.id)}
-            onLoad={() => setContentInteraction(prev => ({...prev, [lesson.id]: true}))}
-          />
-        </div>
-      )
-    }
+// Replace the renderLessonContent function with this improved version
+const renderLessonContent = (lesson: any) => {
+  if (lesson.content_type === 'QUIZ') {
+    return (
+      <div className="alert alert-info">
+        <p>Complete this quiz to finish the lesson.</p>
+        {lessonProgress[lesson.id]?.is_completed ? (
+          <span className="badge bg-success">Completed</span>
+        ) : (
+          <button 
+            onClick={() => router.push(`/dashboard/learn/${courseId}/${moduleId}/${lesson.id}`)}
+            className="btn btn-sm btn-primary"
+          >
+            Take Quiz
+          </button>
+        )}
+      </div>
+    )
+  }
 
-    if (lesson.content_type === 'PDF') {
-      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_HOST
-      const pdfUrl = lesson.pdf_file?.startsWith('http') 
-        ? lesson.pdf_file 
-        : `${baseUrl}${lesson.pdf_file}`
-      return (
-        <div className="mb-3">
-          <div className="card">
-            <div className="card-body">
-              <h6>PDF Document: {lesson.title}</h6>
-              <p className="text-muted small">
-                Click below to view or download the document.
-              </p>
-              <div className="d-flex gap-2">
-                <a 
-                  href={pdfUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn btn-sm btn-primary"
-                  onClick={() => {
-                    setContentInteraction(prev => ({...prev, [lesson.id]: true}))
-                    handlePdfLoaded(lesson.id)
-                  }}
-                >
-                  View 
-                </a>
-                <a 
-                  href={pdfUrl}
-                  download
-                  className="btn btn-sm btn-outline-primary"
-                  onClick={() => {
-                    setContentInteraction(prev => ({...prev, [lesson.id]: true}))
-                    handlePdfLoaded(lesson.id)
-                  }}
-                >
-                  Download 
-                </a>
+  if (lesson.content_type === 'VIDEO') {
+    return (
+      <div className="ratio ratio-16x9 mb-3">
+        <iframe 
+          ref={(el: HTMLIFrameElement | null) => {
+            iframeRefs.current[lesson.id] = el
+          }}
+          src={convertToEmbedUrl(lesson.content)} 
+          title={lesson.title}
+          allowFullScreen
+          onEnded={() => handleVideoEnded(lesson.id)}
+          onLoad={() => setContentInteraction(prev => ({...prev, [lesson.id]: true}))}
+        />
+      </div>
+    )
+  }
+
+  if (lesson.content_type === 'PDF') {
+    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_HOST
+    const pdfUrl = lesson.pdf_file?.startsWith('http') 
+      ? lesson.pdf_file 
+      : `${baseUrl}${lesson.pdf_file}`
+    return (
+      <div className="mb-3">
+        <div className="card">
+          <div className="card-body">
+            <h6>PDF Document: {lesson.title}</h6>
+            <p className="text-muted small">
+              Click below to view or download the document.
+            </p>
+            <div className="d-flex gap-2">
+              <a 
+                href={pdfUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-sm btn-primary"
+                onClick={() => {
+                  setContentInteraction(prev => ({...prev, [lesson.id]: true}))
+                  handlePdfLoaded(lesson.id)
+                }}
+              >
+                View 
+              </a>
+              <a 
+                href={pdfUrl}
+                download
+                className="btn btn-sm btn-outline-primary"
+                onClick={() => {
+                  setContentInteraction(prev => ({...prev, [lesson.id]: true}))
+                  handlePdfLoaded(lesson.id)
+                }}
+              >
+                Download 
+              </a>
+            </div>
+            {lesson.pdf_file ? null : (
+              <div className="alert alert-warning mt-2">
+                PDF file is not available. Please contact support.
               </div>
-              {lesson.pdf_file ? null : (
-                <div className="alert alert-warning mt-2">
-                  PDF file is not available. Please contact support.
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <>
+      <div 
+        ref={(el) => { contentRefs.current[lesson.id] = el }}
+        className="lesson-content formatted-content" 
+        dangerouslySetInnerHTML={{ __html: lesson.content }}
+        style={{ maxHeight: '500px', overflowY: 'auto' }}
+        onClick={() => setContentInteraction(prev => ({...prev, [lesson.id]: true}))}
+      />
+      
+      {/* Add CSS for better formatting */}
+      <style jsx>{`
+        .formatted-content {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          line-height: 1.6;
+          color: #333;
+        }
+        .formatted-content h1, 
+        .formatted-content h2, 
+        .formatted-content h3, 
+        .formatted-content h4, 
+        .formatted-content h5, 
+        .formatted-content h6 {
+          margin-top: 1.5rem;
+          margin-bottom: 1rem;
+          font-weight: 600;
+          color: #2c3e50;
+        }
+        .formatted-content p {
+          margin-bottom: 1rem;
+        }
+        .formatted-content ul, 
+        .formatted-content ol {
+          margin-bottom: 1rem;
+          padding-left: 2rem;
+        }
+        .formatted-content ul {
+          list-style-type: disc;
+        }
+        .formatted-content ol {
+          list-style-type: decimal;
+        }
+        .formatted-content li {
+          margin-bottom: 0.5rem;
+        }
+        .formatted-content strong {
+          font-weight: 600;
+          color: #2c3e50;
+        }
+        .formatted-content code {
+          background-color: #f8f9fa;
+          padding: 0.2rem 0.4rem;
+          border-radius: 0.25rem;
+          font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+          font-size: 0.875em;
+        }
+      `}</style>
+      
+      {lesson.sections?.length > 0 && (
+        <div className="sections-container mt-3">
+          {lesson.sections.map((section: any) => (
+            <div key={section.id} className="section mb-4">
+              <h5>{section.title}</h5>
+              
+              {section.content_type === 'VIDEO' ? (
+                <div className="ratio ratio-16x9 mb-3">
+                  <iframe 
+                    src={convertToEmbedUrl(section.video_url)} 
+                    title={section.title}
+                    allowFullScreen
+                    onLoad={() => setContentInteraction(prev => ({...prev, [lesson.id]: true}))}
+                  />
+                </div>
+              ) : (
+                <div 
+                  className="formatted-content"
+                  dangerouslySetInnerHTML={{ __html: section.content }} 
+                  onClick={() => setContentInteraction(prev => ({...prev, [lesson.id]: true}))}
+                />
+              )}
+              
+              {section.subsections?.length > 0 && (
+                <div className="subsections ms-4">
+                  {section.subsections.map((sub: any) => (
+                    <div key={sub.id} className="subsection mb-3">
+                      <p className="fs-6 mb-1">{sub.title}</p>
+                      
+                      {sub.content_type === 'VIDEO' ? (
+                        <div className="ratio ratio-16x9 mb-3">
+                          <iframe 
+                            src={convertToEmbedUrl(sub.video_url)} 
+                            title={sub.title}
+                            allowFullScreen
+                            onLoad={() => setContentInteraction(prev => ({...prev, [lesson.id]: true}))}
+                          />
+                        </div>
+                      ) : (
+                        <div 
+                          className="formatted-content"
+                          dangerouslySetInnerHTML={{ __html: sub.content }} 
+                          onClick={() => setContentInteraction(prev => ({...prev, [lesson.id]: true}))}
+                        />
+                      )}
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
-          </div>
+          ))}
         </div>
-      )
-    }
-
-    return (
-      <>
-        <div 
-          ref={(el) => { contentRefs.current[lesson.id] = el }}
-          className="lesson-content" 
-          dangerouslySetInnerHTML={{ __html: lesson.content }}
-          style={{ maxHeight: '500px', overflowY: 'auto' }}
-          onClick={() => setContentInteraction(prev => ({...prev, [lesson.id]: true}))}
-        />
-        {lesson.sections?.length > 0 && (
-          <div className="sections-container mt-3">
-            {lesson.sections.map((section: any) => (
-              <div key={section.id} className="section mb-4">
-                <h5>{section.title}</h5>
-                
-                {section.content_type === 'VIDEO' ? (
-                  <div className="ratio ratio-16x9 mb-3">
-                    <iframe 
-                      src={convertToEmbedUrl(section.video_url)} 
-                      title={section.title}
-                      allowFullScreen
-                      onLoad={() => setContentInteraction(prev => ({...prev, [lesson.id]: true}))}
-                    />
-                  </div>
-                ) : (
-                  <div 
-                    dangerouslySetInnerHTML={{ __html: section.content }} 
-                    onClick={() => setContentInteraction(prev => ({...prev, [lesson.id]: true}))}
-                  />
-                )}
-                
-                {section.subsections?.length > 0 && (
-                  <div className="subsections ms-4">
-                    {section.subsections.map((sub: any) => (
-                      <div key={sub.id} className="subsection mb-3">
-                        <p className="fs-6 mb-1">{sub.title}</p>
-                        
-                        {sub.content_type === 'VIDEO' ? (
-                          <div className="ratio ratio-16x9 mb-3">
-                            <iframe 
-                              src={convertToEmbedUrl(sub.video_url)} 
-                              title={sub.title}
-                              allowFullScreen
-                              onLoad={() => setContentInteraction(prev => ({...prev, [lesson.id]: true}))}
-                            />
-                          </div>
-                        ) : (
-                          <div 
-                            dangerouslySetInnerHTML={{ __html: sub.content }} 
-                            onClick={() => setContentInteraction(prev => ({...prev, [lesson.id]: true}))}
-                          />
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </>
-    )
-  }
+      )}
+    </>
+  )
+}
 
   if (loading) {
     return (

@@ -3,10 +3,8 @@ import { useState } from 'react';
 import { Lesson } from '@/lib/api';
 import Button from 'react-bootstrap/Button';
 import Badge from 'react-bootstrap/Badge';
-import SectionItem from './SectionItem';
-import QuizSection from './QuizSection';
 import ContentTypeBadge from './ContentTypeBadge';
-import QuestionsManager from './QuestionsManager';
+import SectionItem from './SectionItem';
 
 interface LessonCardProps {
   lesson: Lesson;
@@ -16,8 +14,10 @@ interface LessonCardProps {
 }
 
 const LessonCard = ({ lesson, onEdit, onDelete, onManageQuestions }: LessonCardProps) => {
+  const [showAddSection, setShowAddSection] = useState(false);
+
   return (
-    <div className="lesson-card mb-3">
+    <div className="lesson-card mb-4">
       <div className="card">
         <div className="card-header d-flex justify-content-between align-items-center">
           <h3 className="h5 mb-0">
@@ -32,7 +32,7 @@ const LessonCard = ({ lesson, onEdit, onDelete, onManageQuestions }: LessonCardP
               variant="info"
               size="sm"
               className="me-2"
-              onClick={() => onEdit(lesson, 'lesson')} // Fixed: Correct argument order
+              onClick={() => onEdit(lesson, 'lesson')}
             >
               Edit
             </Button>
@@ -44,14 +44,14 @@ const LessonCard = ({ lesson, onEdit, onDelete, onManageQuestions }: LessonCardP
             >
               Delete
             </Button>
-            <Button
-              variant="secondary"
+            {/* <Button
+              variant="success"
               size="sm"
               className="me-2"
-              onClick={() => onEdit({ lesson: { id: lesson.id }, is_subsection: false }, 'section')} // Fixed: Correct argument order
+              onClick={() => setShowAddSection(!showAddSection)}
             >
-              Add Section
-            </Button>
+              {showAddSection ? 'Cancel' : 'Add Section'}
+            </Button> */}
             {lesson.content_type === 'QUIZ' && (
               <Button
                 variant="warning"
@@ -66,10 +66,23 @@ const LessonCard = ({ lesson, onEdit, onDelete, onManageQuestions }: LessonCardP
         <div className="card-body">
           {lesson.description && <p className="card-text">{lesson.description}</p>}
           
+          {showAddSection && (
+            <div className="add-section-form mb-4 p-3 border rounded">
+              <h5 className="mb-3">Add New Section</h5>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => onEdit({ lesson: { id: lesson.id }, is_subsection: false }, 'section')}
+              >
+                Add Main Section
+              </Button>
+            </div>
+          )}
+          
           {lesson.sections.length > 0 && (
             <div className="sections-list mt-3">
               <h4 className="h6 mb-3">Sections:</h4>
-              <ul className="list-group">
+              <div className="list-group">
                 {lesson.sections
                   .sort((a: any, b: any) => a.order - b.order)
                   .map((section: any) => (
@@ -81,7 +94,7 @@ const LessonCard = ({ lesson, onEdit, onDelete, onManageQuestions }: LessonCardP
                       onDelete={onDelete}
                     />
                   ))}
-              </ul>
+              </div>
             </div>
           )}
         </div>

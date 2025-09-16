@@ -41,9 +41,9 @@ def notify_new_lesson(sender, instance, created, **kwargs):
                     related_object_id=course.id,
                     related_content_type='course',
                     action_url=reverse('lesson-detail', kwargs={
-                        'course_id': course.id,
-                        'module_id': instance.module.id,
-                        'lesson_id': instance.id
+                        'course_pk': instance.module.course.id,
+                        'module_pk': instance.module.id,
+                        'pk': instance.id
                     })
                 )
 

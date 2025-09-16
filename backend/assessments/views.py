@@ -4,6 +4,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
+from django.db.models import Sum
 from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
 from .models import Question, Answer, UserAttempt, UserResponse,  Survey, SurveyQuestion, SurveyChoice, SurveyResponse, SurveyAnswer
@@ -87,103 +88,129 @@ class QuizView(generics.GenericAPIView):
         lesson = get_object_or_404(Lesson, pk=lesson_id)
         user = request.user
         
-        # Get the nested answers data correctly
+        # Get the answers data (handle both flat {answers: {qid: value}} and nested {answers: {answers: {qid: value}}}
         answers_data = request.data.get('answers', {})
-        answers = answers_data.get('answers', {})  # Get the actual answers dictionary
+        if isinstance(answers_data, dict) and 'answers' in answers_data:
+            answers = answers_data['answers']
+        else:
+            answers = answers_data  # Flat case
         
         questions = Question.objects.filter(lesson=lesson).prefetch_related('answers')
         
-        total_questions = questions.count()
-        correct_answers = 0
+        # Calculate max_score as sum of all question points
+        max_score = questions.aggregate(total=Sum('points'))['total'] or 0
         
         # Create attempt record
         attempt = UserAttempt.objects.create(
             user=user,
             lesson=lesson,
-            max_score=total_questions,
+            score=0,
+            max_score=max_score,
+            passed=False,
             attempt_date=timezone.now()
         )
         
-        # Check each answer
+        total_earned = 0.0
+        
+        # Process each question
         for question in questions:
             user_answer = answers.get(str(question.id))
-            correct = False
+            earned = 0.0
             
             if question.question_type == 'MCQ':
-                # For MCQ, check if all selected answers are correct
-                try:
-                    correct_answer_ids = set(
-                        question.answers.filter(is_correct=True).values_list('id', flat=True)
-                    )
-                    # Handle multiple answers (expecting a list of answer IDs)
-                    selected_answer_ids = (
-                        [user_answer] if isinstance(user_answer, str)
-                        else user_answer if isinstance(user_answer, list)
-                        else []
-                    )
-                    selected_answer_ids = set(str(aid) for aid in selected_answer_ids)
-                    
-                    # Check if all selected answers are correct and all correct answers are selected
-                    correct = (
-                        selected_answer_ids
-                        and selected_answer_ids.issubset(correct_answer_ids)
-                        and len(selected_answer_ids) == len(correct_answer_ids)
-                    )
-                    if correct:
-                        correct_answers += 1
-                    
-                    # Create a UserResponse for each selected answer
-                    for answer_id in selected_answer_ids:
-                        try:
-                            selected_answer = question.answers.get(id=answer_id)
-                            UserResponse.objects.create(
-                                attempt=attempt,
-                                question=question,
-                                selected_answer=selected_answer,
-                                is_correct=selected_answer.is_correct
-                            )
-                        except Answer.DoesNotExist:
-                            pass
-                except (Answer.DoesNotExist, ValueError):
-                    pass
-            elif question.question_type == 'TF':
-                # For True/False, check if answer matches
-                correct_answer = question.answers.filter(is_correct=True).first()
-                if correct_answer and str(correct_answer.id) == user_answer:
-                    correct = True
-                    correct_answers += 1
-                UserResponse.objects.create(
-                    attempt=attempt,
-                    question=question,
-                    selected_answer_id=user_answer,
-                    is_correct=correct
+                # Get correct answers
+                correct_answers_qs = question.answers.filter(is_correct=True)
+                correct_answer_ids = set(str(uuid) for uuid in correct_answers_qs.values_list('id', flat=True))  # Fix: Convert UUID to str
+                num_correct = correct_answers_qs.count()
+                points_per_correct = question.points / num_correct if num_correct > 0 else 0
+                
+                # Handle selected answers (single str, list, or empty)
+                selected_answer_ids = (
+                    [user_answer] if isinstance(user_answer, str) and user_answer
+                    else user_answer if isinstance(user_answer, list)
+                    else []
                 )
+                selected_answer_ids = set(str(aid) for aid in selected_answer_ids if aid)
+                
+                # Count correct selections
+                correct_selected_count = len(selected_answer_ids.intersection(correct_answer_ids))
+                earned = correct_selected_count * points_per_correct
+                total_earned += earned
+                
+                # Create UserResponse for each selected answer
+                for answer_id in selected_answer_ids:
+                    try:
+                        selected_answer = question.answers.get(id=answer_id)
+                        UserResponse.objects.create(
+                            attempt=attempt,
+                            question=question,
+                            selected_answer=selected_answer,
+                            is_correct=selected_answer.is_correct
+                        )
+                    except Answer.DoesNotExist:
+                        # Invalid selection: create response with is_correct=False
+                        UserResponse.objects.create(
+                            attempt=attempt,
+                            question=question,
+                            selected_answer=None,
+                            is_correct=False
+                        )
+                        
+            elif question.question_type == 'TF':
+                # Assume single correct answer
+                try:
+                    correct_answer = question.answers.get(is_correct=True)
+                    if user_answer and str(correct_answer.id) == str(user_answer):
+                        earned = question.points
+                        total_earned += earned
+                        
+                    # Create response
+                    selected_answer = question.answers.filter(id=user_answer).first()
+                    UserResponse.objects.create(
+                        attempt=attempt,
+                        question=question,
+                        selected_answer=selected_answer,
+                        is_correct=bool(selected_answer and selected_answer.is_correct)
+                    )
+                except Answer.DoesNotExist:
+                    # No correct answer defined, or invalid selection
+                    UserResponse.objects.create(
+                        attempt=attempt,
+                        question=question,
+                        selected_answer=None,
+                        is_correct=False
+                    )
+                    
             elif question.question_type == 'SA':
+                # Short answer: auto 0 points
                 text_response = user_answer if user_answer is not None else ''
                 UserResponse.objects.create(
                     attempt=attempt,
                     question=question,
                     text_response=text_response,
-                    is_correct=False  
+                    is_correct=False
                 )
+                # earned remains 0
         
-        # Calculate score percentage
-        score_percentage = (correct_answers / total_questions) * 100 if total_questions > 0 else 0
-        passed = score_percentage >= 70  # Assuming 70% is passing
+        # Calculate final score
+        score_percentage = (total_earned / max_score * 100) if max_score > 0 else 0
+        passed = score_percentage >= 70
         
         # Update attempt
         attempt.score = score_percentage
+        attempt.max_score = max_score
         attempt.passed = passed
         attempt.completion_date = timezone.now()
         attempt.save()
         
         return Response({
             'attempt_id': str(attempt.id),
-            'score': score_percentage,
+            'score': round(score_percentage, 2),
+            'earned_points': round(total_earned, 2),
+            'max_score': max_score,
             'passed': passed,
-            'correct_answers': correct_answers,
             'questions': QuestionSerializer(questions, many=True).data,
-            'total_questions': total_questions
+            'total_questions': questions.count()
         }, status=status.HTTP_200_OK)
 
 class QuizDeleteView(APIView):
