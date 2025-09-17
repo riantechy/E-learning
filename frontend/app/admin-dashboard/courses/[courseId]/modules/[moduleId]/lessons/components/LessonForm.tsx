@@ -233,36 +233,51 @@ const LessonForm = ({
   );
 
   const renderContentField = () => {
-    if (formData.content_type === 'PDF') {
+    // Add description field for PDF and VIDEO content types
+    if (formData.content_type === 'PDF' || formData.content_type === 'VIDEO') {
       return (
-        <Form.Group className="mb-3">
-          <Form.Label>PDF File</Form.Label>
-          <Form.Control
-            type="file"
-            accept=".pdf"
-            onChange={handleFileChange}
-            disabled={loading}
-            isInvalid={!!errors.pdf_file}
-          />
-          <Form.Control.Feedback type="invalid">{errors.pdf_file}</Form.Control.Feedback>
-        </Form.Group>
-      );
-    } else if (formData.content_type === 'VIDEO') {
-      return (
-        <Form.Group className="mb-3">
-          <Form.Label>Video URL</Form.Label>
-          <Form.Control
-            type="url"
-            name="content"
-            value={formData.content || ''}
-            onChange={onInputChange}
-            placeholder="Enter video URL (e.g., https://youtube.com/watch?v=...)"
-            required
-            disabled={loading}
-            isInvalid={!!errors.content}
-          />
-          <Form.Control.Feedback type="invalid">{errors.content}</Form.Control.Feedback>
-        </Form.Group>
+        <>
+          <Form.Group className="mb-3">
+            <Form.Label>Description</Form.Label>
+            <Form.Control
+              as="textarea"
+              rows={3}
+              name="description"
+              value={formData.description || ''}
+              onChange={onInputChange}
+              placeholder={`Enter description for this ${formData.content_type === 'PDF' ? 'PDF' : 'video'}`}
+              disabled={loading}
+            />
+          </Form.Group>
+          {formData.content_type === 'PDF' ? (
+            <Form.Group className="mb-3">
+              <Form.Label>PDF File</Form.Label>
+              <Form.Control
+                type="file"
+                accept=".pdf"
+                onChange={handleFileChange}
+                disabled={loading}
+                isInvalid={!!errors.pdf_file}
+              />
+              <Form.Control.Feedback type="invalid">{errors.pdf_file}</Form.Control.Feedback>
+            </Form.Group>
+          ) : (
+            <Form.Group className="mb-3">
+              <Form.Label>Video URL</Form.Label>
+              <Form.Control
+                type="url"
+                name="content"
+                value={formData.content || ''}
+                onChange={onInputChange}
+                placeholder="Enter video URL (e.g., https://youtube.com/watch?v=...)"
+                required
+                disabled={loading}
+                isInvalid={!!errors.content}
+              />
+              <Form.Control.Feedback type="invalid">{errors.content}</Form.Control.Feedback>
+            </Form.Group>
+          )}
+        </>
       );
     } else if (formData.content_type === 'TEXT') {
       return (
@@ -322,18 +337,6 @@ const LessonForm = ({
                 </Form.Group>
 
                 {renderContentField()}
-
-                <Form.Group className="mb-3">
-                  <Form.Label>Description (optional)</Form.Label>
-                  <Form.Control
-                    as="textarea"
-                    rows={3}
-                    name="description"
-                    value={formData.description || ''}
-                    onChange={onInputChange}
-                    disabled={loading}
-                  />
-                </Form.Group>
 
                 <div className="row">
                   <Form.Group className="col-md-6 mb-3">
@@ -483,6 +486,22 @@ const LessonForm = ({
                   </Form.Select>
                 </Form.Group>
 
+                {/* Add description field for sections with video content */}
+                {formData.content_type === 'VIDEO' && (
+                  <Form.Group className="mb-3">
+                    <Form.Label>Description</Form.Label>
+                    <Form.Control
+                      as="textarea"
+                      rows={3}
+                      name="description"
+                      value={formData.description || ''}
+                      onChange={onInputChange}
+                      placeholder="Enter description for this video"
+                      disabled={loading}
+                    />
+                  </Form.Group>
+                )}
+
                 {formData.content_type === 'VIDEO' ? (
                   <>
                     <Form.Group className="mb-3">
@@ -498,17 +517,6 @@ const LessonForm = ({
                         isInvalid={!!errors.content}
                       />
                       <Form.Control.Feedback type="invalid">{errors.content}</Form.Control.Feedback>
-                    </Form.Group>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Description (optional)</Form.Label>
-                      <Form.Control
-                        as="textarea"
-                        rows={3}
-                        name="description"
-                        value={formData.description || ''}
-                        onChange={onInputChange}
-                        disabled={loading}
-                      />
                     </Form.Group>
                   </>
                 ) : (

@@ -3,14 +3,13 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { coursesApi, usersApi } from '@/lib/api';
+import { coursesApi, usersApi, analyticsApi } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import DashboardLayout from '@/components/DashboardLayout';
 import AdminSidebar from '@/components/AdminSidebar';
 import Card from 'react-bootstrap/Card';
 import Alert from 'react-bootstrap/Alert';
 import ListGroup from 'react-bootstrap/ListGroup';
-import { notificationsApi } from '@/lib/api';
 import Badge from 'react-bootstrap/Badge';
 import { Bar, Pie } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement } from 'chart.js';
@@ -19,7 +18,7 @@ import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Toolti
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
 
 export default function AdminDashboard() {
-  const { user, loading: authLoading } = useAuth(); // Get user and loading state from AuthContext
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [stats, setStats] = useState({
     totalLearners: 0,
@@ -36,7 +35,6 @@ export default function AdminDashboard() {
   // Role-based access control
   useEffect(() => {
     if (!authLoading && user) {
-      // Redirect non-ADMIN users to their appropriate dashboard
       if (user.role !== 'ADMIN') {
         switch (user.role) {
           case 'CONTENT_MANAGER':
@@ -50,32 +48,43 @@ export default function AdminDashboard() {
         }
       }
     } else if (!authLoading && !user) {
-      // Redirect to login if no user is authenticated
       router.push('/login');
     }
   }, [user, authLoading, router]);
 
   useEffect(() => {
-    // Only fetch data if user is authenticated and has ADMIN role
     if (user && user.role === 'ADMIN') {
       fetchDashboardData();
-      loadMockData();
     }
   }, [user]);
 
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const [learnersRes, coursesRes, enrollmentsRes, completionRes] = await Promise.all([
+      const [
+        learnersRes, 
+        coursesRes, 
+        enrollmentsRes, 
+        completionRes,
+        userActivityRes,
+        enrollmentStatsRes,
+        userDistributionRes
+      ] = await Promise.all([
         usersApi.getLearnersCount(),
         coursesApi.getAllCourses(),
         coursesApi.getTotalEnrollments(),
         coursesApi.getCompletionRates(),
+        analyticsApi.getUserActivity('7d'),
+        analyticsApi.getEnrollmentStats('monthly'),
+        usersApi.getUsersDistribution()
       ]);
 
-      if (learnersRes.error || coursesRes.error || enrollmentsRes.error || completionRes.error) {
-        const errorMsg =
-          learnersRes.error || coursesRes.error || enrollmentsRes.error || completionRes.error || 'Failed to fetch data';
+      if (learnersRes.error || coursesRes.error || enrollmentsRes.error || 
+          completionRes.error || userActivityRes.error || enrollmentStatsRes.error || 
+          userDistributionRes.error) {
+        const errorMsg = learnersRes.error || coursesRes.error || enrollmentsRes.error || 
+                         completionRes.error || userActivityRes.error || enrollmentStatsRes.error || 
+                         userDistributionRes.error || 'Failed to fetch data';
         setError(errorMsg);
         return;
       }
@@ -88,6 +97,32 @@ export default function AdminDashboard() {
         enrollments: enrollmentsRes.data?.total_enrollments || 0,
         completionRate: completionRes.data?.overall_completion_rate || 0,
       });
+
+      // Set user distribution data
+      if (userDistributionRes.data) {
+        setUserDistribution(userDistributionRes.data);
+      }
+
+      // Set course enrollment data
+      if (enrollmentStatsRes.data && enrollmentStatsRes.data.enrollment_trend) {
+        // Get the latest enrollment data for top courses
+        const topCourses = enrollmentStatsRes.data.top_courses || [];
+        setCourseEnrollments(topCourses.map((course: any) => ({
+          course: course.title,
+          enrollments: course.enrollment_count
+        })));
+      }
+
+      // Set recent activities from user activity data
+      if (userActivityRes.data && userActivityRes.data.activity_counts) {
+        const activities = userActivityRes.data.activity_counts.slice(0, 5).map((activity: any, index: number) => ({
+          id: index,
+          user: 'System',
+          action: `${activity.count} ${activity.activity_type} activities`,
+          time: 'Recently'
+        }));
+        setRecentActivities(activities);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred while fetching dashboard data');
     } finally {
@@ -95,27 +130,12 @@ export default function AdminDashboard() {
     }
   };
 
-  // Load mock data for charts and activity (replace with real API calls later)
-  const loadMockData = () => {
-    setRecentActivities([
-      // { id: 1, user: 'John Doe', action: 'completed the course "Introduction to Programming"', time: '2 hours ago' },
-      // { id: 2, user: 'Jane Smith', action: 'enrolled in the course "Data Science Fundamentals"', time: '4 hours ago' },
-      // { id: 3, user: 'Admin', action: 'added a new course "Advanced React"', time: '1 day ago' },
-    ]);
-
-    setCourseEnrollments([
-      { course: 'Introduction to Programming', enrollments: 120 },
-      { course: 'Data Science Fundamentals', enrollments: 85 },
-      { course: 'Web Development Basics', enrollments: 64 },
-      { course: 'Advanced React', enrollments: 45 },
-    ]);
-
-    setUserDistribution([
-      { role: 'Learners', count: 1500 },
-      { role: 'Content Managers', count: 15 },
-      { role: 'Administrators', count: 5 },
-    ]);
-  };
+  // const statCards = [
+  //   { title: 'Total Learners', value: stats.totalLearners, variant: 'success' },
+  //   { title: 'Active Courses', value: stats.activeCourses, variant: 'info' },
+  //   { title: 'Enrollments', value: stats.enrollments, variant: 'warning' },
+  //   { title: 'Completion Rate', value: `${stats.completionRate}%`, variant: 'danger' },
+  // ];
 
   const statCards = [
     { title: 'Total Learners', value: stats.totalLearners, variant: 'success', change: '+8% from last month' },
@@ -178,7 +198,6 @@ export default function AdminDashboard() {
     },
   };
 
-  // Render loading state if authentication is still in progress or user is not authorized
   if (authLoading || !user || user.role !== 'ADMIN') {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -198,7 +217,7 @@ export default function AdminDashboard() {
         {error && <Alert variant="danger">{error}</Alert>}
 
         <div className="row mb-4">
-          {statCards.map((card, index) => (
+        {statCards.map((card, index) => (
             <div key={index} className="col-md-3 mb-3">
               <Card bg={card.variant.toLowerCase()} text="white">
                 <Card.Body>
@@ -263,10 +282,12 @@ export default function AdminDashboard() {
                       <span className="visually-hidden">Loading...</span>
                     </div>
                   </div>
-                ) : (
+                ) : courseEnrollments.length > 0 ? (
                   <div style={{ height: '300px' }}>
                     <Bar data={enrollmentChartData} options={chartOptions} />
                   </div>
+                ) : (
+                  <p className="text-muted text-center py-4">No enrollment data available</p>
                 )}
               </div>
             </div>
@@ -283,10 +304,12 @@ export default function AdminDashboard() {
                       <span className="visually-hidden">Loading...</span>
                     </div>
                   </div>
-                ) : (
+                ) : userDistribution.length > 0 ? (
                   <div style={{ height: '300px' }}>
                     <Pie data={userDistributionData} options={pieOptions} />
                   </div>
+                ) : (
+                  <p className="text-muted text-center py-4">No user distribution data available</p>
                 )}
               </div>
             </div>

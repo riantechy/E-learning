@@ -6,6 +6,7 @@ from django.core.files.storage import default_storage
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from django.core.files.base import ContentFile
 from django.utils import timezone
+from django.db.models import Count
 from datetime import timedelta
 from .email_utils import send_verification_email, send_password_reset_email
 import os
@@ -420,3 +421,20 @@ class ForceChangePasswordView(APIView):
             {'message': 'Password successfully changed'}, 
             status=status.HTTP_200_OK
         )
+
+class UserDistributionView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        distribution = User.objects.values('role').annotate(
+            count=Count('id')
+        ).order_by('role')
+        
+        # Map role codes to human-readable names
+        role_map = dict(User.ROLES)
+        data = [{
+            'role': role_map.get(item['role'], item['role']),
+            'count': item['count']
+        } for item in distribution]
+        
+        return Response(data)

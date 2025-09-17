@@ -181,79 +181,61 @@ export default function ModulesPage() {
             </div>
           </div>
         ) : (
-          <Table striped bordered hover responsive>
-            <thead>
-              <tr>
-                <th>Order</th>
-                <th>Title</th>
-                <th>Description</th>
-                <th>Lessons</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {modules.map((module) => (
-                <tr key={module.id}>
-                  <td>{module.order}</td>
-                  <td>{module.title}</td>
-                  <td>{module.description}</td>
-                  <td>{module.lesson_count || 0}</td>
-                  <td>
-                    <div className="d-flex gap-2">
-                      <Button
-                        variant="outline-primary"
-                        size="sm"
-                        onClick={() => handleEdit(module)}
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        variant="outline-danger"
-                        size="sm"
-                        onClick={() => handleDelete(module.id)}
-                      >
-                        Delete
-                      </Button>
-                      <Link
-                        href={`/admin-dashboard/courses/${courseId}/modules/${module.id}/lessons`}
-                        className="btn btn-primary btn-sm"
-                        title="Manage Lessons"
-                      >
-                        📚
-                      </Link>
-                      <Link
-                        href={`/admin-dashboard/courses/${courseId}/modules/${module.id}/survey`}
-                        className="btn btn-warning btn-sm"
-                        title="Manage Survey"
-                      >
-                        📝 Survey
-                      </Link>
-                      {/* {module.order > 0 && (
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => handleReorder('up', module.id, module.order)}
-                          title="Move Up"
-                        >
-                          ⬆️
-                        </Button>
-                      )}
-                      {module.order < modules.length - 1 && (
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => handleReorder('down', module.id, module.order)}
-                          title="Move Down"
-                        >
-                          ⬇️
-                        </Button>
-                      )} */}
-                    </div>
-                  </td>
+            <Table striped bordered hover responsive>
+              <thead>
+                <tr>
+                  <th>Order</th>
+                  <th>Title</th>
+                  <th>Description</th>
+                  <th>Lessons</th>
+                  <th>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </Table>
+              </thead>
+              <tbody>
+                {modules.map((module) => (
+                  <tr key={module.id}>
+                    <td>{module.order}</td>
+                    <td>{module.title}</td>
+                    <td>{module.description}</td>
+                    <td>{module.lesson_count || 0}</td>
+                    <td>
+                      <div className="d-flex gap-2">
+                        <Button
+                          variant="outline-primary"
+                          size="sm"
+                          onClick={() => handleEdit(module)}
+                          title="Edit"
+                        >
+                          ✏️
+                        </Button>
+                        <Button
+                          variant="outline-danger"
+                          size="sm"
+                          onClick={() => handleDelete(module.id)}
+                          title="Delete"
+                        >
+                          🗑️
+                        </Button>
+                        <Link
+                          href={`/admin-dashboard/courses/${courseId}/modules/${module.id}/lessons`}
+                          className="btn btn-primary btn-sm"
+                          title="Manage Lessons"
+                        >
+                          Manage Lessons
+                        </Link>
+                        <Link
+                          href={`/admin-dashboard/courses/${courseId}/modules/${module.id}/survey`}
+                          className="btn btn-warning btn-sm"
+                          title="Manage Survey"
+                        >
+                          📝 Survey
+                        </Link>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
         )}
 
         <Modal show={showModal} onHide={() => setShowModal(false)} size="lg">

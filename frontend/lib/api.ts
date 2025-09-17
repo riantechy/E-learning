@@ -142,6 +142,9 @@ export const usersApi = {
   forcePasswordChange: (data: { new_password: string }) => 
     apiRequest('/auth/force-change-password/', 'POST', data),
 
+  getUsersDistribution: () => 
+    apiRequest<{ role: string; count: number }[]>('/auth/users/distribution/'),
+
   uploadProfileImage: (formData: FormData) => {
     return apiRequest<{ profile_image_url: string }>(
       '/auth/profile/image/',
@@ -151,15 +154,6 @@ export const usersApi = {
       false // isBinary
     );
   },
- 
-  // resendVerificationEmail: () => 
-  //   apiRequest('/auth/resend-verification-email/', 'POST'),
-  
-  // requestPasswordReset: (data: { email: string }) => 
-  //   apiRequest('/auth/request-password-reset/', 'POST', data),
-  
-  // // resetPassword: (data: { token: string; new_password: string }) => 
-  // //   apiRequest('/auth/reset-password/', 'POST', data),
   resetPassword: (data: { token: string; new_password: string }) => 
     apiRequest(`/auth/reset-password/${data.token}/`, 'POST', { new_password: data.new_password }),
 };
@@ -188,7 +182,8 @@ export const coursesApi = {
   // Lesson operations
   getLessons: (courseId: string, moduleId: string) => apiRequest<PaginatedResponse<Lesson>>(`/courses/${courseId}/modules/${moduleId}/lessons/`),
   getLesson: (courseId: string, moduleId: string, lessonId: string) => apiRequest<Lesson>(`/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}/`),
-  // getLesson: (courseId: string, moduleId: string, lessonId: string) => apiRequest<LessonResponse>(`/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}/`),
+  getEnrollmentStats: () => 
+    apiRequest<{ course: string; enrollments: number }[]>('/courses/enrollment-stats/'),
   
   createLesson: (courseId: string, moduleId: string, lesson: Partial<Lesson> | FormData) => {
     return apiRequest<Lesson>(

@@ -1,7 +1,7 @@
 from django.urls import path
 from .views import (
     RegisterView, LoginView, UserProfileView, ForceChangePasswordView,
-    UserListView, UserDetailView, UserUpdateView, UserDeleteView,
+    UserListView, UserDetailView, UserUpdateView, UserDeleteView, UserDistributionView,
     ChangePasswordView, LogoutView, LearnerListView, NonLearnerListView, 
     UserCreateView, LearnerCountView, ProfileImageView, PasswordResetConfirmView,
     VerifyEmailView, ResendVerificationEmailView, PasswordResetRequestView
@@ -29,6 +29,7 @@ urlpatterns = [
     # Keep the old 'all/' endpoint for backward compatibility
     path('learners/count/', LearnerCountView.as_view(), name='learner-count'),
     path('all/', UserListView.as_view(), name='user-list-old'),
+    path('users/distribution/', UserDistributionView.as_view(), name='user-distribution'),
 
     path('verify-email/<uuid:token>/', VerifyEmailView.as_view(), name='verify-email'),
     path('resend-verification-email/', ResendVerificationEmailView.as_view(), name='resend-verification-email'),

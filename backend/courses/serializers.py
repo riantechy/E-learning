@@ -14,9 +14,14 @@ class CourseSerializer(serializers.ModelSerializer):
         read_only_fields = ('created_by', 'published_at', 'created_at', 'updated_at')
 
 class ModuleSerializer(serializers.ModelSerializer):
+    lesson_count = serializers.SerializerMethodField()
+    
     class Meta:
         model = Module
         fields = '__all__'
+    
+    def get_lesson_count(self, obj):
+        return obj.lessons.count()
 
 class ModuleProgressSerializer(serializers.ModelSerializer):
     class Meta:

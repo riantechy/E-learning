@@ -24,9 +24,11 @@ router.register(
 
 urlpatterns = [
     path('completion-rates/', views.CourseViewSet.as_view({'get': 'completion_rates'}), name='completion-rates'),
+    path('enrollment-stats/', 
+     views.CourseViewSet.as_view({'get': 'enrollment_stats'}), 
+     name='course-enrollment-stats'),
     path('', include(router.urls)),
     
-    # Updated paths (removed 'courses/' prefix)
     path('approve/<uuid:pk>/', views.CourseViewSet.as_view({'post': 'approve'}), name='course-approve'),
     path('reject/<uuid:pk>/', views.CourseViewSet.as_view({'post': 'reject'}), name='course-reject'),
     path('publish/<uuid:pk>/', views.CourseViewSet.as_view({'post': 'publish'}), name='course-publish'),

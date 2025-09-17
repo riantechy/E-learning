@@ -251,8 +251,6 @@ export default function ModulePage() {
     }
   }
 
-
-// Replace the renderLessonContent function with this improved version
 const renderLessonContent = (lesson: any) => {
   if (lesson.content_type === 'QUIZ') {
     return (
@@ -274,18 +272,28 @@ const renderLessonContent = (lesson: any) => {
 
   if (lesson.content_type === 'VIDEO') {
     return (
-      <div className="ratio ratio-16x9 mb-3">
-        <iframe 
-          ref={(el: HTMLIFrameElement | null) => {
-            iframeRefs.current[lesson.id] = el
-          }}
-          src={convertToEmbedUrl(lesson.content)} 
-          title={lesson.title}
-          allowFullScreen
-          onEnded={() => handleVideoEnded(lesson.id)}
-          onLoad={() => setContentInteraction(prev => ({...prev, [lesson.id]: true}))}
-        />
-      </div>
+      <>
+        {/* Description Card */}
+        {lesson.description && (          
+          <div className="card-body">
+            <p className="card-text">{lesson.description}</p>
+          </div>         
+        )}
+        
+        {/* Video Content */}
+        <div className="ratio ratio-16x9 mb-3">
+          <iframe 
+            ref={(el: HTMLIFrameElement | null) => {
+              iframeRefs.current[lesson.id] = el
+            }}
+            src={convertToEmbedUrl(lesson.content)} 
+            title={lesson.title}
+            allowFullScreen
+            onEnded={() => handleVideoEnded(lesson.id)}
+            onLoad={() => setContentInteraction(prev => ({...prev, [lesson.id]: true}))}
+          />
+        </div>
+      </>
     )
   }
 
@@ -299,9 +307,14 @@ const renderLessonContent = (lesson: any) => {
         <div className="card">
           <div className="card-body">
             <h6>PDF Document: {lesson.title}</h6>
-            <p className="text-muted small">
+            {lesson.description && (
+              <div className="card-body">
+                <p className="card-text">{lesson.description}</p>
+              </div>
+            )}
+            {/* <p className="text-muted small">
               Click below to view or download the document.
-            </p>
+            </p> */}
             <div className="d-flex gap-2">
               <a 
                 href={pdfUrl}
@@ -555,11 +568,11 @@ const renderLessonContent = (lesson: any) => {
                               className="d-flex justify-content-between align-items-center p-3 border-bottom cursor-pointer"
                               onClick={() => toggleLesson(lesson.id)}
                             >
-                              <h6 className="mb-0">
-                                {lesson.title}
+                              <h6 className="mb-0">                                
                                 {lessonProgress[lesson.id]?.is_completed && (
                                   <span className="badge bg-success ms-2">✓</span>
                                 )}
+                                {lesson.title}
                               </h6>
                               <span>
                                 {expandedLessons[lesson.id] ? <ChevronUp /> : <ChevronDown />}

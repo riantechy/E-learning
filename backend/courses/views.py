@@ -51,11 +51,6 @@ class CourseViewSet(viewsets.ModelViewSet):
             )
             return Response({'status': 'course approved'})
         return Response({'status': 'course not in pending state'}, status=status.HTTP_400_BAD_REQUEST)
-    # def approve(self, request, pk=None):
-    #     course = self.get_object()
-    #     if course.approve(request.user):
-    #         return Response({'status': 'course approved'})
-    #     return Response({'status': 'course not in pending state'}, status=status.HTTP_400_BAD_REQUEST)
     
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
     def reject(self, request, pk=None):
@@ -182,6 +177,20 @@ class CourseViewSet(viewsets.ModelViewSet):
             'overall_completion_rate': overall_rate,
             'courses': completion_data
         })
+    @action(detail=False, methods=['get'])
+    def enrollment_stats(self, request):
+        """Get enrollment statistics for all courses"""
+        courses = Course.objects.filter(status='PUBLISHED').annotate(
+            enrollment_count=Count('enrollment')
+        ).order_by('-enrollment_count')[:10]  
+        
+        data = [{
+            'course': course.title,
+            'enrollments': course.enrollment_count
+        } for course in courses]
+        
+        return Response(data)
+
 class ModuleViewSet(viewsets.ModelViewSet):
     serializer_class = ModuleSerializer
     permission_classes = [permissions.IsAuthenticated]  
