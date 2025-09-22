@@ -63,8 +63,19 @@ class CourseViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
     def publish(self, request, pk=None):
         course = self.get_object()
-        course.publish()
-        return Response({'status': 'course published'})
+        
+        # Check if course has modules
+        if not course.has_modules():
+            return Response(
+                {'error': 'Cannot publish a course without modules. Please add at least one module first.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            course.publish()
+            return Response({'status': 'course published'})
+        except ValueError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
     def enroll(self, request, pk=None):

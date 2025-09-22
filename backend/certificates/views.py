@@ -72,8 +72,6 @@ class GenerateCertificateView(generics.GenericAPIView):
         full_name = f"{user.first_name} {user.last_name}"
 
         # Customize position and styling for the student's name
-        # Adjust x, y coordinates based on the template's layout
-        # Assuming "Awarded to" section is centered around y=400 (adjust after testing)
         c.setFont("Helvetica-Bold", 24)
         c.drawCentredString(420, 300, full_name)  # Adjust coordinates as needed
         c.save()

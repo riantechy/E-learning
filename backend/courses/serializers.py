@@ -7,11 +7,49 @@ class CourseCategorySerializer(serializers.ModelSerializer):
         model = CourseCategory
         fields = '__all__'
 
+# class CourseSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Course
+#         fields = '__all__'
+#         read_only_fields = ('created_by', 'published_at', 'created_at', 'updated_at')
+
 class CourseSerializer(serializers.ModelSerializer):
+    module_count = serializers.SerializerMethodField()
+    
     class Meta:
         model = Course
         fields = '__all__'
         read_only_fields = ('created_by', 'published_at', 'created_at', 'updated_at')
+
+    def get_module_count(self, obj):
+        return obj.modules.count()
+
+    def validate_status(self, value):
+        # If trying to set status to PUBLISHED, check if course has modules
+        if value == 'PUBLISHED':
+            # For existing instances, check module count
+            if self.instance and not self.instance.has_modules():
+                raise serializers.ValidationError(
+                    "Cannot publish a course without modules. Please add at least one module first."
+                )
+        return value
+
+    def validate(self, data):
+        # For new instances, we can't check modules during creation, but we can prevent direct publishing
+        if not self.instance and data.get('status') == 'PUBLISHED':
+            raise serializers.ValidationError(
+                "New courses cannot be published directly. Please create modules first."
+            )
+        return data
+
+class CourseProgressSerializer(serializers.Serializer):
+    completed = serializers.IntegerField()
+    total = serializers.IntegerField()
+    percentage = serializers.FloatField()
+    completed_modules = serializers.ListField(child=serializers.CharField())
+    is_course_completed = serializers.BooleanField()
+    completed_modules_count = serializers.IntegerField()
+    total_modules_count = serializers.IntegerField()
 
 class ModuleSerializer(serializers.ModelSerializer):
     lesson_count = serializers.SerializerMethodField()

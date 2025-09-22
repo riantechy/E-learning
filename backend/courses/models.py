@@ -33,6 +33,19 @@ class Course(models.Model):
     duration_hours = models.PositiveIntegerField(default=0)
     is_featured = models.BooleanField(default=False)
 
+    def has_modules(self):
+        """Check if the course has at least one module"""
+        return self.modules.exists()
+
+    def publish(self):
+        # Check if course has modules before publishing
+        if not self.has_modules():
+            raise ValueError("Cannot publish a course without modules")
+        
+        self.status = 'PUBLISHED'
+        self.published_at = timezone.now()
+        self.save()
+
     def approve(self, approved_by):
         if self.status == 'PENDING_REVIEW':
             self.status = 'PUBLISHED'
@@ -64,12 +77,6 @@ class Course(models.Model):
     
     def __str__(self):
         return self.title
-    
-    def publish(self):
-        self.status = 'PUBLISHED'
-        self.published_at = timezone.now()
-        self.save()
-
 class Module(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='modules')
@@ -97,18 +104,18 @@ class ModuleProgress(models.Model):
         if self.is_completed and not self.completed_at:
             self.completed_at = timezone.now()
         super().save(*args, **kwargs)
-
-@classmethod
-def mark_module_completed(cls, user, module):
-    progress, created = cls.objects.get_or_create(
-        user=user,
-        module=module,
-        defaults={'is_completed': True}
-    )
-    if not created and not progress.is_completed:
-        progress.is_completed = True
-        progress.save()
-    return progress
+    
+    @classmethod
+    def mark_module_completed(cls, user, module):
+        progress, created = cls.objects.get_or_create(
+            user=user,
+            module=module,
+            defaults={'is_completed': True}
+        )
+        if not created and not progress.is_completed:
+            progress.is_completed = True
+            progress.save()
+        return progress
 
 class Lesson(models.Model):
     CONTENT_TYPES = (
@@ -174,7 +181,7 @@ class UserProgress(models.Model):
         if self.is_completed and not self.completed_at:
             self.completed_at = timezone.now()
         super().save(*args, **kwargs)
-    
+        
     @classmethod
     def get_course_progress(cls, user, course):
         # Get all lessons in course
@@ -188,34 +195,32 @@ class UserProgress(models.Model):
             is_completed=True
         ).count()
         
-        # Get completed modules (modules where all lessons are completed)
+        # Get completed modules (check ModuleProgress model)
         completed_modules = []
-        for module in Module.objects.filter(course=course):
-            module_lessons = lessons.filter(module=module)
-            completed_module_lessons = cls.objects.filter(
-                user=user,
-                lesson__in=module_lessons,
-                is_completed=True
-            ).count()
-            
-            # Mark module as completed if all its lessons are completed
-            if module_lessons.count() > 0 and completed_module_lessons == module_lessons.count():
-                # Update ModuleProgress if not already marked
-                module_progress, created = ModuleProgress.objects.get_or_create(
-                    user=user,
-                    module=module,
-                    defaults={'is_completed': True}
-                )
-                if not created and not module_progress.is_completed:
-                    module_progress.is_completed = True
-                    module_progress.save()
-                completed_modules.append(str(module.id))
+        module_progresses = ModuleProgress.objects.filter(
+            user=user,
+            module__course=course,
+            is_completed=True
+        )
+        
+        for mp in module_progresses:
+            completed_modules.append(str(mp.module.id))
+        
+        # Calculate percentage
+        percentage = round((completed_lessons / total_lessons * 100), 2) if total_lessons > 0 else 0
+        
+        # Check if course is fully completed (all modules completed)
+        total_modules = Module.objects.filter(course=course).count()
+        is_course_completed = len(completed_modules) == total_modules and total_modules > 0
         
         return {
             'completed': completed_lessons,
             'total': total_lessons,
-            'percentage': round((completed_lessons / total_lessons * 100), 2) if total_lessons > 0 else 0,
-            'completed_modules': completed_modules
+            'percentage': percentage,
+            'completed_modules': completed_modules,
+            'is_course_completed': is_course_completed,  
+            'completed_modules_count': len(completed_modules),
+            'total_modules_count': total_modules
         }
 
     @classmethod

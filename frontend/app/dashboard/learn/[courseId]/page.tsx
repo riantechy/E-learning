@@ -21,6 +21,13 @@ export default function CourseOverviewPage() {
   const [loading, setLoading] = useState(true)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
 
+  const getIncompleteModules = () => {
+    return modules.filter(module => {
+      const moduleProgress = progress?.completed_modules?.includes(module.id);
+      return !moduleProgress;
+    });
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -104,14 +111,31 @@ export default function CourseOverviewPage() {
   }, [courseId, modules])
 
   const handleStartCourse = async () => {
-    const firstIncompleteModule = modules.find(module => 
-      !module.is_completed
-    ) || modules[0]
+    const incompleteModules = getIncompleteModules();
     
-    if (firstIncompleteModule) {
-      router.push(`/dashboard/learn/${courseId}/${firstIncompleteModule.id}`)
+    if (incompleteModules.length === 0) {
+      // All modules completed, navigate to completion page
+      router.push(`/dashboard/learn/${courseId}/complete`);
+    } else {
+      // Find first incomplete module
+      const firstIncompleteModule = incompleteModules[0];
+      if (firstIncompleteModule) {
+        router.push(`/dashboard/learn/${courseId}/${firstIncompleteModule.id}`);
+      }
     }
-  }
+  };
+  
+  // Add this function to handle completion check
+  const checkCourseCompletion = () => {
+    const incompleteModules = getIncompleteModules();
+    const isCourseCompleted = incompleteModules.length === 0;
+    
+    return {
+      isCompleted: isCourseCompleted,
+      incompleteModules: incompleteModules,
+      completedPercentage: progress?.percentage || 0
+    };
+  };
 
   const isModuleLocked = (module: any) => {
     if (module.order === 1) return false
@@ -246,7 +270,17 @@ export default function CourseOverviewPage() {
                         disabled={!modules.length}
                         style={{ minWidth: '180px' }}
                       >
-                        {progress?.percentage === 0 ? 'Start Course' : 'Continue'}
+                        {(() => {
+                          const completionStatus = checkCourseCompletion();
+                          
+                          if (completionStatus.isCompleted) {
+                            return 'Get Certificate';
+                          } else if (completionStatus.completedPercentage > 0) {
+                            return `Continue (${Math.round(completionStatus.completedPercentage)}%)`;
+                          } else {
+                            return 'Start Course';
+                          }
+                        })()}
                       </button>
                     </div>
 
@@ -360,6 +394,53 @@ export default function CourseOverviewPage() {
                         {progress?.percentage === 0 ? 'Start Course' : 'Continue Learning'}
                       </button>
                     </div>
+                      {/* Course Completion Status */}
+                      {(() => {
+                        const completionStatus = checkCourseCompletion();
+                        
+                        if (completionStatus.isCompleted) {
+                          return (
+                            <div className="alert alert-success mt-3">
+                              <div className="d-flex justify-content-between align-items-center">
+                                <span>
+                                  <i className="bi bi-check-circle-fill me-2"></i>
+                                  Course completed! Ready for certificate
+                                </span>
+                                <Link 
+                                  href={`/dashboard/learn/${courseId}/complete`}
+                                  className="btn btn-success btn-sm"
+                                >
+                                  Get Certificate
+                                </Link>
+                              </div>
+                            </div>
+                          );
+                        } else if (completionStatus.completedPercentage > 0) {
+                          return (
+                            <div className="alert alert-info mt-3">
+                              <div className="d-flex justify-content-between align-items-center">
+                                <div>
+                                  <i className="bi bi-info-circle-fill me-2"></i>
+                                  <strong>Pending modules: {completionStatus.incompleteModules.length}</strong>
+                                  <div className="mt-1">
+                                    <small>Complete these modules to finish the course:</small>
+                                    <ul className="mb-0 mt-1">
+                                      {completionStatus.incompleteModules.slice(0, 3).map(module => (
+                                        <li key={module.id}>{module.title}</li>
+                                      ))}
+                                      {completionStatus.incompleteModules.length > 3 && (
+                                        <li>...and {completionStatus.incompleteModules.length - 3} more</li>
+                                      )}
+                                    </ul>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        }
+                        
+                        return null;
+                      })()}
                   </div>
                 </div>
               </div>

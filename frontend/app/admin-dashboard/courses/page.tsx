@@ -74,7 +74,12 @@ export default function CoursesPage() {
       if (currentCourse) {
         response = await coursesApi.updateCourse(currentCourse.id, formData);
       } else {
-        response = await coursesApi.createCourse(formData);
+        // For new courses, always set status to DRAFT regardless of form data
+        const newCourseData = {
+          ...formData,
+          status: 'DRAFT'
+        };
+        response = await coursesApi.createCourse(newCourseData);
       }
 
       if (response.error) {
@@ -127,7 +132,7 @@ export default function CoursesPage() {
       title: '',
       description: '',
       category: '',
-      status: 'DRAFT',
+      status: 'DRAFT', // Always set to DRAFT for new courses
     });
     setShowModal(true);
   };
@@ -146,9 +151,15 @@ export default function CoursesPage() {
       }
 
       if (response?.error) {
-        setError(response.error);
+        // Handle specific error for publishing without modules
+        if (response.error.includes('without modules') || response.error.includes('modules first')) {
+          setError(`Cannot publish: ${response.error}`);
+        } else {
+          setError(response.error);
+        }
       } else {
-        fetchData();
+        setError(''); // Clear any previous errors
+        fetchData(); // Refresh the data
       }
     } catch (err) {
       setError('Failed to update course status');
@@ -167,6 +178,13 @@ export default function CoursesPage() {
     return <Badge bg={variants[status]}>{status.replace('_', ' ')}</Badge>;
   };
 
+  // Get module count for a course - using the module_count field from API
+  const getModuleCount = (courseId: string) => {
+    const course = courses.find(c => c.id === courseId);
+    // Use module_count from the API response, fallback to 0
+    return course?.module_count || 0;
+  };
+
   return (
     <DashboardLayout sidebar={<AdminSidebar />}>
       <div className="container-fluid">
@@ -177,7 +195,7 @@ export default function CoursesPage() {
           </Button>
         </div>
 
-        {error && <Alert variant="danger">{error}</Alert>}
+        {error && <Alert variant="danger" onClose={() => setError('')} dismissible>{error}</Alert>}
 
         {loading ? (
           <div className="text-center py-5">
@@ -191,6 +209,7 @@ export default function CoursesPage() {
               <tr>
                 <th>Title</th>
                 <th>Category</th>
+                <th>Modules</th>
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
@@ -201,26 +220,50 @@ export default function CoursesPage() {
                 style={{ cursor: 'pointer' }}>
                   <td>{course.title}</td>
                   <td>{categories.find(cat => cat.id === course.category)?.name || 'Uncategorized'}</td>
-                  <td>{getStatusBadge(course.status)}</td>
+                  <td>
+                    <Badge bg={getModuleCount(course.id) > 0 ? 'primary' : 'secondary'}>
+                      {getModuleCount(course.id)} modules
+                    </Badge>
+                    {getModuleCount(course.id) === 0 && (
+                      <Badge bg="warning" className="ms-1" title="Add modules to publish">
+                        No Modules
+                      </Badge>
+                    )}
+                  </td>
+                  <td>
+                    {getStatusBadge(course.status)}
+                    {course.status === 'DRAFT' && getModuleCount(course.id) === 0 && (
+                      <Badge bg="warning" className="ms-1" title="Add modules to publish">
+                        Cannot Publish
+                      </Badge>
+                    )}
+                  </td>
                   <td onClick={(e) => e.stopPropagation()}> {/* Prevent click propagation for actions */}
-                    <Button variant="info" size="sm" className="me-2" onClick={() => handleEdit(course)}>
-                      Edit
-                    </Button>
-                              <Button 
-            variant="primary" 
-            size="sm" 
-            className="me-2" 
-            onClick={() => router.push(`/admin-dashboard/courses/${course.id}/modules`)}
-          >
-            Manage
-          </Button>
+                  <div className="d-flex gap-1">
+                      <Button 
+                        variant="outline-info" 
+                        size="sm" 
+                        onClick={() => handleEdit(course)}
+                        title="Edit Course"
+                      >
+                        <i className="bi bi-pencil"></i>
+                      </Button>
+                      <Button 
+                        variant="outline-danger" 
+                        size="sm" 
+                        onClick={() => handleDelete(course.id)}
+                        title="Delete Course"
+                      >
+                        <i className="bi bi-trash"></i>
+                      </Button>
+              
                     <Button 
-                      variant="danger" 
+                      variant="primary" 
                       size="sm" 
                       className="me-2" 
-                      onClick={() => handleDelete(course.id)}
+                      onClick={() => router.push(`/admin-dashboard/courses/${course.id}/modules`)}
                     >
-                      Delete
+                      Manage
                     </Button>
                     {course.status === 'PENDING_REVIEW' && (
                       <>
@@ -233,10 +276,17 @@ export default function CoursesPage() {
                       </>
                     )}
                     {course.status === 'DRAFT' && (
-                      <Button variant="primary" size="sm" onClick={() => handleStatusAction(course.id, 'publish')}>
+                      <Button 
+                        variant="primary" 
+                        size="sm" 
+                        onClick={() => handleStatusAction(course.id, 'publish')}
+                        disabled={getModuleCount(course.id) === 0}
+                        title={getModuleCount(course.id) === 0 ? "Add modules first to publish" : "Publish course"}
+                      >
                         Publish
                       </Button>
                     )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -290,27 +340,43 @@ export default function CoursesPage() {
                 </Form.Select>
               </Form.Group>
 
-              <Form.Group className="mb-3">
-                <Form.Label>Status</Form.Label>
-                <Form.Select
-                  name="status"
-                  value={formData.status}
-                  onChange={handleInputChange}
-                  required
-                >
-                  <option value="DRAFT">Draft</option>
-                  <option value="PENDING_REVIEW">Pending Review</option>
-                  <option value="PUBLISHED">Published</option>
-                  <option value="ARCHIVED">Archived</option>
-                </Form.Select>
-              </Form.Group>
+              {/* Only show status dropdown when editing an existing course */}
+              {currentCourse && (
+                <Form.Group className="mb-3">
+                  <Form.Label>Status</Form.Label>
+                  <Form.Select
+                    name="status"
+                    value={formData.status}
+                    onChange={handleInputChange}
+                    required
+                  >
+                    <option value="DRAFT">Draft</option>
+                    <option value="PENDING_REVIEW">Pending Review</option>
+                    <option value="PUBLISHED">Published</option>
+                    <option value="ARCHIVED">Archived</option>
+                  </Form.Select>
+                  {formData.status === 'PUBLISHED' && getModuleCount(currentCourse.id) === 0 && (
+                    <Form.Text className="text-warning">
+                      ⚠️ This course has no modules. Add modules before publishing.
+                    </Form.Text>
+                  )}
+                </Form.Group>
+              )}
+
+              {/* Show informational text for new courses */}
+              {!currentCourse && (
+                <Alert variant="info" className="mb-3">
+                  <strong>Note:</strong> New courses are automatically set to <Badge bg="secondary">DRAFT</Badge> status. 
+                  You can change the status after creating the course and adding modules.
+                </Alert>
+              )}
             </Modal.Body>
             <Modal.Footer>
               <Button variant="secondary" onClick={() => setShowModal(false)}>
                 Cancel
               </Button>
               <Button variant="primary" type="submit" disabled={loading}>
-                {loading ? 'Saving...' : 'Save'}
+                {loading ? 'Saving...' : currentCourse ? 'Update Course' : 'Create Course'}
               </Button>
             </Modal.Footer>
           </Form>

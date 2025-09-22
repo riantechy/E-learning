@@ -7,7 +7,7 @@ import { coursesApi, certificatesApi } from '@/lib/api'
 import TopNavbar from '@/components/TopNavbar'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import LearnerSidebar from '@/components/LearnerSidebar'
-import { Menu } from 'lucide-react'
+import { Menu, AlertCircle, CheckCircle, Download } from 'lucide-react'
 import Link from 'next/link'
 
 export default function CourseCompletionPage() {
@@ -15,11 +15,65 @@ export default function CourseCompletionPage() {
   const router = useRouter()
   const [course, setCourse] = useState<Course | null>(null)
   const [certificate, setCertificate] = useState<Certificate | null>(null)
+  const [progress, setProgress] = useState<any>(null)
+  const [modules, setModules] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api'
+  const [isCourseCompleted, setIsCourseCompleted] = useState(false)
+
+  const checkCourseCompletion = () => {
+    // Check if progress exists and course is completed
+    if (progress?.is_course_completed) {
+      return true;
+    }
+    
+    // Fallback: Check if all modules are completed
+    if (progress && modules.length > 0) {
+      const completedModulesCount = progress.completed_modules_count || 0;
+      const totalModulesCount = progress.total_modules_count || modules.length;
+      return completedModulesCount === totalModulesCount && totalModulesCount > 0;
+    }
+    
+    return false;
+  }
+
+  // Get incomplete modules
+  const getIncompleteModules = () => {
+    if (!progress || !modules.length) return []
+    
+    const completedModules = progress.completed_modules || []
+    return modules.filter(module => !completedModules.includes(module.id))
+  }
+
+  // Fetch course progress and modules
+  const fetchProgressData = async () => {
+    try {
+      const [progressRes, modulesRes] = await Promise.all([
+        coursesApi.getCourseProgress(courseId),
+        coursesApi.getModules(courseId)
+      ]);
+      
+      if (progressRes.data) {
+        setProgress(progressRes.data);
+        console.log('Progress data:', progressRes.data);
+      }
+      
+      if (modulesRes.data?.results) {
+        setModules(modulesRes.data.results);
+      }
+      
+      // Check completion after both API calls complete
+      const completed = checkCourseCompletion();
+      setIsCourseCompleted(completed);
+      
+      // REMOVED: No longer setting error for incomplete course
+    } catch (err) {
+      console.error('Error fetching progress data:', err);
+      setError('Failed to load course progress');
+    }
+  };
 
   // Fetch certificate data
   const fetchCertificate = async () => {
@@ -31,7 +85,6 @@ export default function CourseCompletionPage() {
       }
     } catch (err) {
       console.error('Error fetching certificate:', err)
-      setError('Failed to load certificate data')
     }
   }
 
@@ -63,7 +116,7 @@ export default function CourseCompletionPage() {
       if (error) {
         throw new Error(error);
       }
-  
+
       if (data instanceof Blob) {
         const url = window.URL.createObjectURL(data);
         const a = document.createElement('a');
@@ -81,6 +134,7 @@ export default function CourseCompletionPage() {
       setError(err instanceof Error ? err.message : 'Failed to download certificate. Please try again later.');
     }
   };
+
   // Initial data loading
   useEffect(() => {
     const loadData = async () => {
@@ -95,6 +149,7 @@ export default function CourseCompletionPage() {
         if (courseRes.error) throw new Error(courseRes.error)
         if (courseRes.data) {
           setCourse(courseRes.data)
+          await fetchProgressData()
           await fetchCertificate()
         }
       } catch (err) {
@@ -142,6 +197,8 @@ export default function CourseCompletionPage() {
     )
   }
 
+  const incompleteModules = getIncompleteModules()
+
   return (
     <ProtectedRoute>
       <div className="d-flex vh-100 bg-light position-relative">
@@ -177,97 +234,197 @@ export default function CourseCompletionPage() {
           />
         )}
 
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <TopNavbar toggleSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)} /> 
-        {/* Main Content */}
-        <main 
-          className="flex-grow-1 p-4 overflow-auto"
-          style={{
-            width: 'calc(100%)',
-            transition: 'margin-left 0.3s ease'
-          }}
-        >
-          <div className="container py-5">
-            <div className="row justify-content-center">
-              <div className="col-md-8 text-center">
-                <div className="card border-success">
-                  <div className="card-header bg-success text-white">
-                    <h2 className="mb-0">Congratulations!</h2>
-                  </div>
-                  <div className="card-body">
-                    <i className="bi bi-trophy-fill text-warning display-1 mb-4"></i>
-                    <h3 className="mb-3">You've completed {course.title}</h3>
-                    <p className="lead">
-                      Great job on finishing the course! You can now get your certificate
-                      of completion below.
-                    </p>
-
-                    {error && (
-                      <div className="alert alert-danger mb-4">
-                        {error}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <TopNavbar toggleSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)} /> 
+          
+          {/* Main Content */}
+          <main 
+            className="flex-grow-1 p-4 overflow-auto"
+            style={{
+              width: 'calc(100%)',
+              transition: 'margin-left 0.3s ease'
+            }}
+          >
+            <div className="container py-5">
+              <div className="row justify-content-center">
+                <div className="col-md-10">
+                  {/* Course Not Completed Warning - Only show warning, not blocking */}
+                  {!isCourseCompleted && (
+                    <div className="card border-info mb-4">
+                      <div className="card-header bg-info text-white d-flex align-items-center">
+                        <AlertCircle className="me-2" size={20} />
+                        <h5 className="mb-0">Course Progress</h5>
                       </div>
-                    )}
+                      <div className="card-body">
+                        <div className="row">
+                          <div className="col-md-8">
+                            <h6>You're making progress! Remaining modules:</h6>
+                            <ul className="list-group">
+                              {incompleteModules.map(module => (
+                                <li key={module.id} className="list-group-item d-flex justify-content-between align-items-center">
+                                  <span>{module.title}</span>
+                                  <span className="badge bg-info text-dark">In Progress</span>
+                                </li>
+                              ))}
+                            </ul>
+                            <div className="mt-3">
+                              <strong>Progress: {progress?.percentage || 0}% Complete</strong>
+                              <div className="progress mt-2">
+                                <div 
+                                  className="progress-bar bg-info" 
+                                  style={{ width: `${progress?.percentage || 0}%` }}
+                                ></div>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="col-md-4 d-flex align-items-center">
+                            <Link 
+                              href={`/dashboard/learn/${courseId}`}
+                              className="btn btn-primary w-100"
+                            >
+                              Continue Learning
+                            </Link>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
-                    {certificate ? (
-                      <div className="mt-4">
-                        <button
-                          onClick={handleDownloadCertificate}
-                          className="btn btn-primary btn-lg me-3"
+                  {/* Course Status Card */}
+                  <div className={`card ${isCourseCompleted ? 'border-success' : 'border-primary'}`}>
+                    <div className={`card-header ${isCourseCompleted ? 'bg-success text-white' : 'bg-primary text-white'} d-flex justify-content-between align-items-center`}>
+                      <h2 className="mb-0">
+                        {isCourseCompleted ? 'Congratulations!' : 'Course Overview'}
+                      </h2>
+                      {isCourseCompleted && (
+                        <CheckCircle size={24} />
+                      )}
+                    </div>
+                    <div className="card-body">
+                      <div className="text-center mb-4">
+                        <i className={`bi ${isCourseCompleted ? 'bi-trophy-fill text-warning' : 'bi-book text-primary'} display-1 mb-4`}></i>
+                        <h3 className="mb-3">
+                          {isCourseCompleted 
+                            ? `You've completed ${course.title}`
+                            : `You're enrolled in ${course.title}`
+                          }
+                        </h3>
+                        <p className="lead">
+                          {isCourseCompleted 
+                            ? "Great job on finishing the course! Download your certificate below."
+                            : "Access your certificate anytime during your learning journey."
+                          }
+                        </p>
+                      </div>
+
+                      {error && (
+                        <div className="alert alert-danger mb-4">
+                          {error}
+                        </div>
+                      )}
+
+                      {/* Certificate Section - ALWAYS VISIBLE */}
+                      <div className="text-center mt-4">
+                        {certificate ? (
+                          <div>
+                            <div className="alert alert-success mb-4">
+                              <CheckCircle className="me-2" />
+                              Certificate available for download!
+                            </div>
+                            <button
+                              onClick={handleDownloadCertificate}
+                              className="btn btn-primary btn-lg me-3"
+                            >
+                              <Download className="me-2" size={20} />
+                              Download Certificate
+                            </button>
+                            <Link 
+                              href="/dashboard/certificates"
+                              className="btn btn-outline-secondary btn-lg"
+                            >
+                              View All Certificates
+                            </Link>
+                          </div>
+                        ) : (
+                          <div>
+                            <button 
+                              onClick={handleGenerateCertificate}
+                              disabled={generating}
+                              className="btn btn-primary btn-lg me-3"
+                            >
+                              {generating ? (
+                                <>
+                                  <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                                  Generating...
+                                </>
+                              ) : (
+                                <>
+                                  <i className="bi bi-award me-2"></i>
+                                  Get Certificate
+                                </>
+                              )}
+                            </button>
+                            <Link 
+                              href="/dashboard/certificates"
+                              className="btn btn-outline-secondary btn-lg"
+                            >
+                              View All Certificates
+                            </Link>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="text-center mt-4">
+                        <Link
+                          href={`/dashboard/learn/${courseId}`}
+                          className="btn btn-outline-primary"
                         >
-                          <i className="bi bi-download me-2"></i>
-                          Download Certificate
-                        </button>
-                        <Link 
-                          href="/dashboard/certificates"
-                          className="btn btn-outline-secondary btn-lg"
-                        >
-                          View All Certificates
+                          <i className="bi bi-arrow-left me-2"></i>
+                          Back to Course
                         </Link>
                       </div>
-                    ) : (
-                      <div className="mt-4">
-                        <button 
-                          onClick={handleGenerateCertificate}
-                          disabled={generating}
-                          className="btn btn-primary btn-lg me-3"
-                        >
-                          {generating ? (
-                            <>
-                              <span className="spinner-border spinner-border-sm me-2" role="status"></span>
-                              Generating...
-                            </>
-                          ) : (
-                            <>
-                              <i className="bi bi-award me-2"></i>
-                              Get Certificate
-                            </>
-                          )}
-                        </button>
-                        <Link 
-                          href="/dashboard/certificates"
-                          className="btn btn-outline-secondary btn-lg"
-                        >
-                          View All Certificates
-                        </Link>
-                      </div>
-                    )}
-
-                    <div className="mt-5">
-                      <Link 
-                        href="/dashboard/courses"
-                        className="btn btn-outline-primary"
-                      >
-                        <i className="bi bi-arrow-left me-2"></i>
-                        Back to Courses
-                      </Link>
                     </div>
                   </div>
+
+                  {/* Module Progress Overview */}
+                  {modules.length > 0 && (
+                    <div className="card mt-4">
+                      <div className="card-header">
+                        <h5 className="mb-0">Module Progress</h5>
+                      </div>
+                      <div className="card-body">
+                        <div className="row">
+                          {modules.map(module => {
+                            const isCompleted = progress?.completed_modules?.includes(module.id)
+                            return (
+                              <div key={module.id} className="col-md-6 mb-3">
+                                <div className={`card ${isCompleted ? 'border-success' : 'border-info'}`}>
+                                  <div className="card-body">
+                                    <div className="d-flex justify-content-between align-items-center">
+                                      <h6 className="mb-0">{module.title}</h6>
+                                      {isCompleted ? (
+                                        <CheckCircle className="text-success" size={20} />
+                                      ) : (
+                                        <span className="badge bg-info">In Progress</span>
+                                      )}
+                                    </div>
+                                    <small className="text-muted">
+                                      Status: {isCompleted ? 'Completed' : 'In Progress'}
+                                    </small>
+                                  </div>
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
-          </div>
-        </main>
-      </div>
+          </main>
+        </div>
       </div>
     </ProtectedRoute>
   )
