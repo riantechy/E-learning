@@ -57,7 +57,7 @@ export default function LessonsPage() {
       <div className="container-fluid">
         <div className="d-flex justify-content-between align-items-center mb-4">
           <div>
-            <h1 className="h2 mb-0">Course Content Management</h1>
+            <h1 className="h4 mb-0">Course Content Management</h1>
             {course && module && (
               <p className="text-muted mb-0">
                 Course: {course.title} → Module: {module.title}

@@ -94,7 +94,7 @@ export default function AdminNotifications() {
     <DashboardLayout sidebar={<AdminSidebar />}>
       <div className="container-fluid">
         <div className="d-flex justify-content-between align-items-center mb-4">
-          <h1 className="h4">Notifications</h1>
+          <h1 className="h4 mb-0">Notifications</h1>
           {unreadCount > 0 && (
             <Button variant="outline-primary" onClick={markAllAsRead}>
               Mark All as Read

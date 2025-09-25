@@ -48,10 +48,32 @@ const defaultForm: UserFormData = {
   innovation_industry: '',
   training: '',
   training_institution: '',
-  agreed_to_terms: false,
+  agreed_to_terms: true,
   status: '',
   role: 'LEARNER',
 };
+
+// Education options
+const educationOptions = [
+  'Primary',
+  'Secondary',
+  'Diploma',
+  'Bachelor',
+  'Master',
+  'PhD',
+  'Other'
+];
+
+// County options (Kenyan counties)
+const countyOptions = [
+  'Nairobi', 'Mombasa', 'Kisumu', 'Nakuru', 'Eldoret', 'Thika', 'Malindi', 'Kitale',
+  'Garissa', 'Kakamega', 'Nyeri', 'Meru', 'Embu', 'Nanyuki', 'Machakos', 'Kitui',
+  'Lamu', 'Wajir', 'Mandera', 'Marsabit', 'Isiolo', 'Narok', 'Kajiado', 'Kericho',
+  'Bomet', 'Sotik', 'Bungoma', 'Busia', 'Siaya', 'Homa Bay', 'Migori', 'Kisii',
+  'Nyamira', 'Muranga', 'Kiambu', 'Turkana', 'West Pokot', 'Samburu', 'Trans Nzoia',
+  'Uasin Gishu', 'Elgeyo Marakwet', 'Nandi', 'Laikipia', 'Nyandarua', 'Kirinyaga',
+  'Makueni', 'Taita Taveta', 'Kwale', 'Kilifi', 'Tana River', 'Lamu'
+];
 
 export default function UsersPage() {
   const [users, setUsers] = useState<any[]>([]); 
@@ -199,9 +221,9 @@ export default function UsersPage() {
     <DashboardLayout sidebar={<AdminSidebar />}>
       <div className="container-fluid">
         <div className="d-flex justify-content-between align-items-center mb-4">
-          <h1 className="h2 mb-0">Manage Administrators</h1>
+          <h1 className="h4 mb-0">Manage Administrators</h1>
           <Button variant="primary" onClick={handleNewUser}>
-            Add New User
+            Add New Instractor
           </Button>
         </div>
 
@@ -306,7 +328,7 @@ export default function UsersPage() {
 
         <Modal show={showModal} onHide={() => setShowModal(false)} size="lg">
           <Modal.Header closeButton>
-            <Modal.Title>{currentUser ? 'Edit User' : 'Add New User'}</Modal.Title>
+            <Modal.Title>{currentUser ? 'Edit Instractor' : 'Add New Instractor'}</Modal.Title>
           </Modal.Header>
           <Form onSubmit={handleSubmit}>
             <Modal.Body>
@@ -348,56 +370,33 @@ export default function UsersPage() {
                 </div>
                 <div className="col-md-6 mb-3">
                   <Form.Label>County</Form.Label>
-                  <Form.Control type="text" name="county" value={formData.county} onChange={handleInputChange} required />
-                </div>
-                {/* <div className="col-md-6 mb-3">
-                  <Form.Label>Status</Form.Label>
-                  <Form.Control type="text" name="status" value={formData.status} onChange={handleInputChange} required />
-                </div> */}
-                <div className="col-md-12 mb-3">
-                  <Form.Label>Education</Form.Label>
-                  <Form.Control type="text" name="education" value={formData.education} onChange={handleInputChange} />
-                </div>
-                {/* <div className="col-md-12 mb-3">
-                  <Form.Label>Innovation</Form.Label>
-                  <Form.Control as="textarea" rows={2} name="innovation" value={formData.innovation} onChange={handleInputChange} />
+                  <Form.Select name="county" value={formData.county} onChange={handleInputChange} required>
+                    <option value="">Select County</option>
+                    {countyOptions.map(county => (
+                      <option key={county} value={county}>{county}</option>
+                    ))}
+                  </Form.Select>
                 </div>
                 <div className="col-md-6 mb-3">
-                  <Form.Label>Innovation Stage</Form.Label>
-                  <Form.Control type="text" name="innovation_stage" value={formData.innovation_stage} onChange={handleInputChange} />
+                  <Form.Label>Education Level</Form.Label>
+                  <Form.Select name="education" value={formData.education} onChange={handleInputChange}>
+                    <option value="">Select Education Level</option>
+                    {educationOptions.map(level => (
+                      <option key={level} value={level}>{level}</option>
+                    ))}
+                  </Form.Select>
                 </div>
-                <div className="col-md-6 mb-3">
-                  <Form.Label>Innovation Industry</Form.Label>
-                  <Form.Control type="text" name="innovation_industry" value={formData.innovation_industry} onChange={handleInputChange} />
-                </div>
-                <div className="col-md-6 mb-3">
-                  <Form.Label>Innovation in Whitebox</Form.Label>
-                  <Form.Control type="text" name="innovation_in_whitebox" value={formData.innovation_in_whitebox} onChange={handleInputChange} />
-                </div>
-                <div className="col-md-6 mb-3">
-                  <Form.Label>Training</Form.Label>
-                  <Form.Control type="text" name="training" value={formData.training} onChange={handleInputChange} />
-                </div> */}
-                <div className="col-md-6 mb-3">
-                  <Form.Label>Training Institution</Form.Label>
-                  <Form.Control type="text" name="training_institution" value={formData.training_institution} onChange={handleInputChange} />
-                </div>
+
                 <div className="col-md-6 mb-3">
                   <Form.Label>Role</Form.Label>
                   <Form.Select name="role" value={formData.role} onChange={handleInputChange} required>
-                    <option value="LEARNER">Learner</option>
                     <option value="CONTENT_MANAGER">Content Manager</option>
                     <option value="ADMIN">Administrator</option>
                   </Form.Select>
                 </div>
-                <div className="col-12 mb-3">
-                  <Form.Check
-                    type="checkbox"
-                    label="Agreed to Terms"
-                    name="agreed_to_terms"
-                    checked={formData.agreed_to_terms}
-                    onChange={handleInputChange}
-                  />
+                <div className="col-md-6 mb-3">
+                  <Form.Label>Training Institution</Form.Label>
+                  <Form.Control type="text" name="training_institution" value={formData.training_institution} onChange={handleInputChange} />
                 </div>
               </div>
             </Modal.Body>

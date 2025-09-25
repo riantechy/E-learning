@@ -12,6 +12,7 @@ export default function CertificatesPage() {
   const [certificates, setCertificates] = useState<Certificate[]>([])
   const [loading, setLoading] = useState(true)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     const fetchCertificates = async () => {
@@ -47,13 +48,16 @@ export default function CertificatesPage() {
           className={`d-flex flex-column flex-shrink-0 p-3 bg-white shadow-sm h-100 
             ${mobileSidebarOpen ? 'd-block position-fixed' : 'd-none d-lg-block'}`}
           style={{
-            width: '280px',
+            width: sidebarCollapsed ? '80px' : '280px',
             zIndex: 999,
-            left: mobileSidebarOpen ? '0' : '-280px',
-            transition: 'left 0.3s ease'
+            left: mobileSidebarOpen ? '0' : sidebarCollapsed ? '-80px' : '-280px',
+            transition: 'left 0.3s ease, width 0.3s ease'
           }}
         >
-          <LearnerSidebar />
+          <LearnerSidebar 
+            isCollapsed={sidebarCollapsed}
+            onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+          />
         </div>
 
         {/* Overlay for mobile */}
@@ -71,7 +75,9 @@ export default function CertificatesPage() {
           <main 
             className="flex-grow-1 p-4 overflow-auto"
             style={{
-              width: 'calc(100%)',
+              marginLeft: mobileSidebarOpen 
+                ? (sidebarCollapsed ? '80px' : '280px') 
+                : '0',
               transition: 'margin-left 0.3s ease'
             }}
           >

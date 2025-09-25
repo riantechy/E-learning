@@ -12,6 +12,7 @@ export default function MyCoursesPage() {
   const [courses, setCourses] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -54,28 +55,33 @@ export default function MyCoursesPage() {
 
       {/* Sidebar */}
       <div 
-        className={`d-flex flex-column flex-shrink-0 p-3 bg-white shadow-sm h-100 
-          ${mobileSidebarOpen ? 'd-block position-fixed' : 'd-none d-lg-block'}`}
-        style={{
-          width: '280px',
-          zIndex: 999,
-          left: mobileSidebarOpen ? '0' : '-280px',
-          transition: 'left 0.3s ease'
-        }}
-      >
-        <LearnerSidebar />
-      </div>
+          className={`d-flex flex-column flex-shrink-0 p-3 bg-white shadow-sm h-100 
+            ${mobileSidebarOpen ? 'd-block position-fixed' : 'd-none d-lg-block'}`}
+          style={{
+            width: sidebarCollapsed ? '80px' : '280px',
+            zIndex: 999,
+            left: mobileSidebarOpen ? '0' : sidebarCollapsed ? '-80px' : '-280px',
+            transition: 'left 0.3s ease, width 0.3s ease'
+          }}
+        >
+          <LearnerSidebar 
+            isCollapsed={sidebarCollapsed}
+            onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+          />
+        </div>
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         <TopNavbar toggleSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)} />
         <main 
-          className="flex-grow-1 p-4 overflow-auto"
-          style={{
-            width: 'calc(100%)',
-            transition: 'margin-left 0.3s ease'
-          }}
-        >
+            className="flex-grow-1 p-4 overflow-auto"
+            style={{
+              marginLeft: mobileSidebarOpen 
+                ? (sidebarCollapsed ? '80px' : '280px') 
+                : '0',
+              transition: 'margin-left 0.3s ease'
+            }}
+          >
           <div className="container py-5">
             <div className="d-flex justify-content-between align-items-center mb-4">
               <h5>My Courses</h5>

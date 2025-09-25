@@ -33,6 +33,7 @@ export default function MyScoresPage() {
   const [error, setError] = useState<string | null>(null)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const [selectedModule, setSelectedModule] = useState<string>('All')
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     const fetchScores = async () => {
@@ -128,17 +129,20 @@ export default function MyScoresPage() {
         </button>
 
         {/* Sidebar */}
-        <div
+        <div 
           className={`d-flex flex-column flex-shrink-0 p-3 bg-white shadow-sm h-100 
             ${mobileSidebarOpen ? 'd-block position-fixed' : 'd-none d-lg-block'}`}
           style={{
-            width: '280px',
+            width: sidebarCollapsed ? '80px' : '280px',
             zIndex: 999,
-            left: mobileSidebarOpen ? '0' : '-280px',
-            transition: 'left 0.3s ease',
+            left: mobileSidebarOpen ? '0' : sidebarCollapsed ? '-80px' : '-280px',
+            transition: 'left 0.3s ease, width 0.3s ease'
           }}
         >
-          <LearnerSidebar />
+          <LearnerSidebar 
+            isCollapsed={sidebarCollapsed}
+            onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+          />
         </div>
 
         {/* Overlay for mobile */}

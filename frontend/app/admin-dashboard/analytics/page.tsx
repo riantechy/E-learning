@@ -13,6 +13,7 @@ import CompletionRatesTab from './components/CompletionRatesTab';
 import QuizPerformanceTab from './components/QuizPerformanceTab';
 import ModuleCoverageTab from './components/ModuleCoverageTab';
 import ExportSection from './components/ExportSection';
+import EnrollmentCompletionComparisonTab from './components/EnrollmentCompletionComparisonTab';
 
 // Component to handle useSearchParams
 function AnalyticsContent() {
@@ -31,9 +32,9 @@ function AnalyticsContent() {
       onSelect={(k) => handleTabSelect(k as string)}
       className="mb-4"
     >
-      <Tab eventKey="user-activity" title="User Activity">
+      {/* <Tab eventKey="user-activity" title="User Activity">
         <UserActivityTab timeRange="7d" setTimeRange={() => {}} />
-      </Tab>
+      </Tab> */}
       <Tab eventKey="course-progress" title="Course Progress">
         <CourseProgressTab />
       </Tab>
@@ -45,6 +46,9 @@ function AnalyticsContent() {
       </Tab>
       <Tab eventKey="completion-rates" title="Completion Rates">
         <CompletionRatesTab />
+      </Tab>
+      <Tab eventKey="enrollment-completion-comparison" title="Enrollment vs Completion">
+        <EnrollmentCompletionComparisonTab />
       </Tab>
       <Tab eventKey="quiz-performance" title="Quiz Performance">
         <QuizPerformanceTab />
@@ -62,7 +66,7 @@ export default function AnalyticsDashboard() {
   return (
     <DashboardLayout sidebar={<AdminSidebar />}>
       <div className="container-fluid">
-        <h1 className="h2 mb-4">Learning Analytics Dashboard</h1>
+        <h1 className="h4 mb-0">Learning Analytics Dashboard</h1>
         <Suspense fallback={<div>Loading...</div>}>
           <AnalyticsContent />
         </Suspense>

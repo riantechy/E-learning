@@ -159,7 +159,7 @@ export default function ModulesPage() {
       <div className="container-fluid">
         <div className="d-flex justify-content-between align-items-center mb-4">
           <div>
-            <h2>Course Modules</h2>
+            <h1 className="h4 mb-0">Course Modules</h1>
             {course && <p className="text-muted mb-0">Course: {course.title}</p>}
           </div>
           <div className="d-flex gap-2">
@@ -200,6 +200,20 @@ export default function ModulesPage() {
                     <td>{module.lesson_count || 0}</td>
                     <td>
                       <div className="d-flex gap-2">
+                        <Link
+                          href={`/admin-dashboard/courses/${courseId}/modules/${module.id}/lessons`}
+                          className="btn btn-primary btn-sm"
+                          title="Manage Lessons"
+                        >
+                          Manage Lessons
+                        </Link>
+                        <Link
+                          href={`/admin-dashboard/courses/${courseId}/modules/${module.id}/survey`}
+                          className="btn btn-warning btn-sm"
+                          title="Manage Survey"
+                        >
+                          📝 Survey
+                        </Link>
                         <Button
                           variant="outline-primary"
                           size="sm"
@@ -216,20 +230,6 @@ export default function ModulesPage() {
                         >
                           🗑️
                         </Button>
-                        <Link
-                          href={`/admin-dashboard/courses/${courseId}/modules/${module.id}/lessons`}
-                          className="btn btn-primary btn-sm"
-                          title="Manage Lessons"
-                        >
-                          Manage Lessons
-                        </Link>
-                        <Link
-                          href={`/admin-dashboard/courses/${courseId}/modules/${module.id}/survey`}
-                          className="btn btn-warning btn-sm"
-                          title="Manage Survey"
-                        >
-                          📝 Survey
-                        </Link>
                       </div>
                     </td>
                   </tr>

@@ -335,6 +335,9 @@ export default function SettingsPage() {
                 <Card.Title>Notification Settings</Card.Title>
                 <p>Configure system notifications and alerts</p>
               </Card.Body>
+              <Alert variant="info">
+                  This section will be implemented in a future update.
+                </Alert>
             </Card>
           </Tab>
 
@@ -344,6 +347,9 @@ export default function SettingsPage() {
                 <Card.Title>Security Settings</Card.Title>
                 <p>Configure password policies, login security, and more</p>
               </Card.Body>
+              <Alert variant="info">
+                  This section will be implemented in a future update.
+                </Alert>
             </Card>
           </Tab>
 
@@ -353,6 +359,9 @@ export default function SettingsPage() {
                 <Card.Title>Integration Settings</Card.Title>
                 <p>Connect with third-party services and APIs</p>
               </Card.Body>
+              <Alert variant="info">
+                  This section will be implemented in a future update.
+                </Alert>
             </Card>
           </Tab>
         </Tabs>

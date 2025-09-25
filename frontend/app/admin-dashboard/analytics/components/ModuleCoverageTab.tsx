@@ -1,10 +1,8 @@
-// components/ModuleCoverageTab.tsx
-'use client'
-
 import { useState, useEffect, useMemo } from 'react';
-import { Card, Spinner, Alert, Row, Col, Form, Table, Pagination, Button } from 'react-bootstrap';
+import { Card, Spinner, Alert, Row, Col, Form, Table, Pagination, Button, Dropdown } from 'react-bootstrap';
 import { analyticsApi, coursesApi } from '@/lib/api';
 import Link from 'next/link';
+import * as XLSX from 'xlsx';
 
 export default function ModuleCoverageTab() {
   const [loading, setLoading] = useState(true);
@@ -13,8 +11,9 @@ export default function ModuleCoverageTab() {
   const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
   const [moduleCoverage, setModuleCoverage] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize] = useState(20); 
-  const [searchQuery, setSearchQuery] = useState(''); 
+  const [pageSize] = useState(20);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [exporting, setExporting] = useState(false);
 
   // Fetch all courses on component mount
   useEffect(() => {
@@ -45,7 +44,7 @@ export default function ModuleCoverageTab() {
         const response = await analyticsApi.getModuleCoverage(selectedCourse);
         if (response.error) throw new Error(response.error);
         setModuleCoverage(response.data);
-        setCurrentPage(1); // Reset to page 1 on new data
+        setCurrentPage(1);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch module coverage');
       } finally {
@@ -55,6 +54,102 @@ export default function ModuleCoverageTab() {
 
     fetchModuleCoverage();
   }, [selectedCourse]);
+
+  // Download module coverage as Excel
+  const downloadModuleCoverage = async (format: 'excel' | 'csv') => {
+    if (!moduleCoverage) return;
+    
+    setExporting(true);
+    try {
+      const data = moduleCoverage.learners.map((learner: any) => {
+        const row: any = {
+          'Learner ID': learner.user_id,
+          'Learner Name': learner.name,
+        };
+        
+        // Add module completion status for each module
+        moduleCoverage.modules.forEach((module: string, index: number) => {
+          row[module] = learner.module_progress[index]?.completed ? 'Completed' : 'Not Completed';
+        });
+        
+        return row;
+      });
+
+      if (format === 'excel') {
+        const worksheet = XLSX.utils.json_to_sheet(data);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Module Coverage');
+        XLSX.writeFile(workbook, `module_coverage_${moduleCoverage.course_title}_${new Date().toISOString().split('T')[0]}.xlsx`);
+      } else {
+        // CSV format
+        const headers = Object.keys(data[0] || {});
+        const csvContent = [
+          headers.join(','),
+          ...data.map((row: any) => headers.map(header => `"${row[header]}"`).join(','))
+        ].join('\n');
+        
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', `module_coverage_${moduleCoverage.course_title}_${new Date().toISOString().split('T')[0]}.csv`);
+        link.click();
+        URL.revokeObjectURL(url);
+      }
+    } catch (err) {
+      setError('Failed to export module coverage');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  // Download module statistics
+  const downloadModuleStats = async (format: 'excel' | 'csv') => {
+    if (!moduleCoverage) return;
+    
+    setExporting(true);
+    try {
+      const moduleStats = moduleCoverage.modules.map((module: string, index: number) => {
+        const completedCount = moduleCoverage.learners.filter(
+          (learner: any) => learner.module_progress[index].completed
+        ).length;
+        const totalLearners = moduleCoverage.learners.length;
+        const percentage = Math.round((completedCount / totalLearners) * 100);
+        
+        return {
+          'Module Name': module,
+          'Completed Learners': completedCount,
+          'Total Learners': totalLearners,
+          'Completion Rate (%)': percentage
+        };
+      });
+
+      if (format === 'excel') {
+        const worksheet = XLSX.utils.json_to_sheet(moduleStats);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Module Statistics');
+        XLSX.writeFile(workbook, `module_stats_${moduleCoverage.course_title}_${new Date().toISOString().split('T')[0]}.xlsx`);
+      } else {
+        const headers = Object.keys(moduleStats[0] || {});
+        const csvContent = [
+          headers.join(','),
+          ...moduleStats.map((row: any) => headers.map(header => `"${row[header]}"`).join(','))
+        ].join('\n');
+        
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', `module_stats_${moduleCoverage.course_title}_${new Date().toISOString().split('T')[0]}.csv`);
+        link.click();
+        URL.revokeObjectURL(url);
+      }
+    } catch (err) {
+      setError('Failed to export module statistics');
+    } finally {
+      setExporting(false);
+    }
+  };
 
   // Filtered learners based on search query
   const filteredLearners = useMemo(() => {
@@ -164,6 +259,32 @@ export default function ModuleCoverageTab() {
               ))}
             </Form.Select>
           </Form.Group>
+        </Col>
+        <Col md={6} className="d-flex align-items-end">
+          {moduleCoverage && (
+            <Dropdown>
+              <Dropdown.Toggle variant="success" disabled={exporting}>
+                {exporting ? 'Exporting...' : 'Download Reports'}
+              </Dropdown.Toggle>
+              <Dropdown.Menu>
+                <Dropdown.Header>Module Coverage</Dropdown.Header>
+                <Dropdown.Item onClick={() => downloadModuleCoverage('excel')}>
+                  Download Coverage (Excel)
+                </Dropdown.Item>
+                <Dropdown.Item onClick={() => downloadModuleCoverage('csv')}>
+                  Download Coverage (CSV)
+                </Dropdown.Item>
+                <Dropdown.Divider />
+                <Dropdown.Header>Module Statistics</Dropdown.Header>
+                <Dropdown.Item onClick={() => downloadModuleStats('excel')}>
+                  Download Statistics (Excel)
+                </Dropdown.Item>
+                <Dropdown.Item onClick={() => downloadModuleStats('csv')}>
+                  Download Statistics (CSV)
+                </Dropdown.Item>
+              </Dropdown.Menu>
+            </Dropdown>
+          )}
         </Col>
       </Row>
 

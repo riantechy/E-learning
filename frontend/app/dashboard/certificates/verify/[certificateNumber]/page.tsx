@@ -16,6 +16,7 @@ export default function VerifyCertificatePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     const verifyCertificate = async () => {
@@ -49,6 +50,7 @@ export default function VerifyCertificatePage() {
     }
   }
 
+  // Render loading state
   if (loading) {
     return (
       <ProtectedRoute>
@@ -65,13 +67,17 @@ export default function VerifyCertificatePage() {
             className={`d-flex flex-column flex-shrink-0 p-3 bg-white shadow-sm h-100 
               ${mobileSidebarOpen ? 'd-block position-fixed' : 'd-none d-lg-block'}`}
             style={{
-              width: '280px',
+              width: mobileSidebarOpen ? '280px' : (sidebarCollapsed ? '80px' : '280px'),
               zIndex: 999,
-              left: mobileSidebarOpen ? '0' : '-280px',
-              transition: 'left 0.3s ease'
+              left: mobileSidebarOpen ? '0' : (sidebarCollapsed ? '-80px' : '-280px'),
+              transition: 'left 0.3s ease, width 0.3s ease'
             }}
           >
-            <LearnerSidebar />
+            <LearnerSidebar 
+              isCollapsed={sidebarCollapsed}
+              onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+              isMobileOpen={mobileSidebarOpen}
+            />
           </div>
 
           {mobileSidebarOpen && (
@@ -84,7 +90,15 @@ export default function VerifyCertificatePage() {
 
           <div className="flex-1 flex flex-col overflow-hidden">
             <TopNavbar toggleSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)} />
-            <main className="flex-grow-1 p-4 overflow-auto">
+            <main 
+              className="flex-grow-1 p-4 overflow-auto"
+              style={{
+                marginLeft: mobileSidebarOpen 
+                  ? (sidebarCollapsed ? '80px' : '280px') 
+                  : '0',
+                transition: 'margin-left 0.3s ease'
+              }}
+            >
               <div className="container py-5 text-center">
                 <div className="spinner-border" role="status">
                   <span className="visually-hidden">Loading...</span>
@@ -97,6 +111,7 @@ export default function VerifyCertificatePage() {
     )
   }
 
+  // Render error state
   if (error || !certificate) {
     return (
       <ProtectedRoute>
@@ -113,13 +128,17 @@ export default function VerifyCertificatePage() {
             className={`d-flex flex-column flex-shrink-0 p-3 bg-white shadow-sm h-100 
               ${mobileSidebarOpen ? 'd-block position-fixed' : 'd-none d-lg-block'}`}
             style={{
-              width: '280px',
+              width: mobileSidebarOpen ? '280px' : (sidebarCollapsed ? '80px' : '280px'),
               zIndex: 999,
-              left: mobileSidebarOpen ? '0' : '-280px',
-              transition: 'left 0.3s ease'
+              left: mobileSidebarOpen ? '0' : (sidebarCollapsed ? '-80px' : '-280px'),
+              transition: 'left 0.3s ease, width 0.3s ease'
             }}
           >
-            <LearnerSidebar />
+            <LearnerSidebar 
+              isCollapsed={sidebarCollapsed}
+              onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+              isMobileOpen={mobileSidebarOpen}
+            />
           </div>
 
           {mobileSidebarOpen && (
@@ -132,7 +151,15 @@ export default function VerifyCertificatePage() {
 
           <div className="flex-1 flex flex-col overflow-hidden">
             <TopNavbar toggleSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)} />
-            <main className="flex-grow-1 p-4 overflow-auto">
+            <main 
+              className="flex-grow-1 p-4 overflow-auto"
+              style={{
+                marginLeft: mobileSidebarOpen 
+                  ? (sidebarCollapsed ? '80px' : '280px') 
+                  : '0',
+                transition: 'margin-left 0.3s ease'
+              }}
+            >
               <div className="container py-5 text-center">
                 <i className="bi bi-exclamation-circle-fill text-danger display-1"></i>
                 <h1 className="h3 mt-3">Certificate Not Found</h1>
@@ -150,6 +177,7 @@ export default function VerifyCertificatePage() {
     )
   }
 
+  // Render success state
   return (
     <ProtectedRoute>
       <div className="d-flex vh-100 bg-light position-relative">
@@ -165,13 +193,17 @@ export default function VerifyCertificatePage() {
           className={`d-flex flex-column flex-shrink-0 p-3 bg-white shadow-sm h-100 
             ${mobileSidebarOpen ? 'd-block position-fixed' : 'd-none d-lg-block'}`}
           style={{
-            width: '280px',
+            width: mobileSidebarOpen ? '280px' : (sidebarCollapsed ? '80px' : '280px'),
             zIndex: 999,
-            left: mobileSidebarOpen ? '0' : '-280px',
-            transition: 'left 0.3s ease'
+            left: mobileSidebarOpen ? '0' : (sidebarCollapsed ? '-80px' : '-280px'),
+            transition: 'left 0.3s ease, width 0.3s ease'
           }}
         >
-          <LearnerSidebar />
+          <LearnerSidebar 
+            isCollapsed={sidebarCollapsed}
+            onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+            isMobileOpen={mobileSidebarOpen}
+          />
         </div>
 
         {mobileSidebarOpen && (
@@ -184,7 +216,15 @@ export default function VerifyCertificatePage() {
 
         <div className="flex-1 flex flex-col overflow-hidden">
           <TopNavbar toggleSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)} />
-          <main className="flex-grow-1 p-4 overflow-auto">
+          <main 
+            className="flex-grow-1 p-4 overflow-auto"
+            style={{
+              marginLeft: mobileSidebarOpen 
+                ? (sidebarCollapsed ? '80px' : '280px') 
+                : '0',
+              transition: 'margin-left 0.3s ease'
+            }}
+          >
             <div className="container py-5">
               <div className="text-center mb-5">
                 <h1 className="h3 mb-3">Certificate Verification</h1>
@@ -223,13 +263,6 @@ export default function VerifyCertificatePage() {
                   </div>
                   
                   <div className="d-grid gap-2">
-                    {/* <button
-                      onClick={handleDownload}
-                      className="btn btn-primary btn-lg"
-                    >
-                      <i className="bi bi-download me-2"></i>
-                      Download Now
-                    </button> */}
                     <Link href="/dashboard/certificates" className="btn btn-outline-secondary">
                       View My Certificates
                     </Link>

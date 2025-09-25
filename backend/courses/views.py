@@ -275,7 +275,14 @@ class LessonViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         module = get_object_or_404(Module, pk=self.kwargs['module_pk'])
-        serializer.save(module=module)
+
+        # Handle description from form data
+        description = self.request.data.get('description', '')
+        if description is None:
+            description = ''
+            
+        serializer.save(module=module, description=description)
+        # serializer.save(module=module)
 
     def perform_update(self, serializer):
         module = get_object_or_404(Module, pk=self.kwargs['module_pk'])

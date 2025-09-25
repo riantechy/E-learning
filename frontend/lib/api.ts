@@ -577,7 +577,7 @@ export interface CourseCategory {
 
 export interface Module {
   id: string;
-  course: string | Course;
+  course: string | Course; 
   title: string;
   description: string;
   order: number;
@@ -696,13 +696,14 @@ export interface CertificateTemplate {
 // Add to your Types section
 export interface Survey {
   id: string;
-  module: string | Module;
+  module: string | Module; // This can be string OR Module object
   title: string;
   description: string;
   is_active: boolean;
   created_at: string;
   updated_at: string;
   questions?: SurveyQuestion[];
+  responses_count?: number; // Add this if it exists in your API response
 }
 
 export interface SurveyQuestion {
@@ -730,6 +731,10 @@ export interface SurveyResponse {
     module: {
       id: string;
       title: string;
+      course?: { 
+        id: string;
+        title: string;
+      };
     };
   };
   user: {
@@ -740,7 +745,6 @@ export interface SurveyResponse {
   submitted_at: string;
   answers?: SurveyAnswer[];
 }
-
 export interface SurveyAnswer {
   id: string;
   response: string | SurveyResponse;

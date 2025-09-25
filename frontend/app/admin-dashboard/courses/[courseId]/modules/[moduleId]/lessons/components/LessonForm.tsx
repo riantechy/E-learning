@@ -46,15 +46,68 @@ const LessonForm = ({
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
-        bulletList: { keepMarks: true, keepAttributes: false },
-        orderedList: { keepMarks: true, keepAttributes: false },
+        bulletList: {
+          keepMarks: true,
+          keepAttributes: false,
+          HTMLAttributes: {
+            class: 'bullet-list',
+          },
+        },
+        orderedList: {
+          keepMarks: true,
+          keepAttributes: false,
+          HTMLAttributes: {
+            class: 'ordered-list',
+          },
+        },
       }),
     ],
     content: richContent,
     onUpdate: ({ editor }) => {
       setRichContent(editor.getHTML());
     },
-    immediatelyRender: false, // Prevent SSR rendering issues
+    immediatelyRender: false,
+    editorProps: {
+      attributes: {
+        class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-2xl mx-auto focus:outline-none',
+        'data-placeholder': 'Start typing your content here...',
+      },
+      handleDOMEvents: {
+        keydown: (view, event) => {
+          // Auto-formatting for lists like Word
+          if (event.key === 'Enter') {
+            const { state } = view;
+            const { selection } = state;
+            const { $from, empty } = selection;
+  
+            if (!empty || $from.parent.type.name !== 'paragraph') {
+              return false;
+            }
+  
+            const textContent = $from.parent.textContent;
+            
+            // Auto-detect bullet lists
+            if (/^[-*]\s$/.test(textContent)) {
+              event.preventDefault();
+              return editor?.chain()
+                .focus()
+                .toggleBulletList()
+                .run();
+            }
+            
+            // Auto-detect numbered lists
+            if (/^\d\.\s$/.test(textContent)) {
+              event.preventDefault();
+              return editor?.chain()
+                .focus()
+                .toggleOrderedList()
+                .run();
+            }
+          }
+          return false;
+        },
+      },
+    },
   });
 
   useEffect(() => {
@@ -96,11 +149,47 @@ const LessonForm = ({
       .is-active {
         background-color: #e9ecef;
       }
+      /* Improved list styling */
+      .ProseMirror ul, .ProseMirror ol {
+        padding-left: 1.5rem;
+        margin: 0.5rem 0;
+      }
+      .ProseMirror ul {
+        list-style-type: disc;
+      }
+      .ProseMirror ol {
+        list-style-type: decimal;
+      }
+      .ProseMirror li {
+        margin: 0.25rem 0;
+      }
+      .ProseMirror li p {
+        margin: 0;
+      }
+      /* Nested list styling */
+      .ProseMirror ul ul, .ProseMirror ol ul {
+        list-style-type: circle;
+      }
+      .ProseMirror ol ol, .ProseMirror ul ol {
+        list-style-type: lower-latin;
+      }
+      .ProseMirror h1, .ProseMirror h2, .ProseMirror h3, 
+      .ProseMirror h4, .ProseMirror h5, .ProseMirror h6 {
+        margin-top: 1rem;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+      }
+      .ProseMirror h1 { font-size: 2rem; }
+      .ProseMirror h2 { font-size: 1.75rem; }
+      .ProseMirror h3 { font-size: 1.5rem; }
+      .ProseMirror h4 { font-size: 1.25rem; }
+      .ProseMirror h5 { font-size: 1.1rem; }
+      .ProseMirror h6 { font-size: 1rem; }
     `;
     document.head.appendChild(style);
-
+  
     return () => {
-      document.head.removeChild(style); // Clean up on unmount
+      document.head.removeChild(style); 
     };
   }, []);
 
@@ -188,7 +277,7 @@ const LessonForm = ({
   };
 
   const Toolbar = () => (
-    <div className="mb-2">
+    <div className="mb-2 d-flex flex-wrap gap-1">
       <Button
         size="sm"
         variant="outline-secondary"
@@ -211,7 +300,15 @@ const LessonForm = ({
         onClick={() => editor?.chain().focus().toggleBulletList().run()}
         className={editor?.isActive('bulletList') ? 'is-active' : ''}
       >
-        List
+        Bullet List
+      </Button>
+      <Button
+        size="sm"
+        variant="outline-secondary"
+        onClick={() => editor?.chain().focus().toggleOrderedList().run()}
+        className={editor?.isActive('orderedList') ? 'is-active' : ''}
+      >
+        Numbered List
       </Button>
       <Button
         size="sm"
@@ -228,6 +325,38 @@ const LessonForm = ({
         className={editor?.isActive('heading', { level: 2 }) ? 'is-active' : ''}
       >
         H2
+      </Button>
+      <Button
+        size="sm"
+        variant="outline-secondary"
+        onClick={() => editor?.chain().focus().toggleHeading({ level: 3 }).run()}
+        className={editor?.isActive('heading', { level: 3 }) ? 'is-active' : ''}
+      >
+        H3
+      </Button>
+      <Button
+        size="sm"
+        variant="outline-secondary"
+        onClick={() => editor?.chain().focus().toggleHeading({ level: 4 }).run()}
+        className={editor?.isActive('heading', { level: 4 }) ? 'is-active' : ''}
+      >
+        H4
+      </Button>
+      <Button
+        size="sm"
+        variant="outline-secondary"
+        onClick={() => editor?.chain().focus().toggleHeading({ level: 5 }).run()}
+        className={editor?.isActive('heading', { level: 5 }) ? 'is-active' : ''}
+      >
+        H5
+      </Button>
+      <Button
+        size="sm"
+        variant="outline-secondary"
+        onClick={() => editor?.chain().focus().toggleHeading({ level: 6 }).run()}
+        className={editor?.isActive('heading', { level: 6 }) ? 'is-active' : ''}
+      >
+        H6
       </Button>
     </div>
   );

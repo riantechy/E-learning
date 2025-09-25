@@ -71,6 +71,7 @@ class LessonSerializer(serializers.ModelSerializer):
     sections = serializers.SerializerMethodField()
     has_quiz = serializers.SerializerMethodField()
     content = serializers.CharField(required=False, allow_blank=True)
+    description = serializers.CharField(required=False, allow_blank=True, allow_null=True)
 
     class Meta:
         model = Lesson

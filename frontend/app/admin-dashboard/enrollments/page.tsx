@@ -13,6 +13,7 @@ import Button from 'react-bootstrap/Button';
 import Badge from 'react-bootstrap/Badge';
 import { FaSearch, FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
 import Pagination from 'react-bootstrap/Pagination';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 
 interface CourseEnrollment {
   course_id: string;
@@ -21,6 +22,14 @@ interface CourseEnrollment {
   status: string;
   created_at: string;
 }
+
+// Define colors for different statuses
+const STATUS_COLORS: Record<string, string> = {
+  PUBLISHED: '#28a745',
+  DRAFT: '#6c757d',
+  PENDING_REVIEW: '#ffc107',
+  ARCHIVED: '#dc3545'
+};
 
 export default function EnrollmentStats() {
   const [enrollments, setEnrollments] = useState<CourseEnrollment[]>([]);
@@ -101,6 +110,24 @@ export default function EnrollmentStats() {
     }
   };
 
+  // Calculate enrollment distribution by status
+  const getEnrollmentDistribution = () => {
+    const distribution: Record<string, number> = {};
+    
+    enrollments.forEach(course => {
+      if (!distribution[course.status]) {
+        distribution[course.status] = 0;
+      }
+      distribution[course.status] += course.enrollment_count;
+    });
+    
+    return Object.entries(distribution).map(([status, count]) => ({
+      status,
+      count,
+      percentage: (count / totalEnrollments * 100).toFixed(1)
+    }));
+  };
+
   const handleSort = (key: keyof CourseEnrollment) => {
     let direction: 'asc' | 'desc' = 'asc';
     if (sortConfig.key === key && sortConfig.direction === 'asc') {
@@ -133,6 +160,12 @@ export default function EnrollmentStats() {
     course.course_title.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Calculate total enrollments across all courses
+  const totalEnrollments = enrollments.reduce((sum, course) => sum + course.enrollment_count, 0);
+  
+  // Get enrollment distribution data
+  const enrollmentDistribution = getEnrollmentDistribution();
+
   // Pagination logic
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
   const currentItems = filteredData.slice(
@@ -149,12 +182,26 @@ export default function EnrollmentStats() {
     );
   };
 
+  // Custom tooltip for the pie chart
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="custom-tooltip p-2" style={{ backgroundColor: 'white', border: '1px solid #ccc' }}>
+          <p className="label">{`${payload[0].payload.status.replace('_', ' ')}`}</p>
+          <p className="intro">{`Enrollments: ${payload[0].value}`}</p>
+          <p className="intro">{`Percentage: ${payload[0].payload.percentage}%`}</p>
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <DashboardLayout sidebar={<AdminSidebar />}>
       <div className="container-fluid">
         <div className="d-flex justify-content-between align-items-center mb-4">
           <div>
-            <h1 className="h2 mb-0">Course Enrollment Statistics</h1>
+            <h1 className="h4 mb-0">Course Enrollment Statistics</h1>
             <p className="text-muted mb-0">View and analyze course enrollment data</p>
           </div>
           <Button variant="primary" onClick={fetchEnrollmentData} disabled={loading}>
@@ -187,6 +234,9 @@ export default function EnrollmentStats() {
                 <div className="d-flex justify-content-end align-items-end h-100">
                   <Badge bg="light" text="dark" className="fs-6">
                     Total Courses: {enrollments.length}
+                  </Badge>
+                  <Badge bg="info" text="dark" className="fs-6 ms-2">
+                    Total Enrollments: {totalEnrollments}
                   </Badge>
                 </div>
               </div>
@@ -339,7 +389,7 @@ export default function EnrollmentStats() {
           <div className="col-md-6">
             <Card>
               <Card.Header>
-                <Card.Title>Enrollment Distribution</Card.Title>
+                <Card.Title>Enrollment Distribution by Status</Card.Title>
               </Card.Header>
               <Card.Body>
                 {loading ? (
@@ -349,11 +399,60 @@ export default function EnrollmentStats() {
                     </div>
                   </div>
                 ) : (
-                  <div className="text-center py-4">
-                    <p className="text-muted">Enrollment distribution chart would appear here</p>
-                    <small className="text-muted">
-                      (Would show pie chart of enrollments by course status in a real implementation)
-                    </small>
+                  <div>
+                    {enrollmentDistribution.length > 0 ? (
+                      <div className="d-flex flex-column align-items-center">
+                        <ResponsiveContainer width="100%" height={300}>
+                          <PieChart>
+                            <Pie
+                              data={enrollmentDistribution}
+                              cx="50%"
+                              cy="50%"
+                              labelLine={false}
+                              outerRadius={100}
+                              fill="#8884d8"
+                              dataKey="count"
+                              nameKey="status"
+                              label={({ status, percentage }) => `${status}: ${percentage}%`}
+                            >
+                              {enrollmentDistribution.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={STATUS_COLORS[entry.status] || '#8884d8'} />
+                              ))}
+                            </Pie>
+                            <Tooltip content={<CustomTooltip />} />
+                            <Legend />
+                          </PieChart>
+                        </ResponsiveContainer>
+                        
+                        <div className="mt-3 w-100">
+                          <h6 className="text-center mb-3">Enrollment Breakdown</h6>
+                          {enrollmentDistribution.map((item, index) => (
+                            <div key={index} className="d-flex justify-content-between align-items-center mb-2">
+                              <div className="d-flex align-items-center">
+                                <div 
+                                  className="color-indicator me-2" 
+                                  style={{
+                                    width: '12px',
+                                    height: '12px',
+                                    backgroundColor: STATUS_COLORS[item.status] || '#8884d8',
+                                    borderRadius: '2px'
+                                  }}
+                                />
+                                <span>{item.status.replace('_', ' ')}</span>
+                              </div>
+                              <div>
+                                <strong>{item.count}</strong> 
+                                <small className="text-muted ms-1">({item.percentage}%)</small>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-4">
+                        <p className="text-muted">No enrollment data available for chart</p>
+                      </div>
+                    )}
                   </div>
                 )}
               </Card.Body>

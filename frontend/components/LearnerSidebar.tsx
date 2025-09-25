@@ -11,26 +11,51 @@ interface UserProgressItem {
   completed_at: string | null;
   last_accessed: string;
   user: string | User;
-  lesson: string 
+  lesson: string;
 }
 
-export default function LearnerSidebar() {
+interface LearnerSidebarProps {
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
+  isMobileOpen?: boolean;
+}
+
+export default function LearnerSidebar({ 
+  isCollapsed = false, 
+  onToggleCollapse, 
+  isMobileOpen = false 
+}: LearnerSidebarProps) {
   const pathname = usePathname();
   const { user } = useAuth();
   const [progress, setProgress] = useState<number>(0);
   const [certCount, setCertCount] = useState<number>(0);
   const [enrolledCoursesCount, setEnrolledCoursesCount] = useState<number>(0);
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [localCollapsed, setLocalCollapsed] = useState(isCollapsed);
+
+  // Force expanded view on mobile when sidebar is open
+  const isExpandedView = isMobileOpen || !localCollapsed;
+
+  useEffect(() => {
+    setLocalCollapsed(isCollapsed);
+  }, [isCollapsed]);
+
+  const handleToggleCollapse = () => {
+    const newState = !localCollapsed;
+    setLocalCollapsed(newState);
+    if (onToggleCollapse) {
+      onToggleCollapse();
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch all progress data
-        const progressRes = await coursesApi.getUserProgress();
-        const certsRes = await certificatesApi.getUserCertificates();
-        const enrollmentsRes = await coursesApi.getUserEnrollments();
+        const [progressRes, certsRes, enrollmentsRes] = await Promise.all([
+          coursesApi.getUserProgress(),
+          certificatesApi.getUserCertificates(),
+          coursesApi.getUserEnrollments(),
+        ]);
 
-        // Calculate progress percentage
         if (progressRes.data && Array.isArray(progressRes.data)) {
           const completedLessons = progressRes.data.filter(
             (item: UserProgressItem) => item.is_completed
@@ -42,12 +67,10 @@ export default function LearnerSidebar() {
           setProgress(calculatedProgress);
         }
 
-        // Set certificates count
         if (certsRes.data) {
           setCertCount(certsRes.data.results?.length || 0);
         }
 
-        // Set enrolled courses count
         if (enrollmentsRes.data) {
           setEnrolledCoursesCount(enrollmentsRes.data.length || 0);
         }
@@ -69,132 +92,115 @@ export default function LearnerSidebar() {
   };
 
   return (
-    <div className={`h-full flex flex-col transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'}`}>
-      {/* Toggle Button */}
-      <button 
-        onClick={() => setIsCollapsed(!isCollapsed)}
-        className="p-2 m-2 rounded-md bg-gray-100 hover:bg-gray-200 self-end"
-        aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-      >
-        <i className={`bi ${isCollapsed ? 'bi-chevron-right' : 'bi-chevron-left'}`}></i>
-      </button>
+    <div className="h-100 d-flex flex-column">
+      {/* Toggle Button - Hidden on mobile when sidebar is open */}
+      {!isMobileOpen && (
+        <button 
+          onClick={handleToggleCollapse}
+          className="btn btn-link p-2 mb-2 text-decoration-none border-0 text-muted"
+          style={{ 
+            alignSelf: isExpandedView ? 'flex-end' : 'center',
+            width: isExpandedView ? 'auto' : '100%'
+          }}
+          title={isExpandedView ? "Collapse sidebar" : "Expand sidebar"}
+        >
+          <i className={`bi ${isExpandedView ? 'bi-chevron-left' : 'bi-chevron-right'}`}></i>
+          {isExpandedView && <span className="ms-2 small"></span>}
+        </button>
+      )}
 
-      <div className="flex-1 overflow-y-auto">
-        <div className={`text-center mb-6 px-4 ${isCollapsed ? 'px-2' : ''}`}>
-          <div className="avatar mx-auto mb-3">
+      <div className="flex-grow-1 overflow-auto">
+        {/* User Profile Section */}
+        <div className={`text-center mb-4 ${isExpandedView ? 'px-3' : 'px-2'}`}>
+          <div className="avatar mx-auto mb-2">
             {user?.profile_image ? (
               <img
                 src={user.profile_image}
                 alt={`${user.first_name} ${user.last_name}`}
-                className="rounded-full w-14 h-14 object-cover"
+                className="rounded-circle object-cover"
+                style={{ width: isExpandedView ? '60px' : '40px', height: isExpandedView ? '60px' : '40px' }}
               />
             ) : (
               <div
-                className="rounded-full bg-primary flex items-center justify-center mx-auto w-14 h-14"
+                className="rounded-circle bg-primary d-flex align-items-center justify-content-center mx-auto text-white fw-bold"
+                style={{ 
+                  width: isExpandedView ? '60px' : '40px', 
+                  height: isExpandedView ? '60px' : '40px',
+                  fontSize: isExpandedView ? '1.2rem' : '0.9rem'
+                }}
               >
-                <span className="text-white font-bold">
-                  {user?.first_name?.charAt(0)}{user?.last_name?.charAt(0)}
-                </span>
+                {user?.first_name?.charAt(0)}{user?.last_name?.charAt(0)}
               </div>
             )}
           </div>
-          {!isCollapsed && (
+          
+          {isExpandedView && (
             <>
-              <h5 className="text-lg font-medium mb-1 truncate">{user?.first_name} {user?.last_name}</h5>
-              <span className="text-gray-500 text-sm">{user?.role}</span>
+              <h6 className="mb-1 fw-bold">{user?.first_name} {user?.last_name}</h6>
+              <span className="text-muted small">{user?.role}</span>
             </>
           )}
         </div>
 
-        {!isCollapsed && (
-          <div className="mb-6 px-4">
-            <div className="mb-2 flex justify-between">
-              <span className="text-sm text-gray-500">Learning Progress</span>
-              <span className="text-sm font-medium">{progress}%</span>
+        {/* Progress Section */}
+        {isExpandedView && (
+          <div className="mb-4 px-3">
+            <div className="d-flex justify-content-between align-items-center mb-2">
+              <span className="text-muted small">Learning Progress</span>
+              <span className="small fw-bold">{progress}%</span>
             </div>
-            <div className="progress mb-3 h-2 bg-gray-200 rounded-full">
+            <div className="progress mb-2" style={{ height: '8px' }}>
               <div
-                className="progress-bar bg-success h-full rounded-full"
+                className="progress-bar bg-success"
                 style={{ width: `${progress}%` }}
-                aria-valuenow={progress}
-                aria-valuemin={0}
-                aria-valuemax={100}
-              ></div>
+                role="progressbar"
+              />
             </div>
-            <div className="flex justify-between">
-              <span className="badge bg-blue-100 text-blue-800 text-xs">
+            <div className="d-flex justify-content-between">
+              <span className="badge bg-primary bg-opacity-10 text-primary small">
                 Courses: {enrolledCoursesCount}
               </span>
-              <span className="badge bg-green-100 text-green-800 text-xs">
+              <span className="badge bg-success bg-opacity-10 text-success small">
                 Certs: {certCount}
               </span>
             </div>
           </div>
         )}
 
-        <ul className="space-y-1 px-2">
-          <li>
-            <Link
-              href="/dashboard"
-              className={`flex items-center p-2 rounded-md ${isActive('/dashboard') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100'}`}
-              title="Dashboard"
-            >
-              <i className="bi bi-speedometer2 text-xl"></i>
-              {!isCollapsed && <span className="ml-3">Dashboard</span>}
-            </Link>
-          </li>
-          <li>
-            <Link
-              href="/dashboard/courses"
-              className={`flex items-center p-2 rounded-md ${isActive('/dashboard/courses') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100'}`}
-              title="Browse Courses"
-            >
-              <i className="bi bi-book text-xl"></i>
-              {!isCollapsed && <span className="ml-3">Browse Courses</span>}
-            </Link>
-          </li>
-          <li>
-            <Link
-              href="/dashboard/learn"
-              className={`flex items-center p-2 rounded-md ${isActive('/dashboard/learn') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100'}`}
-              title="My Courses"
-            >
-              <i className="bi bi-collection text-xl"></i>
-              {!isCollapsed && <span className="ml-3">My Courses</span>}
-            </Link>
-          </li>
-          <li>
-            <Link
-              href="/dashboard/my-score"
-              className={`flex items-center p-2 rounded-md ${isActive('/dashboard/my-score') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100'}`}
-              title="My Score"
-            >
-              <i className="bi bi-graph-up text-xl"></i>
-              {!isCollapsed && <span className="ml-3">My Score</span>}
-            </Link>
-          </li>
-          <li>
-            <Link
-              href="/dashboard/certificates"
-              className={`flex items-center p-2 rounded-md ${isActive('/dashboard/certificates') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100'}`}
-              title="My Certificates"
-            >
-              <i className="bi bi-award text-xl"></i>
-              {!isCollapsed && <span className="ml-3">My Certificates</span>}
-            </Link>
-          </li>
-          <li>
-            <Link
-              href="/dashboard/profile"
-              className={`flex items-center p-2 rounded-md ${isActive('/dashboard/profile') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100'}`}
-              title="Profile"
-            >
-              <i className="bi bi-person text-xl"></i>
-              {!isCollapsed && <span className="ml-3">Profile</span>}
-            </Link>
-          </li>
-        </ul>
+        {/* Navigation Menu */}
+        <nav>
+          <ul className="nav nav-pills flex-column gap-1 px-2">
+            {[
+              { href: '/dashboard', icon: 'bi-speedometer2', label: 'Dashboard' },
+              { href: '/dashboard/courses', icon: 'bi-book', label: 'Browse Courses' },
+              { href: '/dashboard/learn', icon: 'bi-collection', label: 'My Courses' },
+              { href: '/dashboard/my-score', icon: 'bi-graph-up', label: 'My Score' },
+              { href: '/dashboard/certificates', icon: 'bi-award', label: 'My Certificates' },
+              { href: '/dashboard/profile', icon: 'bi-person', label: 'Profile' },
+            ].map((item) => (
+              <li key={item.href} className="nav-item">
+                <Link
+                  href={item.href}
+                  className={`nav-link d-flex align-items-center rounded ${
+                    isActive(item.href) ? 'active bg-primary text-white' : 'text-dark'
+                  }`}
+                  title={!isExpandedView ? item.label : ''}
+                >
+                  <i className={`${item.icon} ${isExpandedView ? 'me-3' : ''}`} style={{ minWidth: '20px' }}></i>
+                  {isExpandedView && <span>{item.label}</span>}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
       </div>
+
+      {/* Collapsed indicator */}
+      {!isExpandedView && (
+        <div className="text-center mt-auto pt-3 border-top">
+          <i className="bi bi-three-dots text-muted"></i>
+        </div>
+      )}
     </div>
   );
 }

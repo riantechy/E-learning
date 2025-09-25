@@ -189,7 +189,7 @@ export default function CoursesPage() {
     <DashboardLayout sidebar={<AdminSidebar />}>
       <div className="container-fluid">
         <div className="d-flex justify-content-between align-items-center mb-4">
-          <h1 className="h2 mb-0">Manage Courses</h1>
+          <h1 className="h4 mb-0">Manage Courses</h1>
           <Button variant="primary" onClick={handleNewCourse}>
             Add New Course
           </Button>
@@ -239,24 +239,7 @@ export default function CoursesPage() {
                     )}
                   </td>
                   <td onClick={(e) => e.stopPropagation()}> {/* Prevent click propagation for actions */}
-                  <div className="d-flex gap-1">
-                      <Button 
-                        variant="outline-info" 
-                        size="sm" 
-                        onClick={() => handleEdit(course)}
-                        title="Edit Course"
-                      >
-                        <i className="bi bi-pencil"></i>
-                      </Button>
-                      <Button 
-                        variant="outline-danger" 
-                        size="sm" 
-                        onClick={() => handleDelete(course.id)}
-                        title="Delete Course"
-                      >
-                        <i className="bi bi-trash"></i>
-                      </Button>
-              
+                  <div className="d-flex gap-1">                                    
                     <Button 
                       variant="primary" 
                       size="sm" 
@@ -286,6 +269,22 @@ export default function CoursesPage() {
                         Publish
                       </Button>
                     )}
+                    <Button 
+                        variant="outline-info" 
+                        size="sm" 
+                        onClick={() => handleEdit(course)}
+                        title="Edit Course"
+                      >
+                        <i className="bi bi-pencil"></i>
+                      </Button>
+                      <Button 
+                        variant="outline-danger" 
+                        size="sm" 
+                        onClick={() => handleDelete(course.id)}
+                        title="Delete Course"
+                      >
+                        <i className="bi bi-trash"></i>
+                      </Button>
                     </div>
                   </td>
                 </tr>

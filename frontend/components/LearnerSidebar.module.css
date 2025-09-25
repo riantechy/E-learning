@@ -1,176 +1,176 @@
+/* LearnerSidebar.module.css */
 .sidebar {
-    padding: 1.5rem;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
+  transition: width 0.3s ease-in-out;
+  overflow: hidden;
 }
 
 .userProfile {
-    text-align: center;
-    margin-bottom: 2rem;
+  text-align: center;
+  margin-bottom: 2rem;
 }
 
- /* Sidebar Styles */
- .sidebar {
-    padding: 1.5rem;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-  }
-  
-  .user-profile {
-    text-align: center;
-    margin-bottom: 2rem;
-  }
-  
-  .avatar {
-    width: 80px;
-    height: 80px;
-    margin: 0 auto 1rem;
-    border-radius: 50%;
-    overflow: hidden;
-    background: #e2e8f0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  
-  .avatar-img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-  
-  .avatar-initials {
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: #4a5568;
-  }
-  
-  .user-info h5 {
-    margin-bottom: 0.25rem;
-    font-size: 1.1rem;
-  }
-  
-  .user-role {
-    font-size: 0.875rem;
-    color: #718096;
-  }
-  
-  .progress-container {
-    margin-bottom: 2rem;
-  }
-  
-  .progress-wrapper {
-    margin-bottom: 1rem;
-  }
-  
-  .progress-label {
-    font-size: 0.875rem;
-    color: #718096;
-    margin-bottom: 0.5rem;
-  }
-  
-  .progress-bar {
-    height: 10px;
-    background: #edf2f7;
-    border-radius: 5px;
-    overflow: hidden;
-  }
-  
-  .progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #48bb78 0%, #38a169 100%);
-    color: white;
-    font-size: 0.6rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 5px;
-  }
-  
-  .stats-badges {
-    display: flex;
-    justify-content: space-between;
-  }
-  
-  .badge {
-    padding: 0.35rem 0.75rem;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    font-weight: 600;
-  }
-  
-  .badge.courses {
-    background: #ebf8ff;
-    color: #3182ce;
-  }
-  
-  .badge.certificates {
-    background: #f0fff4;
-    color: #38a169;
-  }
-  
-  .sidebar-nav {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-  
-  .nav-item {
-    display: flex;
-    align-items: center;
-    padding: 0.75rem 1rem;
-    border-radius: 0.5rem;
-    color: #4a5568;
-    text-decoration: none;
-    transition: all 0.2s;
-  }
-  
-  .nav-item i {
-    margin-right: 0.75rem;
-    font-size: 1.1rem;
-  }
-  
-  .nav-item:hover {
-    background: #edf2f7;
-    color: #2d3748;
-  }
-  
-  .nav-item.active {
-    background: #ebf8ff;
-    color: #3182ce;
-    font-weight: 500;
-  }
-  
-  /* Responsive Adjustments */
-  @media (max-width: 992px) {
-    .content-grid {
-      grid-template-columns: 1fr;
-    }
-    
-    .sidebar-wrapper {
-      width: 240px;
-    }
-    
-    .main-content {
-      margin-left: 240px;
-    }
-  }
-  
-  @media (max-width: 768px) {
-    .sidebar-wrapper {
-      width: 100%;
-      height: auto;
-      position: relative;
-    }
-    
-    .main-content {
-      margin-left: 0;
-    }
-    
-    .dashboard-container {
-      flex-direction: column;
-    }
-  }
+.avatar {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 1rem;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-initials {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #4a5568;
+}
+
+.user-info h5 {
+  margin-bottom: 0.25rem;
+  font-size: 1.1rem;
+}
+
+.user-role {
+  font-size: 0.875rem;
+  color: #718096;
+}
+
+.progress-container {
+  margin-bottom: 2rem;
+}
+
+.progress-wrapper {
+  margin-bottom: 1rem;
+}
+
+.progress-label {
+  font-size: 0.875rem;
+  color: #718096;
+  margin-bottom: 0.5rem;
+}
+
+.progress-bar {
+  height: 10px;
+  background: #edf2f7;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #48bb78 0%, #38a169 100%);
+  color: white;
+  font-size: 0.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+}
+
+.stats-badges {
+  display: flex;
+  justify-content: space-between;
+}
+
+.badge {
+  padding: 0.35rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.badge.courses {
+  background: #ebf8ff;
+  color: #3182ce;
+}
+
+.badge.certificates {
+  background: #f0fff4;
+  color: #38a169;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  color: #4a5568;
+  text-decoration: none;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.nav-item i {
+  margin-right: 0.75rem;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.nav-item:hover {
+  background: #edf2f7;
+  color: #2d3748;
+}
+
+.nav-item.active {
+  background: #ebf8ff;
+  color: #3182ce;
+  font-weight: 500;
+}
+
+/* Collapsed state styles */
+.sidebar.collapsed .nav-text {
+  display: none;
+}
+
+.sidebar.collapsed .user-info,
+.sidebar.collapsed .progress-container {
+  display: none;
+}
+
+.sidebar.collapsed .nav-item {
+  justify-content: center;
+  padding: 0.75rem 0.5rem;
+}
+
+.sidebar.collapsed .nav-item i {
+  margin-right: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .sidebar {
+      width: 100% !important;
+      position: fixed;
+      z-index: 1040;
+      transform: translateX(-100%);
+      transition: transform 0.3s ease-in-out;
+  }
+  
+  .sidebar.mobile-open {
+      transform: translateX(0);
+  }
+  
+  /* Override collapsed state on mobile */
+  .sidebar.mobile-open .nav-text {
+      display: inline;
+  }
+  
+  .sidebar.mobile-open .user-info,
+  .sidebar.mobile-open .progress-container {
+      display: block;
+  }
+}

@@ -38,6 +38,7 @@ export default function ModuleSurveyPage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     const fetchSurvey = async () => {
@@ -187,13 +188,16 @@ export default function ModuleSurveyPage() {
           className={`d-flex flex-column flex-shrink-0 p-3 bg-white shadow-sm h-100 
             ${mobileSidebarOpen ? 'd-block position-fixed' : 'd-none d-lg-block'}`}
           style={{
-            width: '280px',
+            width: sidebarCollapsed ? '80px' : '280px',
             zIndex: 999,
-            left: mobileSidebarOpen ? '0' : '-280px',
-            transition: 'left 0.3s ease'
+            left: mobileSidebarOpen ? '0' : sidebarCollapsed ? '-80px' : '-280px',
+            transition: 'left 0.3s ease, width 0.3s ease'
           }}
         >
-          <LearnerSidebar />
+          <LearnerSidebar 
+            isCollapsed={sidebarCollapsed}
+            onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+          />
         </div>
 
         {/* Mobile Overlay */}
@@ -207,14 +211,15 @@ export default function ModuleSurveyPage() {
         
       <div className="flex-1 flex flex-col overflow-hidden">
         <TopNavbar toggleSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)} />   
-        {/* Main Content */}
-        <main 
-          className="flex-grow-1 p-4 overflow-auto"
-          style={{
-            width: 'calc(100%)',
-            transition: 'margin-left 0.3s ease'
-          }}
-        >
+         <main 
+            className="flex-grow-1 p-4 overflow-auto"
+            style={{
+              marginLeft: mobileSidebarOpen 
+                ? (sidebarCollapsed ? '80px' : '280px') 
+                : '0',
+              transition: 'margin-left 0.3s ease'
+            }}
+          >
           <div className="container py-5">
             <nav aria-label="breadcrumb" className="mb-4">
               <ol className="breadcrumb">
