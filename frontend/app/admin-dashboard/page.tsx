@@ -239,7 +239,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Recent Activity Section */}
-        <div className="card mb-4">
+        {/* <div className="card mb-4">
           <div className="card-header">
             <h5 className="mb-0">Recent Activity</h5>
           </div>
@@ -267,7 +267,7 @@ export default function AdminDashboard() {
               <p className="text-muted text-center py-4">No recent activity</p>
             )}
           </div>
-        </div>
+        </div> */}
 
         <div className="row">
           <div className="col-md-6 mb-4">

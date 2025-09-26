@@ -18,6 +18,9 @@ from PyPDF2 import PdfReader, PdfWriter
 from reportlab.lib.units import inch
 from django.urls import reverse
 from django.conf import settings
+import qrcode
+from reportlab.lib.utils import ImageReader
+
 class GenerateCertificateView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated]
 
@@ -61,7 +64,28 @@ class GenerateCertificateView(generics.GenericAPIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Generate certificate by overlaying the student's name on the template
+        # Generate certificate number
+        cert_number = str(uuid.uuid4())[:8].upper()
+        
+        # Use FRONTEND_URL from settings for the verification URL
+        frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:3000')
+        verification_url = f"{frontend_url}/dashboard/certificates/verify/{cert_number}"
+
+        # Generate QR code
+        qr_buffer = BytesIO()
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(verification_url)
+        qr.make(fit=True)
+        qr_img = qr.make_image(fill_color="black", back_color="white")
+        qr_img.save(qr_buffer, format='PNG')
+        qr_buffer.seek(0)
+
+        # Generate certificate by overlaying the student's name and QR code on the template
         buffer = BytesIO()
         pdf_reader = PdfReader(template.template_file.open('rb'))
         pdf_writer = PdfWriter()
@@ -80,31 +104,31 @@ class GenerateCertificateView(generics.GenericAPIView):
         name_pdf = PdfReader(BytesIO(name_buffer.getvalue()))
         for page_num in range(len(pdf_reader.pages)):
             page = pdf_reader.pages[page_num]
-            if page_num == 0:  # Only add name to the first page
+            if page_num == 0:  # Only add name to the first page 
                 page.merge_page(name_pdf.pages[0])
             pdf_writer.add_page(page)
 
-        # Add certificate number and verification URL to the PDF
-        cert_number = str(uuid.uuid4())[:8].upper()
-        verification_url = request.build_absolute_uri(
-            reverse('verify-certificate', kwargs={'certificate_number': cert_number})
-        )
-
-        # Create a new canvas for certificate number and verification URL
-        final_buffer = BytesIO()
-        c = canvas.Canvas(final_buffer, pagesize=letter)
-        c.setFont("Helvetica", 12)
-        c.drawString(45, 80, f"Certificate ID: {cert_number}")
-        # c.drawString(50, 80, f"Verify at: {verification_url}")
+        # Create a new canvas for QR code and certificate number
+        qr_cert_buffer = BytesIO()
+        c = canvas.Canvas(qr_cert_buffer, pagesize=letter)
+        
+        # Add QR code (positioned similar to the screenshot - bottom right)
+        qr_image = ImageReader(qr_buffer)
+        c.drawImage(qr_image, 600, 80, width=100, height=100)  
+        
+        # Add certificate number below QR code
+        c.setFont("Helvetica", 10)
+        c.drawString(600, 65, f"Certificate ID: {cert_number}")
+        
         c.save()
 
-        # Merge certificate number and verification URL
-        final_pdf = PdfReader(BytesIO(final_buffer.getvalue()))
+        # Merge QR code and certificate number
+        qr_cert_pdf = PdfReader(BytesIO(qr_cert_buffer.getvalue()))
         final_writer = PdfWriter()
         for page_num in range(len(pdf_writer.pages)):
             page = pdf_writer.pages[page_num]
             if page_num == 0:
-                page.merge_page(final_pdf.pages[0])
+                page.merge_page(qr_cert_pdf.pages[0])
             final_writer.add_page(page)
 
         # Save the final PDF to buffer
@@ -134,7 +158,6 @@ class GenerateCertificateView(generics.GenericAPIView):
         certificate.save()
 
         serializer = CertificateSerializer(certificate)
-        # return Response(serializer.data)
         from notifications.signals import create_certificate_notification
         create_certificate_notification(certificate)
         

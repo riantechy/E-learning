@@ -253,10 +253,10 @@ export default function CourseDetailPage() {
                   </div>
                   <div className="card-body">
                     <ul className="list-group list-group-flush">
-                      <li className="list-group-item d-flex justify-content-between">
+                      {/* <li className="list-group-item d-flex justify-content-between">
                         <span>Status:</span>
                         <span className="badge bg-primary">{course.status}</span>
-                      </li>
+                      </li> */}
                       <li className="list-group-item d-flex justify-content-between">
                         <span>Created:</span>
                         <span>{new Date(course.created_at).toLocaleDateString()}</span>

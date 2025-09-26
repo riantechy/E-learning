@@ -7,6 +7,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import AdminSidebar from '@/components/AdminSidebar';
 import { useRouter } from 'next/navigation';
 import styles from './profile.module.css';
+import { kenyaCounties, educationLevels } from '@/components/data/counties';
 
 export default function ProfilePage() {  
   const [user, setUser] = useState<any>(null);
@@ -25,6 +26,7 @@ export default function ProfilePage() {
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
   const [imageUpdated, setImageUpdated] = useState(false);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
@@ -51,7 +53,7 @@ export default function ProfilePage() {
       }
       setUser(response.data);
       setProfileImage(response.data.profile_image || '/images/profile.JPG');
-      setImageUpdated(false); // Reset image update flag
+      setImageUpdated(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch profile');
     } finally {
@@ -59,22 +61,74 @@ export default function ProfilePage() {
     }
   };
 
+  // Form validation function
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+
+    if (!user.first_name?.trim()) {
+      errors.first_name = 'First name is required';
+    }
+
+    if (!user.last_name?.trim()) {
+      errors.last_name = 'Last name is required';
+    }
+
+    if (!user.phone?.trim()) {
+      errors.phone = 'Phone number is required';
+    } else if (!/^[0-9+\-\s()]{10,15}$/.test(user.phone)) {
+      errors.phone = 'Please enter a valid phone number';
+    }
+
+    if (!user.gender) {
+      errors.gender = 'Gender is required';
+    }
+
+    if (!user.date_of_birth) {
+      errors.date_of_birth = 'Date of birth is required';
+    } else {
+      const birthDate = new Date(user.date_of_birth);
+      const today = new Date();
+      const age = today.getFullYear() - birthDate.getFullYear();
+      if (age < 18) {
+        errors.date_of_birth = 'You must be at least 18 years old';
+      }
+    }
+
+    if (!user.county) {
+      errors.county = 'County is required';
+    }
+
+    if (!user.education) {
+      errors.education = 'Education level is required';
+    }
+
+    if (!user.training_institution?.trim()) {
+      errors.training_institution = 'Training institution is required';
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setUser((prev: any) => ({ ...prev, [name]: value }));
+    
+    // Clear error when user starts typing
+    if (formErrors[name]) {
+      setFormErrors(prev => ({ ...prev, [name]: '' }));
+    }
   };
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setPasswordForm(prev => ({ ...prev, [name]: value }));
     
-    // Validate password when new_password changes
     if (name === 'new_password') {
       validatePassword(value);
     }
   };
 
-  // Validate password against all criteria
   const validatePassword = (p: string) => {
     const errors = passwordRequirements
       .filter(req => !req.validator(p))
@@ -83,7 +137,6 @@ export default function ProfilePage() {
     return errors.length === 0;
   };
 
-  // Calculate max date for 18 years ago
   const getMaxBirthDate = () => {
     const today = new Date();
     const minAgeDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
@@ -92,6 +145,11 @@ export default function ProfilePage() {
 
   const handleSubmitProfile = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+
     try {
       setLoading(true);
       const response = await usersApi.updateUser(user.id, {
@@ -113,6 +171,7 @@ export default function ProfilePage() {
       }
       setUser(response.data);
       setEditMode(false);
+      setFormErrors({});
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update profile');
     } finally {
@@ -120,14 +179,12 @@ export default function ProfilePage() {
     }
   };
 
-  // Add this state to your existing state declarations
   const [showPassword, setShowPassword] = useState({
     old_password: false,
     new_password: false,
     confirm_password: false,
   });
 
-  // Add this function to toggle password visibility
   const togglePasswordVisibility = (field: keyof typeof showPassword) => {
     setShowPassword(prev => ({
       ...prev,
@@ -187,11 +244,10 @@ export default function ProfilePage() {
         return;
       }
       if (response.data) {
-        // Force image reload by adding a timestamp query parameter
         const newImageUrl = `${response.data.profile_image_url}?t=${new Date().getTime()}`;
         setProfileImage(newImageUrl);
         setUser((prev: any) => ({ ...prev, profile_image: newImageUrl }));
-        setImageUpdated(true); // Set flag to indicate image was updated
+        setImageUpdated(true);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to upload image');
@@ -284,26 +340,32 @@ export default function ProfilePage() {
                       <form onSubmit={handleSubmitProfile}>
                         <div className="row mb-3">
                           <div className="col-md-6">
-                            <label className="form-label">First Name</label>
+                            <label className="form-label">First Name *</label>
                             <input
                               type="text"
                               name="first_name"
                               value={user.first_name || ''}
                               onChange={handleInputChange}
-                              className="form-control"
+                              className={`form-control ${formErrors.first_name ? 'is-invalid' : ''}`}
                               required
                             />
+                            {formErrors.first_name && (
+                              <div className="invalid-feedback">{formErrors.first_name}</div>
+                            )}
                           </div>
                           <div className="col-md-6">
-                            <label className="form-label">Last Name</label>
+                            <label className="form-label">Last Name *</label>
                             <input
                               type="text"
                               name="last_name"
                               value={user.last_name || ''}
                               onChange={handleInputChange}
-                              className="form-control"
+                              className={`form-control ${formErrors.last_name ? 'is-invalid' : ''}`}
                               required
                             />
+                            {formErrors.last_name && (
+                              <div className="invalid-feedback">{formErrors.last_name}</div>
+                            )}
                           </div>
                         </div>
                         
@@ -321,75 +383,110 @@ export default function ProfilePage() {
                         
                         <div className="row mb-3">
                           <div className="col-md-6">
-                            <label className="form-label">Phone</label>
+                            <label className="form-label">Phone *</label>
                             <input
                               type="text"
                               name="phone"
                               value={user.phone || ''}
                               onChange={handleInputChange}
-                              className="form-control"
+                              className={`form-control ${formErrors.phone ? 'is-invalid' : ''}`}
+                              placeholder="e.g., 0712345678"
+                              required
                             />
+                            {formErrors.phone && (
+                              <div className="invalid-feedback">{formErrors.phone}</div>
+                            )}
                           </div>
                           <div className="col-md-6">
-                            <label className="form-label">Gender</label>
+                            <label className="form-label">Gender *</label>
                             <select
                               name="gender"
                               value={user.gender || ''}
                               onChange={handleInputChange}
-                              className="form-select"
+                              className={`form-select ${formErrors.gender ? 'is-invalid' : ''}`}
+                              required
                             >
                               <option value="">Select Gender</option>
                               <option value="male">Male</option>
-                              <option value="female">Female</option>
+                              <option value="female">Female</option>                              
                             </select>
+                            {formErrors.gender && (
+                              <div className="invalid-feedback">{formErrors.gender}</div>
+                            )}
                           </div>
                         </div>
                         
                         <div className="row mb-3">
                           <div className="col-md-6">
-                            <label className="form-label">Date of Birth</label>
+                            <label className="form-label">Date of Birth *</label>
                             <input
                               type="date"
                               name="date_of_birth"
                               value={user.date_of_birth || ''}
                               onChange={handleInputChange}
-                              className="form-control"
+                              className={`form-control ${formErrors.date_of_birth ? 'is-invalid' : ''}`}
                               max={getMaxBirthDate()}
+                              required
                             />
-                            <div className="form-text">You must be at least 18 years old</div>
+                            {formErrors.date_of_birth ? (
+                              <div className="invalid-feedback">{formErrors.date_of_birth}</div>
+                            ) : (
+                              <div className="form-text">You must be at least 18 years old</div>
+                            )}
                           </div>
                           <div className="col-md-6">
-                            <label className="form-label">County</label>
-                            <input
-                              type="text"
+                            <label className="form-label">County *</label>
+                            <select
                               name="county"
                               value={user.county || ''}
                               onChange={handleInputChange}
-                              className="form-control"
-                            />
+                              className={`form-select ${formErrors.county ? 'is-invalid' : ''}`}
+                              required
+                            >
+                              <option value="">Select County</option>
+                              {kenyaCounties.map(county => (
+                                <option key={county} value={county}>{county}</option>
+                              ))}
+                            </select>
+                            {formErrors.county && (
+                              <div className="invalid-feedback">{formErrors.county}</div>
+                            )}
                           </div>
                         </div>
                         
                         <div className="mb-3">
-                          <label className="form-label">Education</label>
-                          <textarea
+                          <label className="form-label">Education Level *</label>
+                          <select
                             name="education"
                             value={user.education || ''}
                             onChange={handleInputChange}
-                            rows={3}
-                            className="form-control"
-                          />
+                            className={`form-select ${formErrors.education ? 'is-invalid' : ''}`}
+                            required
+                          >
+                            <option value="">Select Education Level</option>
+                            {educationLevels.map(level => (
+                              <option key={level} value={level}>{level}</option>
+                            ))}
+                          </select>
+                          {formErrors.education && (
+                            <div className="invalid-feedback">{formErrors.education}</div>
+                          )}
                         </div>
                         
                         <div className="mb-4">
-                          <label className="form-label">Training Institution</label>
-                          <textarea
+                          <label className="form-label">Training Institution *</label>
+                          <input
+                            type="text"
                             name="training_institution"
                             value={user.training_institution || ''}
                             onChange={handleInputChange}
-                            rows={3}
-                            className="form-control"
+                            className={`form-control ${formErrors.training_institution ? 'is-invalid' : ''}`}
+                            placeholder="e.g., University of Nairobi"
+                            required
                           />
+                          {formErrors.training_institution && (
+                            <div className="invalid-feedback">{formErrors.training_institution}</div>
+                          )}
                         </div>
                         
                         <div className="d-flex gap-2">
@@ -402,7 +499,10 @@ export default function ProfilePage() {
                           </button>
                           <button
                             type="button"
-                            onClick={() => setEditMode(false)}
+                            onClick={() => {
+                              setEditMode(false);
+                              setFormErrors({});
+                            }}
                             className="btn btn-outline-secondary"
                           >
                             Cancel
@@ -441,11 +541,11 @@ export default function ProfilePage() {
                         
                         <div className="row">
                           <div className="col-md-6">
-                            <p><strong>Status:</strong> {user.status || 'Not provided'}</p>
+                            {/* <p><strong>Status:</strong> {user.status || 'Not provided'}</p> */}
                             <p><strong>Joined:</strong> {new Date(user.date_joined).toLocaleDateString()}</p>
                           </div>
                           <div className="col-md-6">
-                            <p><strong>Registered:</strong> {user.date_registered || 'Not provided'}</p>
+                            {/* <p><strong>Registered:</strong> {user.date_registered || 'Not provided'}</p> */}
                             <p><strong>Last Login:</strong> {user.last_login ? new Date(user.last_login).toLocaleString() : 'Never'}</p>
                           </div>
                         </div>
@@ -516,7 +616,6 @@ export default function ProfilePage() {
                           </button>
                         </div>
                         
-                        {/* Password Requirements */}
                         {passwordForm.new_password && (
                           <div className="mt-3 p-3 bg-light rounded">
                             <p className="fw-bold mb-2">Password must contain:</p>

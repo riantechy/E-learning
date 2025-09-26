@@ -4,7 +4,7 @@
 import { useParams, useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import TopNavbar from '@/components/TopNavbar'
-import { coursesApi } from '@/lib/api'
+import { coursesApi, categoriesApi } from '@/lib/api'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import LearnerSidebar from '@/components/LearnerSidebar'
 import { Menu } from 'lucide-react'
@@ -18,9 +18,25 @@ export default function CourseOverviewPage() {
   const [course, setCourse] = useState<any>(null)
   const [modules, setModules] = useState<any[]>([])
   const [progress, setProgress] = useState<any>(null)
+  const [categoryName, setCategoryName] = useState<string>('General') 
   const [loading, setLoading] = useState(true)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  const fetchCategoryName = async (categoryId: string) => {
+    if (!categoryId) return 'General';
+    
+    try {
+      const response = await categoriesApi.getCategory(categoryId);
+      if (response.data) {
+        return response.data.name;
+      }
+      return 'General';
+    } catch (error) {
+      console.error('Error fetching category:', error);
+      return 'General';
+    }
+  };
 
   const getIncompleteModules = () => {
     return modules.filter(module => {
@@ -39,7 +55,22 @@ export default function CourseOverviewPage() {
           coursesApi.getCourseProgress(courseId)
         ])
         
-        if (courseRes.data) setCourse(courseRes.data)
+        if (courseRes.data) {
+          setCourse(courseRes.data);
+          
+         // Fetch category name if category exists
+          if (courseRes.data.category) {
+            if (typeof courseRes.data.category === 'object' && 'name' in courseRes.data.category) {
+              setCategoryName(courseRes.data.category.name);
+            } else if (typeof courseRes.data.category === 'string') {
+              // Category is just an ID, fetch the name
+              const name = await fetchCategoryName(courseRes.data.category);
+              setCategoryName(name);
+            }
+          }
+
+        }
+        
         if (modulesRes.data?.results) {
           const modulesWithProgress = await Promise.all(
             modulesRes.data?.results.map(async (module: any) => {
@@ -359,22 +390,22 @@ export default function CourseOverviewPage() {
                   </div>
                   <div className="card-body">
                     <ul className="list-group list-group-flush">
-                      <li className="list-group-item d-flex justify-content-between align-items-center">
+                    <li className="list-group-item d-flex justify-content-between align-items-center">
                         <span>Category</span>
                         <span className="badge bg-primary">
-                          {course.category?.name || 'General'}
+                          {categoryName} 
                         </span>
                       </li>
                       <li className="list-group-item d-flex justify-content-between align-items-center">
                         <span>Duration</span>
                         <span>{course.duration_hours} hours</span>
                       </li>
-                      <li className="list-group-item d-flex justify-content-between align-items-center">
+                      {/* <li className="list-group-item d-flex justify-content-between align-items-center">
                         <span>Status</span>
                         <span className="badge bg-success">
                           {course.status}
                         </span>
-                      </li>
+                      </li> */}
                       <li className="list-group-item d-flex justify-content-between align-items-center">
                         <span>Progress</span>
                         <span>{progress?.percentage || 0}%</span>

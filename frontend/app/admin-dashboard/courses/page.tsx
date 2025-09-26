@@ -100,7 +100,7 @@ export default function CoursesPage() {
     setFormData({
       title: course.title,
       description: course.description,
-      category: course.category?.id || '',
+      category: course.category?.id || course.category || '',
       status: course.status,
     });
     setShowModal(true);
