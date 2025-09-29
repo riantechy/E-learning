@@ -57,4 +57,10 @@ urlpatterns = [
         views.SurveyViewSet.as_view({'get': 'responses'}),
         name='survey-responses'
     ),
+
+    path(
+    'quiz-results/<uuid:attempt_id>/',
+    views.QuizResultsView.as_view(),
+    name='quiz-results'
+),
 ]

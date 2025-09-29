@@ -40,8 +40,7 @@ export default function ModulePage() {
   const [expandedLessons, setExpandedLessons] = useState<Record<string, boolean>>({})
   const [hasSurvey, setHasSurvey] = useState(false)
   const [surveyCompleted, setSurveyCompleted] = useState(false)
-  const [contentInteraction, setContentInteraction] = useState<Record<string, boolean>>({})
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -65,12 +64,10 @@ export default function ModulePage() {
 
           const expanded: Record<string, boolean> = {}
           const progressData: Record<string, any> = {}
-          const interactionData: Record<string, boolean> = {}
 
           await Promise.all(
             lessonsRes.data.results.map(async (lesson: any) => {
               expanded[lesson.id] = true
-              interactionData[lesson.id] = false
               try {
                 const progressRes = await coursesApi.getLessonProgress(lesson.id)
                 if (progressRes.data) {
@@ -84,7 +81,6 @@ export default function ModulePage() {
 
           setExpandedLessons(expanded)
           setLessonProgress(progressData)
-          setContentInteraction(interactionData)
         }
 
         const surveyRes = await assessmentsApi.getModuleSurveys(courseId, moduleId)
@@ -132,63 +128,29 @@ export default function ModulePage() {
     checkModuleCompletion()
   }, [lessons, lessonProgress, hasSurvey, surveyCompleted, moduleId, courseId])
 
+  // Auto-complete lessons when they become visible
   useEffect(() => {
-    const handleScroll = (lessonId: string) => {
-      return (e: Event) => {
-        const element = e.target as HTMLElement
-        const scrollPercentage = (element.scrollTop + element.clientHeight) / element.scrollHeight
-
-        if (scrollPercentage > 0.9 && !lessonProgress[lessonId]?.is_completed) {
-          handleLessonCompleted(lessonId)
-        }
-      }
-    }
-
-    Object.keys(contentRefs.current).forEach(lessonId => {
-      const element = contentRefs.current[lessonId]
-      if (element) {
-        element.addEventListener('scroll', handleScroll(lessonId))
-      }
-    })
-
-    return () => {
-      Object.keys(contentRefs.current).forEach(lessonId => {
-        const element = contentRefs.current[lessonId]
-        if (element) {
-          element.removeEventListener('scroll', handleScroll(lessonId))
-        }
-      })
-    }
-  }, [lessonProgress])
-
-  useEffect(() => {
-    const handlePageScroll = () => {
-      lessons.forEach(lesson => {
-        if (lesson.content_type === 'TEXT' && !lessonProgress[lesson.id]?.is_completed) {
-          const element = contentRefs.current[lesson.id]
-          if (element) {
-            const rect = element.getBoundingClientRect()
-            const isVisible = (
-              rect.top >= 0 &&
-              rect.left >= 0 &&
-              rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
-              rect.right <= (window.innerWidth || document.documentElement.clientWidth)
-            )
-            if (isVisible) {
-              setContentInteraction(prev => ({
-                ...prev,
-                [lesson.id]: true
-              }))
-              handleLessonCompleted(lesson.id)
-            }
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const lessonId = entry.target.getAttribute('data-lesson-id')
+          if (lessonId && !lessonProgress[lessonId]?.is_completed) {
+            handleLessonCompleted(lessonId)
           }
         }
       })
-    }
+    }, { threshold: 0.3 })
 
-    window.addEventListener('scroll', handlePageScroll)
-    return () => window.removeEventListener('scroll', handlePageScroll)
-  }, [lessons, lessonProgress])
+    // Observe all lesson content elements
+    Object.entries(contentRefs.current).forEach(([lessonId, ref]) => {
+      if (ref) {
+        ref.setAttribute('data-lesson-id', lessonId)
+        observer.observe(ref)
+      }
+    })
+
+    return () => observer.disconnect()
+  }, [lessonProgress])
 
   const getCurrentModuleIndex = () => {
     return modules.findIndex((m: any) => m.id === moduleId) || 0
@@ -215,24 +177,19 @@ export default function ModulePage() {
       ...prev,
       [lessonId]: !prev[lessonId]
     }))
-
-    if (!expandedLessons[lessonId]) {
-      setContentInteraction(prev => ({
-        ...prev,
-        [lessonId]: true
-      }))
-    }
   }
 
   const handleLessonCompleted = async (lessonId: string) => {
     try {
-      const res = await coursesApi.updateProgress(lessonId, true)
-      if (res.data) {
-        setLessonProgress(prev => ({
-          ...prev,
-          [lessonId]: { ...prev[lessonId], is_completed: true }
-        }))
-        router.refresh()
+      if (!lessonProgress[lessonId]?.is_completed) {
+        const res = await coursesApi.updateProgress(lessonId, true)
+        if (res.data) {
+          setLessonProgress(prev => ({
+            ...prev,
+            [lessonId]: { ...prev[lessonId], is_completed: true }
+          }))
+          router.refresh()
+        }
       }
     } catch (error) {
       console.error('Error updating lesson progress:', error)
@@ -251,220 +208,207 @@ export default function ModulePage() {
     }
   }
 
-const renderLessonContent = (lesson: any) => {
-  if (lesson.content_type === 'QUIZ') {
-    return (
-      <div className="alert alert-info">
-        <p>Complete this quiz to finish the lesson.</p>
-        {lessonProgress[lesson.id]?.is_completed ? (
-          <span className="badge bg-success">Completed</span>
-        ) : (
-          <button 
-            onClick={() => router.push(`/dashboard/learn/${courseId}/${moduleId}/${lesson.id}`)}
-            className="btn btn-sm btn-primary"
-          >
-            Take Quiz
-          </button>
-        )}
-      </div>
-    )
-  }
+  const renderLessonContent = (lesson: any) => {
+    if (lesson.content_type === 'QUIZ') {
+      return (
+        <div className="alert alert-info">
+          <p>Complete this quiz to finish the lesson.</p>
+          {lessonProgress[lesson.id]?.is_completed ? (
+            <span className="badge bg-success">Completed</span>
+          ) : (
+            <div className="d-flex gap-2 align-items-center">
+              <button 
+                onClick={() => {
+                  // REMOVED: handleLessonCompleted(lesson.id) - Don't complete when clicking Take Quiz
+                  router.push(`/dashboard/learn/${courseId}/${moduleId}/${lesson.id}`)
+                }}
+                className="btn btn-sm btn-primary"
+              >
+                Take Quiz
+              </button>
+              <small className="text-muted">
+                Complete the quiz to mark this lesson as finished
+              </small>
+            </div>
+          )}
+        </div>
+      )
+    }
 
-  if (lesson.content_type === 'VIDEO') {
+    if (lesson.content_type === 'VIDEO') {
+      return (
+        <>
+          {lesson.description && (          
+            <div className="card-body">
+              <p className="card-text">{lesson.description}</p>
+            </div>         
+          )}
+          
+          <div className="ratio ratio-16x9 mb-3">
+            <iframe 
+              ref={(el: HTMLIFrameElement | null) => {
+                iframeRefs.current[lesson.id] = el
+              }}
+              src={convertToEmbedUrl(lesson.content)} 
+              title={lesson.title}
+              allowFullScreen
+              onEnded={() => handleVideoEnded(lesson.id)}
+              onLoad={() => {
+                if (!lessonProgress[lesson.id]?.is_completed) {
+                  handleLessonCompleted(lesson.id)
+                }
+              }}
+            />
+          </div>
+        </>
+      )
+    }
+
+    if (lesson.content_type === 'PDF') {
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_HOST
+      const pdfUrl = lesson.pdf_file?.startsWith('http') 
+        ? lesson.pdf_file 
+        : `${baseUrl}${lesson.pdf_file}`
+      return (
+        <div className="mb-3">
+          <div className="card">
+            <div className="card-body">
+              <h6>PDF Document: {lesson.title}</h6>
+              {lesson.description && (
+                <div className="card-body">
+                  <p className="card-text">{lesson.description}</p>
+                </div>
+              )}
+              <div className="d-flex gap-2">
+                <a 
+                  href={pdfUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-sm btn-primary"
+                  onClick={() => handlePdfLoaded(lesson.id)}
+                >
+                  View 
+                </a>
+                <a 
+                  href={pdfUrl}
+                  download
+                  className="btn btn-sm btn-outline-primary"
+                  onClick={() => handlePdfLoaded(lesson.id)}
+                >
+                  Download 
+                </a>
+              </div>
+              {lesson.pdf_file ? null : (
+                <div className="alert alert-warning mt-2">
+                  PDF file is not available.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )
+    }
+
     return (
       <>
-        {/* Description Card */}
-        {lesson.description && (          
-          <div className="card-body">
-            <p className="card-text">{lesson.description}</p>
-          </div>         
-        )}
+        <div 
+          ref={(el) => { contentRefs.current[lesson.id] = el }}
+          className="lesson-content formatted-content" 
+          dangerouslySetInnerHTML={{ __html: lesson.content }}
+          onClick={() => {
+            if (!lessonProgress[lesson.id]?.is_completed) {
+              handleLessonCompleted(lesson.id)
+            }
+          }}
+        />
         
-        {/* Video Content */}
-        <div className="ratio ratio-16x9 mb-3">
-          <iframe 
-            ref={(el: HTMLIFrameElement | null) => {
-              iframeRefs.current[lesson.id] = el
-            }}
-            src={convertToEmbedUrl(lesson.content)} 
-            title={lesson.title}
-            allowFullScreen
-            onEnded={() => handleVideoEnded(lesson.id)}
-            onLoad={() => setContentInteraction(prev => ({...prev, [lesson.id]: true}))}
-          />
-        </div>
+        <style jsx>{`
+          .formatted-content {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+          }
+          .formatted-content h1, h2, h3, h4, h5, h6 {
+            margin: 1rem 0;
+            font-weight: 600;
+          }
+          .formatted-content p {
+            margin-bottom: 1rem;
+          }
+        `}</style>
+        
+        {lesson.sections?.length > 0 && (
+          <div className="sections-container mt-3">
+            {lesson.sections.map((section: any) => (
+              <div key={section.id} className="section mb-4">
+                <h5>{section.title}</h5>
+                
+                {section.content_type === 'VIDEO' ? (
+                  <div className="ratio ratio-16x9 mb-3">
+                    <iframe 
+                      src={convertToEmbedUrl(section.video_url)} 
+                      title={section.title}
+                      allowFullScreen
+                      onLoad={() => {
+                        if (!lessonProgress[lesson.id]?.is_completed) {
+                          handleLessonCompleted(lesson.id)
+                        }
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div 
+                    className="formatted-content"
+                    dangerouslySetInnerHTML={{ __html: section.content }} 
+                    onClick={() => {
+                      if (!lessonProgress[lesson.id]?.is_completed) {
+                        handleLessonCompleted(lesson.id)
+                      }
+                    }}
+                  />
+                )}
+                
+                {section.subsections?.length > 0 && (
+                  <div className="subsections ms-4">
+                    {section.subsections.map((sub: any) => (
+                      <div key={sub.id} className="subsection mb-3">
+                        <p className="fs-6 mb-1">{sub.title}</p>
+                        
+                        {sub.content_type === 'VIDEO' ? (
+                          <div className="ratio ratio-16x9 mb-3">
+                            <iframe 
+                              src={convertToEmbedUrl(sub.video_url)} 
+                              title={sub.title}
+                              allowFullScreen
+                              onLoad={() => {
+                                if (!lessonProgress[lesson.id]?.is_completed) {
+                                  handleLessonCompleted(lesson.id)
+                                }
+                              }}
+                            />
+                          </div>
+                        ) : (
+                          <div 
+                            className="formatted-content"
+                            dangerouslySetInnerHTML={{ __html: sub.content }} 
+                            onClick={() => {
+                              if (!lessonProgress[lesson.id]?.is_completed) {
+                                handleLessonCompleted(lesson.id)
+                              }
+                            }}
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </>
     )
   }
-
-  if (lesson.content_type === 'PDF') {
-    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_HOST
-    const pdfUrl = lesson.pdf_file?.startsWith('http') 
-      ? lesson.pdf_file 
-      : `${baseUrl}${lesson.pdf_file}`
-    return (
-      <div className="mb-3">
-        <div className="card">
-          <div className="card-body">
-            <h6>PDF Document: {lesson.title}</h6>
-            {lesson.description && (
-              <div className="card-body">
-                <p className="card-text">{lesson.description}</p>
-              </div>
-            )}
-            {/* <p className="text-muted small">
-              Click below to view or download the document.
-            </p> */}
-            <div className="d-flex gap-2">
-              <a 
-                href={pdfUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-sm btn-primary"
-                onClick={() => {
-                  setContentInteraction(prev => ({...prev, [lesson.id]: true}))
-                  handlePdfLoaded(lesson.id)
-                }}
-              >
-                View 
-              </a>
-              <a 
-                href={pdfUrl}
-                download
-                className="btn btn-sm btn-outline-primary"
-                onClick={() => {
-                  setContentInteraction(prev => ({...prev, [lesson.id]: true}))
-                  handlePdfLoaded(lesson.id)
-                }}
-              >
-                Download 
-              </a>
-            </div>
-            {lesson.pdf_file ? null : (
-              <div className="alert alert-warning mt-2">
-                PDF file is not available. Please contact support.
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <>
-      <div 
-        ref={(el) => { contentRefs.current[lesson.id] = el }}
-        className="lesson-content formatted-content" 
-        dangerouslySetInnerHTML={{ __html: lesson.content }}
-        style={{ maxHeight: '500px', overflowY: 'auto' }}
-        onClick={() => setContentInteraction(prev => ({...prev, [lesson.id]: true}))}
-      />
-      
-      {/* Add CSS for better formatting */}
-      <style jsx>{`
-        .formatted-content {
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-          line-height: 1.6;
-          color: #333;
-        }
-        .formatted-content h1, 
-        .formatted-content h2, 
-        .formatted-content h3, 
-        .formatted-content h4, 
-        .formatted-content h5, 
-        .formatted-content h6 {
-          margin-top: 1.5rem;
-          margin-bottom: 1rem;
-          font-weight: 600;
-          color: #2c3e50;
-        }
-        .formatted-content p {
-          margin-bottom: 1rem;
-        }
-        .formatted-content ul, 
-        .formatted-content ol {
-          margin-bottom: 1rem;
-          padding-left: 2rem;
-        }
-        .formatted-content ul {
-          list-style-type: disc;
-        }
-        .formatted-content ol {
-          list-style-type: decimal;
-        }
-        .formatted-content li {
-          margin-bottom: 0.5rem;
-        }
-        .formatted-content strong {
-          font-weight: 600;
-          color: #2c3e50;
-        }
-        .formatted-content code {
-          background-color: #f8f9fa;
-          padding: 0.2rem 0.4rem;
-          border-radius: 0.25rem;
-          font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-          font-size: 0.875em;
-        }
-      `}</style>
-      
-      {lesson.sections?.length > 0 && (
-        <div className="sections-container mt-3">
-          {lesson.sections.map((section: any) => (
-            <div key={section.id} className="section mb-4">
-              <h5>{section.title}</h5>
-              
-              {section.content_type === 'VIDEO' ? (
-                <div className="ratio ratio-16x9 mb-3">
-                  <iframe 
-                    src={convertToEmbedUrl(section.video_url)} 
-                    title={section.title}
-                    allowFullScreen
-                    onLoad={() => setContentInteraction(prev => ({...prev, [lesson.id]: true}))}
-                  />
-                </div>
-              ) : (
-                <div 
-                  className="formatted-content"
-                  dangerouslySetInnerHTML={{ __html: section.content }} 
-                  onClick={() => setContentInteraction(prev => ({...prev, [lesson.id]: true}))}
-                />
-              )}
-              
-              {section.subsections?.length > 0 && (
-                <div className="subsections ms-4">
-                  {section.subsections.map((sub: any) => (
-                    <div key={sub.id} className="subsection mb-3">
-                      <p className="fs-6 mb-1">{sub.title}</p>
-                      
-                      {sub.content_type === 'VIDEO' ? (
-                        <div className="ratio ratio-16x9 mb-3">
-                          <iframe 
-                            src={convertToEmbedUrl(sub.video_url)} 
-                            title={sub.title}
-                            allowFullScreen
-                            onLoad={() => setContentInteraction(prev => ({...prev, [lesson.id]: true}))}
-                          />
-                        </div>
-                      ) : (
-                        <div 
-                          className="formatted-content"
-                          dangerouslySetInnerHTML={{ __html: sub.content }} 
-                          onClick={() => setContentInteraction(prev => ({...prev, [lesson.id]: true}))}
-                        />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-    </>
-  )
-}
 
   if (loading) {
     return (
@@ -586,16 +530,6 @@ const renderLessonContent = (lesson: any) => {
                             {expandedLessons[lesson.id] && (
                               <div className="p-3">
                                 {renderLessonContent(lesson)}
-                                {contentInteraction[lesson.id] && !lessonProgress[lesson.id]?.is_completed && (
-                                  <div className="mt-2 text-end">
-                                    <button 
-                                      onClick={() => handleLessonCompleted(lesson.id)}
-                                      className="btn btn-sm btn-outline-primary"
-                                    >
-                                      Mark as Completed
-                                    </button>
-                                  </div>
-                                )}
                               </div>
                             )}
                           </div>

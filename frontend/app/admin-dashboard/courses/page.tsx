@@ -24,7 +24,10 @@ export default function CoursesPage() {
     description: '',
     category: '',
     status: 'DRAFT',
+    thumbnail: null as File | null,
+    is_featured: false,
   });
+   
   const router = useRouter();
 
   useEffect(() => {
@@ -71,17 +74,32 @@ export default function CoursesPage() {
       setLoading(true);
       let response;
       
-      if (currentCourse) {
-        response = await coursesApi.updateCourse(currentCourse.id, formData);
-      } else {
-        // For new courses, always set status to DRAFT regardless of form data
-        const newCourseData = {
-          ...formData,
-          status: 'DRAFT'
-        };
-        response = await coursesApi.createCourse(newCourseData);
+      // Create FormData for file upload
+      const formDataToSend = new FormData();
+      
+      // Append all form fields
+      formDataToSend.append('title', formData.title);
+      formDataToSend.append('description', formData.description);
+      formDataToSend.append('category', formData.category);
+      
+      // Append thumbnail if it's a file
+      if (formData.thumbnail instanceof File) {
+        formDataToSend.append('thumbnail', formData.thumbnail);
       }
-
+      
+      // Append featured status
+      formDataToSend.append('is_featured', formData.is_featured ? 'true' : 'false');
+      
+      if (currentCourse) {
+        // For updates, include status and use FormData
+        formDataToSend.append('status', formData.status);
+        response = await coursesApi.updateCourse(currentCourse.id, formDataToSend);
+      } else {
+        // For new courses, always set status to DRAFT
+        formDataToSend.append('status', 'DRAFT');
+        response = await coursesApi.createCourse(formDataToSend);
+      }
+  
       if (response.error) {
         setError(response.error);
       } else {
@@ -102,6 +120,8 @@ export default function CoursesPage() {
       description: course.description,
       category: course.category?.id || course.category || '',
       status: course.status,
+      thumbnail: null, // Reset file input when editing
+      is_featured: course.is_featured || false,
     });
     setShowModal(true);
   };
@@ -132,7 +152,9 @@ export default function CoursesPage() {
       title: '',
       description: '',
       category: '',
-      status: 'DRAFT', // Always set to DRAFT for new courses
+      status: 'DRAFT', 
+      thumbnail: null, 
+      is_featured: false,
     });
     setShowModal(true);
   };
@@ -297,7 +319,7 @@ export default function CoursesPage() {
           <Modal.Header closeButton>
             <Modal.Title>{currentCourse ? 'Edit Course' : 'Add New Course'}</Modal.Title>
           </Modal.Header>
-          <Form onSubmit={handleSubmit}>
+          <Form onSubmit={handleSubmit} encType="multipart/form-data">
             <Modal.Body>
               <Form.Group className="mb-3">
                 <Form.Label>Title</Form.Label>
@@ -337,6 +359,60 @@ export default function CoursesPage() {
                     </option>
                   ))}
                 </Form.Select>
+              </Form.Group>
+
+              {/* Thumbnail Upload */}
+              <Form.Group className="mb-3">
+                <Form.Label>Course Thumbnail</Form.Label>
+                <Form.Control
+                  type="file"
+                  accept="image/*"
+                  name="thumbnail"
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      // Handle file upload - you'll need to update the formData state
+                      setFormData(prev => ({
+                        ...prev,
+                        thumbnail: file
+                      }));
+                    }
+                  }}
+                />
+                <Form.Text className="text-muted">
+                  Recommended size: 400x200px. Supported formats: JPG, PNG, GIF.
+                </Form.Text>
+                {/* Show current thumbnail if editing */}
+                {currentCourse?.thumbnail && (
+                  <div className="mt-2">
+                    <p className="small mb-1">Current Thumbnail:</p>
+                    <img 
+                      src={currentCourse.thumbnail} 
+                      alt="Current thumbnail" 
+                      style={{ maxWidth: '200px', maxHeight: '100px', objectFit: 'cover' }}
+                      className="border rounded"
+                    />
+                  </div>
+                )}
+              </Form.Group>
+
+              {/* Featured Course Toggle */}
+              <Form.Group className="mb-3">
+                <Form.Check
+                  type="checkbox"
+                  label="Featured Course"
+                  name="is_featured"
+                  checked={formData.is_featured || false}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    setFormData(prev => ({
+                      ...prev,
+                      is_featured: e.target.checked
+                    }));
+                  }}
+                />
+                <Form.Text className="text-muted">
+                  Featured courses will be highlighted on the learner dashboard.
+                </Form.Text>
               </Form.Group>
 
               {/* Only show status dropdown when editing an existing course */}

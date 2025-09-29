@@ -33,6 +33,25 @@ class Course(models.Model):
     duration_hours = models.PositiveIntegerField(default=0)
     is_featured = models.BooleanField(default=False)
 
+    def calculate_total_duration(self):
+        """Calculate total duration from all lessons in the course"""
+        from django.db.models import Sum
+        
+        # Get all lessons in this course and sum their duration_minutes
+        total_minutes = Lesson.objects.filter(
+            module__course=self
+        ).aggregate(total_duration=Sum('duration_minutes'))['total_duration'] or 0
+        
+        # Convert minutes to hours (round to 1 decimal place)
+        total_hours = round(total_minutes / 60, 1)
+        return total_hours
+    
+    def save(self, *args, **kwargs):
+        # Auto-calculate duration_hours when saving if not set
+        if not self.duration_hours:
+            self.duration_hours = self.calculate_total_duration()
+        super().save(*args, **kwargs)
+
     def has_modules(self):
         """Check if the course has at least one module"""
         return self.modules.exists()

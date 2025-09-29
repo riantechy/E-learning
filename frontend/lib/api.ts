@@ -163,8 +163,22 @@ export const coursesApi = {
   // Course operations
   getAllCourses: () => apiRequest<PaginatedResponse<Course>>('/courses/'),
   getCourse: (id: string) => apiRequest<Course>(`/courses/${id}/`),
-  createCourse: (course: Partial<Course>) => apiRequest<Course>('/courses/', 'POST', course),
-  updateCourse: (id: string, course: Partial<Course>) => apiRequest<Course>(`/courses/${id}/`, 'PUT', course),
+  createCourse: (course: Partial<Course> | FormData) => {
+    // If it's FormData, send as multipart form data
+    if (course instanceof FormData) {
+      return apiRequest<Course>('/courses/', 'POST', course);
+    }
+    // Otherwise send as JSON
+    return apiRequest<Course>('/courses/', 'POST', course);
+  },
+  updateCourse: (id: string, course: Partial<Course> | FormData) => {
+    // If it's FormData, send as multipart form data
+    if (course instanceof FormData) {
+      return apiRequest<Course>(`/courses/${id}/`, 'PUT', course);
+    }
+    // Otherwise send as JSON
+    return apiRequest<Course>(`/courses/${id}/`, 'PUT', course);
+  },
   deleteCourse: (id: string) => apiRequest(`/courses/${id}/`, 'DELETE'),
   
   // Course workflow
@@ -502,6 +516,20 @@ export const notificationsApi = {
     apiRequest<NotificationPreference>(`/notifications/preferences/${preferencesId}/`, 'PUT', preferences),
 };
 
+export const getAbsoluteMediaUrl = (url: string | null): string => {
+  if (!url) return '';
+  
+  // If it's already an absolute URL, return as is
+  if (url.startsWith('http')) {
+    return url;
+  }
+  
+  // If it's a relative URL, prepend the API base URL
+  // Remove /api from the base URL for media files
+  const mediaBaseUrl = process.env.NEXT_PUBLIC_API_BASE_HOST || 'http://localhost:8000';
+  return `${mediaBaseUrl}${url}`;
+};
+
 
 // Types
 export interface User {
@@ -565,6 +593,7 @@ export interface Course {
   updated_at: string;
   published_at: string | null;
   duration_hours: number;
+  actual_duration_hours?: number;
   is_featured: boolean;
 }
 

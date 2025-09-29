@@ -292,7 +292,7 @@ export default function CourseOverviewPage() {
                     <div className="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3 mb-4">
                       <div className="d-flex flex-wrap gap-2">
                         <span className="badge bg-primary">
-                          {course.duration_hours} hours
+                           {course.actual_duration_hours || course.duration_hours || 0} hours
                         </span>
                         <span className="badge bg-secondary">
                           {progress?.completed || 0}/{progress?.total || 0} lessons
@@ -398,7 +398,7 @@ export default function CourseOverviewPage() {
                       </li>
                       <li className="list-group-item d-flex justify-content-between align-items-center">
                         <span>Duration</span>
-                        <span>{course.duration_hours} hours</span>
+                        <span>{course.actual_duration_hours || course.duration_hours || 0} hours</span>
                       </li>
                       {/* <li className="list-group-item d-flex justify-content-between align-items-center">
                         <span>Status</span>

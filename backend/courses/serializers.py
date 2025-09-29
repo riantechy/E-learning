@@ -15,7 +15,8 @@ class CourseCategorySerializer(serializers.ModelSerializer):
 
 class CourseSerializer(serializers.ModelSerializer):
     module_count = serializers.SerializerMethodField()
-    
+    actual_duration_hours = serializers.SerializerMethodField()
+    thumbnail_url = serializers.SerializerMethodField()
     class Meta:
         model = Course
         fields = '__all__'
@@ -23,6 +24,19 @@ class CourseSerializer(serializers.ModelSerializer):
 
     def get_module_count(self, obj):
         return obj.modules.count()
+
+    def get_actual_duration_hours(self, obj):
+        """Calculate and return actual duration from lessons"""
+        return obj.calculate_total_duration()
+
+    def get_thumbnail_url(self, obj):
+        """Return absolute URL for thumbnail"""
+        if obj.thumbnail:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.thumbnail.url)
+            return obj.thumbnail.url
+        return None
 
     def validate_status(self, value):
         # If trying to set status to PUBLISHED, check if course has modules

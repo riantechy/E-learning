@@ -5,7 +5,7 @@ from django.http import FileResponse
 from .models import Certificate
 from rest_framework.renderers import BaseRenderer
 from django.utils import timezone
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from .models import Certificate, CertificateTemplate
 from .serializers import CertificateTemplateSerializer, CertificateSerializer
 from reportlab.pdfgen import canvas
@@ -85,40 +85,77 @@ class GenerateCertificateView(generics.GenericAPIView):
         qr_img.save(qr_buffer, format='PNG')
         qr_buffer.seek(0)
 
-        # Generate certificate by overlaying the student's name and QR code on the template
+        # Generate certificate
         buffer = BytesIO()
         pdf_reader = PdfReader(template.template_file.open('rb'))
         pdf_writer = PdfWriter()
 
+        # Get the actual page size from the template
+        first_page = pdf_reader.pages[0]
+        mediabox = first_page.mediabox
+        page_width = float(mediabox.width)  
+        page_height = float(mediabox.height)
+        
+        # Determine if the page is landscape or portrait
+        is_landscape = page_width > page_height
+        
+        # Use the actual page size from the template
+        template_pagesize = (page_width, page_height)
+
         # Create a canvas to draw the student's name
         name_buffer = BytesIO()
-        c = canvas.Canvas(name_buffer, pagesize=letter)
+        c = canvas.Canvas(name_buffer, pagesize=template_pagesize)
         full_name = f"{user.first_name} {user.last_name}"
 
         # Customize position and styling for the student's name
         c.setFont("Helvetica-Bold", 24)
-        c.drawCentredString(420, 300, full_name)  # Adjust coordinates as needed
+        
+        # Adjust name position based on page orientation
+        if is_landscape:
+            # For landscape: center horizontally, position vertically
+            name_x = page_width / 2
+            name_y = page_height * 0.5  # Adjust this value as needed
+        else:
+            # For portrait
+            name_x = page_width / 2
+            name_y = page_height * 0.5
+            
+        c.drawCentredString(name_x, name_y, full_name)
         c.save()
 
         # Merge the name with the template
         name_pdf = PdfReader(BytesIO(name_buffer.getvalue()))
         for page_num in range(len(pdf_reader.pages)):
             page = pdf_reader.pages[page_num]
-            if page_num == 0:  # Only add name to the first page 
+            if page_num == 0: 
                 page.merge_page(name_pdf.pages[0])
             pdf_writer.add_page(page)
 
         # Create a new canvas for QR code and certificate number
         qr_cert_buffer = BytesIO()
-        c = canvas.Canvas(qr_cert_buffer, pagesize=letter)
+        c = canvas.Canvas(qr_cert_buffer, pagesize=template_pagesize)
         
-        # Add QR code (positioned similar to the screenshot - bottom right)
+        # Add QR code with proper positioning based on page orientation
         qr_image = ImageReader(qr_buffer)
-        c.drawImage(qr_image, 600, 80, width=100, height=100)  
         
-        # Add certificate number below QR code
+        if is_landscape:
+            # For landscape: position more centered at bottom, not too close to edge
+            qr_x = page_width - 200  # 200 points from right edge (more margin)
+            qr_y = 80  # 80 points from bottom
+            cert_text_x = qr_x - 20  # Position text to the left of QR code
+            cert_text_y = qr_y - 10  # Text below QR code
+        else:
+            # For portrait
+            qr_x = page_width - 150  # 150 points from right edge
+            qr_y = 80  # 80 points from bottom
+            cert_text_x = qr_x - 30  # Adjust text position
+            cert_text_y = qr_y - 25
+            
+        c.drawImage(qr_image, qr_x, qr_y, width=100, height=100)
+        
+        # Add certificate number
         c.setFont("Helvetica", 10)
-        c.drawString(600, 65, f"Certificate ID: {cert_number}")
+        c.drawString(cert_text_x, cert_text_y, f"Certificate ID: {cert_number}")
         
         c.save()
 
@@ -133,6 +170,7 @@ class GenerateCertificateView(generics.GenericAPIView):
 
         # Save the final PDF to buffer
         final_writer.write(buffer)
+        buffer.seek(0)
 
         # Create certificate record
         certificate, created = Certificate.objects.get_or_create(
@@ -194,6 +232,7 @@ class VerifyCertificateView(generics.RetrieveAPIView):
     queryset = Certificate.objects.all()
     serializer_class = CertificateSerializer
     lookup_field = 'certificate_number'
+    permission_classes = [AllowAny]
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()

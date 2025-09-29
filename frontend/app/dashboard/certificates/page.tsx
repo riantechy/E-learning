@@ -115,12 +115,12 @@ export default function CertificatesPage() {
                             >
                               Download
                             </button>
-                            <Link
+                            {/* <Link
                               href={`/dashboard/certificates/verify/${certificate.certificate_number}`}
                               className="btn btn-outline-secondary"
                             >
                               Verify
-                            </Link>
+                            </Link> */}
                           </div>
                         </div>
                       </div>

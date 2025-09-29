@@ -521,3 +521,14 @@ class UserAttemptsListView(APIView):
             'data': attempts_data,
             'count': len(attempts_data)
         })
+
+class QuizResultsView(generics.RetrieveAPIView):
+    serializer_class = UserAttemptSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        return UserAttempt.objects.filter(user=self.request.user)
+    
+    def get_object(self):
+        attempt_id = self.kwargs['attempt_id']
+        return get_object_or_404(UserAttempt, id=attempt_id, user=self.request.user)
