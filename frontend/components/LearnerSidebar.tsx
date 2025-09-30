@@ -112,17 +112,22 @@ export default function LearnerSidebar({
       <div className="flex-grow-1 overflow-auto">
         {/* User Profile Section */}
         <div className={`text-center mb-4 ${isExpandedView ? 'px-3' : 'px-2'}`}>
-          <div className="avatar mx-auto mb-2">
+          <div className="avatar d-flex align-items-center justify-content-center mx-auto mb-2">
             {user?.profile_image ? (
               <img
                 src={user.profile_image}
                 alt={`${user.first_name} ${user.last_name}`}
                 className="rounded-circle object-cover"
-                style={{ width: isExpandedView ? '60px' : '40px', height: isExpandedView ? '60px' : '40px' }}
+                style={{ 
+                  width: isExpandedView ? '60px' : '40px', 
+                  height: isExpandedView ? '60px' : '40px',
+                  objectFit: 'cover',
+                  display: 'block'
+                }}
               />
             ) : (
               <div
-                className="rounded-circle bg-primary d-flex align-items-center justify-content-center mx-auto text-white fw-bold"
+                className="rounded-circle bg-primary d-flex align-items-center justify-content-center text-white fw-bold"
                 style={{ 
                   width: isExpandedView ? '60px' : '40px', 
                   height: isExpandedView ? '60px' : '40px',
@@ -133,7 +138,6 @@ export default function LearnerSidebar({
               </div>
             )}
           </div>
-          
           {isExpandedView && (
             <>
               <h6 className="mb-1 fw-bold">{user?.first_name} {user?.last_name}</h6>
@@ -145,7 +149,7 @@ export default function LearnerSidebar({
         {/* Progress Section */}
         {isExpandedView && (
           <div className="mb-4 px-3">
-            <div className="d-flex justify-content-between align-items-center mb-2">
+            {/* <div className="d-flex justify-content-between align-items-center mb-2">
               <span className="text-muted small">Learning Progress</span>
               <span className="small fw-bold">{progress}%</span>
             </div>
@@ -155,7 +159,7 @@ export default function LearnerSidebar({
                 style={{ width: `${progress}%` }}
                 role="progressbar"
               />
-            </div>
+            </div> */}
             <div className="d-flex justify-content-between">
               <span className="badge bg-primary bg-opacity-10 text-primary small">
                 Courses: {enrolledCoursesCount}

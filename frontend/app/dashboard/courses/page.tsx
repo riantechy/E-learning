@@ -173,10 +173,10 @@ export default function CourseListPage() {
 
                 <div className="row align-items-center">
                   <div className="col-lg-8">
-                    <h2 className="h4 fw-bold mb-3">Explore Our Courses</h2>
-                    <p className="lead mb-4 opacity-75">
-                      Discover our curated collection of courses designed to enhance your skills and knowledge
-                    </p>
+                  <h2 className="h4 fw-bold text-white mb-2">Explore Our Courses</h2>
+                  <p className="text-white-50 mb-4">
+                    Discover our curated collection of courses designed to enhance your skills and knowledge
+                  </p>
 
                     {/* Stats */}
                     <div className="d-flex flex-wrap gap-4">
@@ -336,7 +336,7 @@ export default function CourseListPage() {
 
               {/* All Available Courses Section */}
               <div>
-                <h3 className="h4 mb-4">
+                <h3 className="h4 mb-2">
                   {enrolledCourses.length > 0 ? 'Explore More Courses' : 'All Available Courses'}
                 </h3>
                 

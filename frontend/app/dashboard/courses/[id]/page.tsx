@@ -227,17 +227,18 @@ export default function CourseDetailPage() {
                       </div>
                     </div>
                     
-                    <h5 className=" h4 display-6 fw-bold mb-3">{course.title}</h5>
-                    <p className="lead mb-4 opacity-75">{truncateText(course.description, 30)}</p>
+                    <h6 className="fw-bold mb-3">{course.title}</h6>
+                    <p className="text-white-50 mb-4">{truncateText(course.description, 30)}</p>
+
                     
                     <div className="d-flex flex-wrap gap-3">
                       {enrolled ? (
                         <>
                           <button 
                             onClick={handleContinueLearning}
-                            className="btn btn-light btn-lg d-flex align-items-center"
+                            className="btn btn-light btn-md d-flex align-items-center"
                           >
-                            <PlayCircle size={20} className="me-2" />
+                            <PlayCircle size={10} className="me-2" />
                             Continue Learning
                             {progress && (
                               <span className="badge bg-primary ms-2">
@@ -247,7 +248,7 @@ export default function CourseDetailPage() {
                           </button>
                           <Link 
                             href={`/dashboard/learn/${id}`}
-                            className="btn btn-outline-light btn-lg"
+                            className="btn btn-outline-light btn-md"
                           >
                             Course Overview
                           </Link>
