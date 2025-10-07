@@ -711,7 +711,7 @@ const LessonForm = ({
             <Button variant="secondary" size="sm" onClick={onHide}>
               Cancel
             </Button>
-            <Button variant="primary" size="sm" type="submit" disabled={loading}>
+            <Button variant="danger" size="sm" type="submit" disabled={loading}>
               {loading ? 'Saving...' : 'Save'}
             </Button>
           </Modal.Footer>

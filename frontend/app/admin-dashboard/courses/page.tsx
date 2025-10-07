@@ -212,7 +212,7 @@ export default function CoursesPage() {
       <div className="container-fluid">
         <div className="d-flex justify-content-between align-items-center mb-4">
           <h1 className="h4 mb-0">Manage Courses</h1>
-          <Button variant="primary" onClick={handleNewCourse}>
+          <Button variant="danger" onClick={handleNewCourse}>
             Add New Course
           </Button>
         </div>
@@ -243,7 +243,7 @@ export default function CoursesPage() {
                   <td>{course.title}</td>
                   <td>{categories.find(cat => cat.id === course.category)?.name || 'Uncategorized'}</td>
                   <td>
-                    <Badge bg={getModuleCount(course.id) > 0 ? 'primary' : 'secondary'}>
+                    <Badge bg={getModuleCount(course.id) > 0 ? 'danger' : 'secondary'}>
                       {getModuleCount(course.id)} modules
                     </Badge>
                     {getModuleCount(course.id) === 0 && (
@@ -263,7 +263,7 @@ export default function CoursesPage() {
                   <td onClick={(e) => e.stopPropagation()}> {/* Prevent click propagation for actions */}
                   <div className="d-flex gap-1">                                    
                     <Button 
-                      variant="primary" 
+                      variant="danger" 
                       size="sm" 
                       className="me-2" 
                       onClick={() => router.push(`/admin-dashboard/courses/${course.id}/modules`)}
@@ -282,7 +282,7 @@ export default function CoursesPage() {
                     )}
                     {course.status === 'DRAFT' && (
                       <Button 
-                        variant="primary" 
+                        variant="danger" 
                         size="sm" 
                         onClick={() => handleStatusAction(course.id, 'publish')}
                         disabled={getModuleCount(course.id) === 0}
@@ -450,7 +450,7 @@ export default function CoursesPage() {
               <Button variant="secondary" onClick={() => setShowModal(false)}>
                 Cancel
               </Button>
-              <Button variant="primary" type="submit" disabled={loading}>
+              <Button variant="danger" type="submit" disabled={loading}>
                 {loading ? 'Saving...' : currentCourse ? 'Update Course' : 'Create Course'}
               </Button>
             </Modal.Footer>

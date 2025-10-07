@@ -168,7 +168,7 @@ export default function CourseCompletionPage() {
       <ProtectedRoute>
         <div className="d-flex vh-100 bg-light position-relative">
           <div className="flex-grow-1 p-4 overflow-auto d-flex justify-content-center align-items-center">
-            <div className="spinner-border text-primary" role="status">
+            <div className="spinner-border text-danger" role="status">
               <span className="visually-hidden">Loading...</span>
             </div>
           </div>
@@ -280,7 +280,7 @@ export default function CourseCompletionPage() {
                           <div className="col-md-4 d-flex align-items-center">
                             <Link 
                               href={`/dashboard/learn/${courseId}`}
-                              className="btn btn-primary w-100"
+                              className="btn btn-danger w-100"
                             >
                               Continue Learning
                             </Link>
@@ -291,8 +291,8 @@ export default function CourseCompletionPage() {
                   )}
 
                   {/* Course Status Card */}
-                  <div className={`card ${isCourseCompleted ? 'border-success' : 'border-primary'}`}>
-                    <div className={`card-header ${isCourseCompleted ? 'bg-success text-white' : 'bg-primary text-white'} d-flex justify-content-between align-items-center`}>
+                  <div className={`card ${isCourseCompleted ? 'border-success' : 'border-danger'}`}>
+                    <div className={`card-header ${isCourseCompleted ? 'bg-success text-white' : 'bg-danger text-white'} d-flex justify-content-between align-items-center`}>
                       <h2 className="mb-0">
                         {isCourseCompleted ? 'Congratulations!' : 'Course Overview'}
                       </h2>
@@ -302,7 +302,7 @@ export default function CourseCompletionPage() {
                     </div>
                     <div className="card-body">
                       <div className="text-center mb-4">
-                        <i className={`bi ${isCourseCompleted ? 'bi-trophy-fill text-warning' : 'bi-book text-primary'} display-1 mb-4`}></i>
+                        <i className={`bi ${isCourseCompleted ? 'bi-trophy-fill text-warning' : 'bi-book text-danger'} display-1 mb-4`}></i>
                         <h3 className="mb-3">
                           {isCourseCompleted 
                             ? `You've completed ${course.title}`
@@ -333,7 +333,7 @@ export default function CourseCompletionPage() {
                             </div>
                             <button
                               onClick={handleDownloadCertificate}
-                              className="btn btn-primary btn-lg me-3"
+                              className="btn btn-danger btn-lg me-3"
                             >
                               <Download className="me-2" size={20} />
                               Download Certificate
@@ -350,7 +350,7 @@ export default function CourseCompletionPage() {
                             <button 
                               onClick={handleGenerateCertificate}
                               disabled={generating}
-                              className="btn btn-primary btn-lg me-3"
+                              className="btn btn-danger btn-lg me-3"
                             >
                               {generating ? (
                                 <>
@@ -377,7 +377,7 @@ export default function CourseCompletionPage() {
                       <div className="text-center mt-4">
                         <Link
                           href={`/dashboard/learn/${courseId}`}
-                          className="btn btn-outline-primary"
+                          className="btn btn-outline-danger"
                         >
                           <i className="bi bi-arrow-left me-2"></i>
                           Back to Course

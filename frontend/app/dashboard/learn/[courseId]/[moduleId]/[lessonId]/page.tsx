@@ -248,7 +248,7 @@ export default function LessonPage() {
               <div className="alert alert-danger">This page is only for quiz lessons</div>
               <Link 
                 href={`/dashboard/learn/${courseId}/${moduleId}`}
-                className="btn btn-primary"
+                className="btn btn-danger"
               >
                 Back to Module
               </Link>
@@ -338,7 +338,7 @@ export default function LessonPage() {
                           <p>For multiple-choice questions, select all answers that apply.</p>
                           <button 
                             onClick={handleStartQuiz} 
-                            className="btn btn-primary btn-sm"
+                            className="btn btn-danger btn-sm"
                           >
                             Start Quiz
                           </button>
@@ -378,7 +378,7 @@ export default function LessonPage() {
                                     <button
                                       key={answer.id}
                                       type="button"
-                                      className={`btn ${userAnswers[question.id] === answer.id ? 'btn-primary' : 'btn-outline-primary'}`}
+                                      className={`btn ${userAnswers[question.id] === answer.id ? 'btn-danger' : 'btn-outline-danger'}`}
                                       onClick={() => handleAnswerSelect(question.id, answer.id, question.question_type)}
                                     >
                                       {answer.answer_text}
@@ -416,7 +416,7 @@ export default function LessonPage() {
                           </div>
                           <button
                             onClick={() => setShowReview(!showReview)}
-                            className="btn btn-outline-primary mb-3"
+                            className="btn btn-outline-danger mb-3"
                           >
                             {showReview ? 'Hide Review' : 'Review Answers'}
                           </button>
@@ -424,7 +424,7 @@ export default function LessonPage() {
                           {quizScore && quizScore >= 70 ? (
                             <button
                               onClick={() => router.push(`/dashboard/learn/${courseId}/${moduleId}`)}
-                              className="btn btn-primary"
+                              className="btn btn-danger"
                             >
                               Back to Module
                             </button>
@@ -437,7 +437,7 @@ export default function LessonPage() {
                                 setShowReview(false)
                                 setUserResponses([])
                               }}
-                              className="btn btn-primary"
+                              className="btn btn-danger"
                             >
                               Retake Quiz
                             </button>

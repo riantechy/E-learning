@@ -208,11 +208,11 @@ export default function RegisterPage() {
 
   // Get password strength color
   const getPasswordStrengthColor = () => {
-    if (passwordStrength === 0) return 'bg-gray-200';
-    if (passwordStrength <= 2) return 'bg-red-500';
-    if (passwordStrength === 3) return 'bg-yellow-500';
-    if (passwordStrength === 4) return 'bg-blue-500';
-    return 'bg-green-500';
+    if (passwordStrength === 0) return 'bg-secondary';
+    if (passwordStrength <= 2) return 'bg-danger';
+    if (passwordStrength === 3) return 'bg-warning';
+    if (passwordStrength === 4) return 'bg-info';
+    return 'bg-success';
   };
 
   // Get password strength text
@@ -225,62 +225,56 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="bg-white shadow rounded-lg p-8 max-w-2xl w-full">
-        <div className="text-center">
-          <h4 className="text-3xl font-extrabold text-gray-900">Create a new account</h4>
-          <p className="mt-2 text-sm text-gray-600">
+    <div className="min-vh-100 d-flex align-items-center justify-content-center bg-light py-5 px-3">
+      <div className="card shadow rounded-lg p-4 p-md-5 w-100" style={{ maxWidth: '900px' }}>
+        <div className="text-center mb-4">
+          <h4 className="h3 fw-bold text-dark">Create a new account</h4>
+          <p className="text-muted mt-2">
             Already have an account?{' '}
-            <Link href="/login" className="font-medium text-indigo-600 hover:text-indigo-500 transition-colors duration-200">
+            <Link href="/login" className="text-primary text-decoration-none fw-medium">
               Sign in here
             </Link>
           </p>
         </div>
 
         {success && (
-          <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded-md mb-6">
-            <div className="flex items-center">
-              <svg
-                className="h-5 w-5 text-green-500"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              <p className="ml-3 text-sm text-green-700">{success}</p>
-            </div>
+          <div className="alert alert-success d-flex align-items-center mb-4" role="alert">
+            <svg
+              className="bi flex-shrink-0 me-2 text-success"
+              width="20"
+              height="20"
+              fill="currentColor"
+              viewBox="0 0 16 16"
+            >
+              <path
+                d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"
+              />
+            </svg>
+            <div className="text-success">{success}</div>
           </div>
         )}
 
         {errors.submit && (
-          <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-md mb-6">
-            <div className="flex items-center">
-              <svg
-                className="h-5 w-5 text-red-500"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              <p className="ml-3 text-sm text-red-700">{errors.submit}</p>
-            </div>
+          <div className="alert alert-danger d-flex align-items-center mb-4" role="alert">
+            <svg
+              className="bi flex-shrink-0 me-2 text-danger"
+              width="20"
+              height="20"
+              fill="currentColor"
+              viewBox="0 0 16 16"
+            >
+              <path
+                d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"
+              />
+            </svg>
+            <div className="text-danger">{errors.submit}</div>
           </div>
         )}
 
-        <form className="space-y-6" onSubmit={handleSubmit}>
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-            <div>
-              <label htmlFor="first_name" className="block text-sm font-medium text-gray-700">
+        <form className="space-y-4" onSubmit={handleSubmit}>
+          <div className="row g-3">
+            <div className="col-md-6">
+              <label htmlFor="first_name" className="form-label">
                 First Name *
               </label>
               <input
@@ -289,15 +283,15 @@ export default function RegisterPage() {
                 type="text"
                 autoComplete="given-name"
                 required
-                className={`mt-1 block w-full border ${errors.first_name ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-colors duration-200`}
+                className={`form-control ${errors.first_name ? 'is-invalid' : ''}`}
                 placeholder="Enter first name"
                 value={formData.first_name}
                 onChange={handleChange}
               />
-              {errors.first_name && <p className="mt-1 text-sm text-red-600">{errors.first_name}</p>}
+              {errors.first_name && <div className="invalid-feedback">{errors.first_name}</div>}
             </div>
-            <div>
-              <label htmlFor="last_name" className="block text-sm font-medium text-gray-700">
+            <div className="col-md-6">
+              <label htmlFor="last_name" className="form-label">
                 Last Name *
               </label>
               <input
@@ -306,15 +300,15 @@ export default function RegisterPage() {
                 type="text"
                 autoComplete="family-name"
                 required
-                className={`mt-1 block w-full border ${errors.last_name ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-colors duration-200`}
+                className={`form-control ${errors.last_name ? 'is-invalid' : ''}`}
                 placeholder="Enter last name"
                 value={formData.last_name}
                 onChange={handleChange}
               />
-              {errors.last_name && <p className="mt-1 text-sm text-red-600">{errors.last_name}</p>}
+              {errors.last_name && <div className="invalid-feedback">{errors.last_name}</div>}
             </div>
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+            <div className="col-md-6">
+              <label htmlFor="email" className="form-label">
                 Email *
               </label>
               <input
@@ -323,15 +317,15 @@ export default function RegisterPage() {
                 type="email"
                 autoComplete="email"
                 required
-                className={`mt-1 block w-full border ${errors.email ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-colors duration-200`}
+                className={`form-control ${errors.email ? 'is-invalid' : ''}`}
                 placeholder="Enter your email"
                 value={formData.email}
                 onChange={handleChange}
               />
-              {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
+              {errors.email && <div className="invalid-feedback">{errors.email}</div>}
             </div>
-            <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+            <div className="col-md-6">
+              <label htmlFor="phone" className="form-label">
                 Phone *
               </label>
               <input
@@ -340,22 +334,22 @@ export default function RegisterPage() {
                 type="tel"
                 autoComplete="tel"
                 required
-                className={`mt-1 block w-full border ${errors.phone ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-colors duration-200`}
+                className={`form-control ${errors.phone ? 'is-invalid' : ''}`}
                 placeholder="e.g., 0712345678 or +254712345678"
                 value={formData.phone}
                 onChange={handleChange}
               />
-              {errors.phone && <p className="mt-1 text-sm text-red-600">{errors.phone}</p>}
+              {errors.phone && <div className="invalid-feedback">{errors.phone}</div>}
             </div>
-            <div>
-              <label htmlFor="gender" className="block text-sm font-medium text-gray-700">
+            <div className="col-md-6">
+              <label htmlFor="gender" className="form-label">
                 Gender *
               </label>
               <select
                 id="gender"
                 name="gender"
                 required
-                className={`mt-1 block w-full border ${errors.gender ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-colors duration-200`}
+                className={`form-select ${errors.gender ? 'is-invalid' : ''}`}
                 value={formData.gender}
                 onChange={handleChange}
               >
@@ -363,10 +357,10 @@ export default function RegisterPage() {
                 <option value="Male">Male</option>
                 <option value="Female">Female</option>
               </select>
-              {errors.gender && <p className="mt-1 text-sm text-red-600">{errors.gender}</p>}
+              {errors.gender && <div className="invalid-feedback">{errors.gender}</div>}
             </div>
-            <div>
-              <label htmlFor="date_of_birth" className="block text-sm font-medium text-gray-700">
+            <div className="col-md-6">
+              <label htmlFor="date_of_birth" className="form-label">
                 Date of Birth *
               </label>
               <DatePicker
@@ -374,7 +368,7 @@ export default function RegisterPage() {
                 selected={date}
                 onChange={handleDateChange}
                 dateFormat="yyyy-MM-dd"
-                className={`mt-1 block w-full border ${errors.date_of_birth ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-colors duration-200`}
+                className={`form-control ${errors.date_of_birth ? 'is-invalid' : ''}`}
                 placeholderText="Select date of birth"
                 showYearDropdown
                 showMonthDropdown
@@ -382,17 +376,17 @@ export default function RegisterPage() {
                 maxDate={minDate}
                 minDate={new Date('1900-01-01')}
               />
-              {errors.date_of_birth && <p className="mt-1 text-sm text-red-600">{errors.date_of_birth}</p>}
+              {errors.date_of_birth && <div className="invalid-feedback">{errors.date_of_birth}</div>}
             </div>
-            <div>
-              <label htmlFor="county" className="block text-sm font-medium text-gray-700">
+            <div className="col-md-6">
+              <label htmlFor="county" className="form-label">
                 County *
               </label>
               <select
                 id="county"
                 name="county"
                 required
-                className={`mt-1 block w-full border ${errors.county ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-colors duration-200`}
+                className={`form-select ${errors.county ? 'is-invalid' : ''}`}
                 value={formData.county}
                 onChange={handleChange}
               >
@@ -401,17 +395,17 @@ export default function RegisterPage() {
                   <option key={county} value={county}>{county}</option>
                 ))}
               </select>
-              {errors.county && <p className="mt-1 text-sm text-red-600">{errors.county}</p>}
+              {errors.county && <div className="invalid-feedback">{errors.county}</div>}
             </div>
-            <div>
-              <label htmlFor="education" className="block text-sm font-medium text-gray-700">
+            <div className="col-md-6">
+              <label htmlFor="education" className="form-label">
                 Education Level *
               </label>
               <select
                 id="education"
                 name="education"
                 required
-                className={`mt-1 block w-full border ${errors.education ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-colors duration-200`}
+                className={`form-select ${errors.education ? 'is-invalid' : ''}`}
                 value={formData.education}
                 onChange={handleChange}
               >
@@ -424,13 +418,13 @@ export default function RegisterPage() {
                 <option value="PhD">PhD</option>
                 <option value="Other">Other</option>
               </select>
-              {errors.education && <p className="mt-1 text-sm text-red-600">{errors.education}</p>}
+              {errors.education && <div className="invalid-feedback">{errors.education}</div>}
             </div>
-            <div className="sm:col-span-2 relative">
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+            <div className="col-12">
+              <label htmlFor="password" className="form-label">
                 Password *
               </label>
-              <div className="relative">
+              <div className="input-group">
                 <input
                   id="password"
                   name="password"
@@ -438,25 +432,26 @@ export default function RegisterPage() {
                   autoComplete="new-password"
                   required
                   minLength={8}
-                  className={`mt-1 block w-full border ${errors.password ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-colors duration-200`}
+                  className={`form-control ${errors.password ? 'is-invalid' : ''}`}
                   placeholder="Enter your password"
                   value={formData.password}
                   onChange={handleChange}
                 />
                 <button
                   type="button"
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  className="btn btn-outline-secondary"
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? (
-                    <svg className="h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                      <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-                      <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                      <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/>
+                      <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/>
                     </svg>
                   ) : (
-                    <svg className="h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2.003 2.003 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z" clipRule="evenodd" />
-                      <path d="M12.454 16.697L9.75 13.992a4 4 0 01-3.742-3.741L2.335 6.578A9.98 9.98 0 00.458 10c1.274 4.057 5.065 7 9.542 7 .847 0 1.669-.105 2.454-.302z" />
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                      <path d="M13.359 11.238C15.06 9.72 16 8 16 8s-3-5.5-8-5.5a7.028 7.028 0 0 0-2.79.588l.77.771A5.944 5.944 0 0 1 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.134 13.134 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755-.165.165-.337.328-.517.486l.708.709z"/>
+                      <path d="M11.297 9.176a3.5 3.5 0 0 0-4.474-4.474l.823.823a2.5 2.5 0 0 1 2.829 2.829l.822.822zm-2.943 1.299.822.822a3.5 3.5 0 0 1-4.474-4.474l.823.823a2.5 2.5 0 0 0 2.829 2.829z"/>
+                      <path d="M3.35 5.47c-.18.16-.353.322-.518.487A13.134 13.134 0 0 0 1.172 8l.195.288c.335.48.83 1.12 1.465 1.755C4.121 11.332 5.881 12.5 8 12.5c.716 0 1.39-.133 2.02-.36l.77.772A7.029 7.029 0 0 1 8 13.5C3 13.5 0 8 0 8s.939-1.721 2.641-3.238l.708.709zm10.296 8.884-12-12 .708-.708 12 12-.708.708z"/>
                     </svg>
                   )}
                 </button>
@@ -465,17 +460,19 @@ export default function RegisterPage() {
               {/* Password strength indicator */}
               {formData.password && (
                 <div className="mt-2">
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className={`h-2 rounded-full ${getPasswordStrengthColor()}`}
-                        style={{ width: `${(passwordStrength / 5) * 100}%` }}
-                      ></div>
-                    </div>
+                  <div className="progress mb-1" style={{ height: '6px' }}>
+                    <div 
+                      className={`progress-bar ${getPasswordStrengthColor()}`}
+                      style={{ width: `${(passwordStrength / 5) * 100}%` }}
+                    ></div>
                   </div>
-                  <div className="text-xs text-gray-600">
+                  <div className="small text-muted">
                     {formData.password && (
-                      <span className={passwordStrength <= 2 ? 'text-red-600' : passwordStrength === 3 ? 'text-yellow-600' : passwordStrength === 4 ? 'text-blue-600' : 'text-green-600'}>
+                      <span className={
+                        passwordStrength <= 2 ? 'text-danger' : 
+                        passwordStrength === 3 ? 'text-warning' : 
+                        passwordStrength === 4 ? 'text-info' : 'text-success'
+                      }>
                         {getPasswordStrengthText()}
                       </span>
                     )}
@@ -484,35 +481,35 @@ export default function RegisterPage() {
               )}
               
               {/* Password requirements */}
-              <div className="mt-2 text-xs text-gray-600">
-                <p className="font-medium mb-1">Password must contain:</p>
-                <ul className="space-y-1">
-                  <li className={formData.password.length >= 8 ? 'text-green-600' : 'text-gray-500'}>
+              <div className="mt-2 small text-muted">
+                <p className="fw-medium mb-1">Password must contain:</p>
+                <ul className="list-unstyled small">
+                  <li className={formData.password.length >= 8 ? 'text-success' : 'text-muted'}>
                     {formData.password.length >= 8 ? '✓' : '•'} At least 8 characters
                   </li>
-                  <li className={/[A-Z]/.test(formData.password) ? 'text-green-600' : 'text-gray-500'}>
+                  <li className={/[A-Z]/.test(formData.password) ? 'text-success' : 'text-muted'}>
                     {/[A-Z]/.test(formData.password) ? '✓' : '•'} At least one uppercase letter
                   </li>
-                  <li className={/[a-z]/.test(formData.password) ? 'text-green-600' : 'text-gray-500'}>
+                  <li className={/[a-z]/.test(formData.password) ? 'text-success' : 'text-muted'}>
                     {/[a-z]/.test(formData.password) ? '✓' : '•'} At least one lowercase letter
                   </li>
-                  <li className={/[0-9]/.test(formData.password) ? 'text-green-600' : 'text-gray-500'}>
+                  <li className={/[0-9]/.test(formData.password) ? 'text-success' : 'text-muted'}>
                     {/[0-9]/.test(formData.password) ? '✓' : '•'} At least one number
                   </li>
-                  <li className={/[^A-Za-z0-9]/.test(formData.password) ? 'text-green-600' : 'text-gray-500'}>
+                  <li className={/[^A-Za-z0-9]/.test(formData.password) ? 'text-success' : 'text-muted'}>
                     {/[^A-Za-z0-9]/.test(formData.password) ? '✓' : '•'} At least one special character
                   </li>
                 </ul>
               </div>
               
-              {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password}</p>}
+              {errors.password && <div className="invalid-feedback d-block">{errors.password}</div>}
             </div>
             
-            <div className="sm:col-span-2 relative">
-              <label htmlFor="confirm_password" className="block text-sm font-medium text-gray-700">
+            <div className="col-12">
+              <label htmlFor="confirm_password" className="form-label">
                 Confirm Password *
               </label>
-              <div className="relative">
+              <div className="input-group">
                 <input
                   id="confirm_password"
                   name="confirm_password"
@@ -520,83 +517,65 @@ export default function RegisterPage() {
                   autoComplete="new-password"
                   required
                   minLength={8}
-                  className={`mt-1 block w-full border ${errors.confirm_password ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-colors duration-200`}
+                  className={`form-control ${errors.confirm_password ? 'is-invalid' : ''}`}
                   placeholder="Confirm your password"
                   value={formData.confirm_password}
                   onChange={handleChange}
                 />
                 <button
                   type="button"
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  className="btn btn-outline-secondary"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                 >
                   {showConfirmPassword ? (
-                    <svg className="h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                      <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-                      <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                      <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/>
+                      <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/>
                     </svg>
                   ) : (
-                    <svg className="h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2.003 2.003 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z" clipRule="evenodd" />
-                      <path d="M12.454 16.697L9.75 13.992a4 4 0 01-3.742-3.741L2.335 6.578A9.98 9.98 0 00.458 10c1.274 4.057 5.065 7 9.542 7 .847 0 1.669-.105 2.454-.302z" />
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                      <path d="M13.359 11.238C15.06 9.72 16 8 16 8s-3-5.5-8-5.5a7.028 7.028 0 0 0-2.79.588l.77.771A5.944 5.944 0 0 1 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.134 13.134 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755-.165.165-.337.328-.517.486l.708.709z"/>
+                      <path d="M11.297 9.176a3.5 3.5 0 0 0-4.474-4.474l.823.823a2.5 2.5 0 0 1 2.829 2.829l.822.822zm-2.943 1.299.822.822a3.5 3.5 0 0 1-4.474-4.474l.823.823a2.5 2.5 0 0 0 2.829 2.829z"/>
+                      <path d="M3.35 5.47c-.18.16-.353.322-.518.487A13.134 13.134 0 0 0 1.172 8l.195.288c.335.48.83 1.12 1.465 1.755C4.121 11.332 5.881 12.5 8 12.5c.716 0 1.39-.133 2.02-.36l.77.772A7.029 7.029 0 0 1 8 13.5C3 13.5 0 8 0 8s.939-1.721 2.641-3.238l.708.709zm10.296 8.884-12-12 .708-.708 12 12-.708.708z"/>
                     </svg>
                   )}
                 </button>
               </div>
-              {errors.confirm_password && <p className="mt-1 text-sm text-red-600">{errors.confirm_password}</p>}
+              {errors.confirm_password && <div className="invalid-feedback">{errors.confirm_password}</div>}
             </div>
           </div>
 
-          <div className="flex items-start">
+          <div className="form-check">
             <input
               id="agreed_to_terms"
               name="agreed_to_terms"
               type="checkbox"
-              className={`h-4 w-4 text-indigo-600 focus:ring-indigo-500 ${errors.agreed_to_terms ? 'border-red-500' : 'border-gray-300'} rounded`}
+              className={`form-check-input ${errors.agreed_to_terms ? 'is-invalid' : ''}`}
               checked={formData.agreed_to_terms}
               onChange={handleChange}
             />
-            <label htmlFor="agreed_to_terms" className="ml-2 text-sm text-gray-700">
+            <label htmlFor="agreed_to_terms" className="form-check-label">
               I agree to the{' '}
-              <Link href="/terms" className="font-medium text-indigo-600 hover:text-indigo-500 transition-colors duration-200">
+              <Link href="/terms" className="text-primary text-decoration-none">
                 Terms and Conditions
               </Link>{' '}
               and{' '}
-              <Link href="/privacy" className="font-medium text-indigo-600 hover:text-indigo-500 transition-colors duration-200">
+              <Link href="/privacy" className="text-primary text-decoration-none">
                 Privacy Policy
               </Link>
             </label>
           </div>
-          {errors.agreed_to_terms && <p className="mt-1 text-sm text-red-600">{errors.agreed_to_terms}</p>}
+          {errors.agreed_to_terms && <div className="invalid-feedback d-block">{errors.agreed_to_terms}</div>}
 
           <div>
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="btn btn-danger w-100 py-2"
             >
               {loading ? (
                 <>
-                  <svg
-                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
+                  <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
                   Registering...
                 </>
               ) : (

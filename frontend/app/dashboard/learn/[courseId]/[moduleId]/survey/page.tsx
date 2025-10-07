@@ -239,7 +239,7 @@ export default function ModuleSurveyPage() {
             </nav>
 
             <div className="card">
-              <div className="card-header bg-primary text-white">
+              <div className="card-header bg-danger text-white">
                 <h4 className="mb-0">{survey.title}</h4>
               </div>
               <div className="card-body">
@@ -315,7 +315,7 @@ export default function ModuleSurveyPage() {
                       Skip Survey
                     </Button>
                     <Button 
-                      variant="primary" 
+                      variant="danger" 
                       type="submit"
                       disabled={submitting}
                     >

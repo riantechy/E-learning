@@ -327,7 +327,7 @@ export default function ProfilePage() {
                       />
                     </div>
                     <button
-                      className="btn btn-outline-primary mt-3"
+                      className="btn btn-outline-danger mt-3"
                       onClick={triggerFileInput}
                     >
                       <Upload size={16} className="me-2" />
@@ -493,7 +493,7 @@ export default function ProfilePage() {
                           <button
                             type="submit"
                             disabled={loading}
-                            className="btn btn-primary"
+                            className="btn btn-danger"
                           >
                             {loading ? 'Saving...' : 'Save Changes'}
                           </button>
@@ -515,7 +515,7 @@ export default function ProfilePage() {
                           <h5 className="card-title">{user.first_name} {user.last_name}</h5>
                           <button
                             onClick={() => setEditMode(true)}
-                            className="btn btn-outline-primary"
+                            className="btn btn-outline-danger"
                           >
                             <Edit3 size={16} className="me-2" />
                             Edit Profile
@@ -672,7 +672,7 @@ export default function ProfilePage() {
                         <button
                           type="submit"
                           disabled={loading || passwordErrors.length > 0 || passwordForm.new_password !== passwordForm.confirm_password}
-                          className="btn btn-primary"
+                          className="btn btn-danger"
                         >
                           {loading ? 'Changing Password...' : 'Change Password'}
                         </button>

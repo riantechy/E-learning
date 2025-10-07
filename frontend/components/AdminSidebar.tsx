@@ -35,7 +35,7 @@ export default function AdminSidebar() {
     // Show module-specific links if we have a module ID
     if (moduleId) {
       courseSubItems.push(
-        { href: `/admin-dashboard/courses/${courseId}/modules/${moduleId}`, label: 'Module Details' },
+        // { href: `/admin-dashboard/courses/${courseId}/modules/${moduleId}`, label: 'Module Details' },
         { href: `/admin-dashboard/courses/${courseId}/modules/${moduleId}/lessons`, label: 'Lessons' }
       );
       

@@ -315,7 +315,7 @@ export default function QuestionsManager({
             <p className="text-muted mb-0">Lesson: {lesson.title}</p>
           )}
         </div>
-        <Button variant="primary" onClick={handleNewQuestion} disabled={loading}>
+        <Button variant="danger" onClick={handleNewQuestion} disabled={loading}>
           Add New Question
         </Button>
       </div>
@@ -573,7 +573,7 @@ export default function QuestionsManager({
             <Button variant="secondary" onClick={() => setShowQuestionModal(false)} disabled={loading}>
               Cancel
             </Button>
-            <Button variant="primary" type="submit" disabled={loading}>
+            <Button variant="danger" type="submit" disabled={loading}>
               {loading ? (
                 <>
                   <Spinner animation="border" size="sm" className="me-2" />

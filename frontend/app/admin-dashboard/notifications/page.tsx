@@ -96,7 +96,7 @@ export default function AdminNotifications() {
         <div className="d-flex justify-content-between align-items-center mb-4">
           <h1 className="h4 mb-0">Notifications</h1>
           {unreadCount > 0 && (
-            <Button variant="outline-primary" onClick={markAllAsRead}>
+            <Button variant="outline-danger" onClick={markAllAsRead}>
               Mark All as Read
             </Button>
           )}
@@ -162,7 +162,7 @@ export default function AdminNotifications() {
                       </div>
                       {!notification.is_read && (
                         <Button
-                          variant="outline-primary"
+                          variant="outline-danger"
                           size="sm"
                           className="ms-2"
                           onClick={() => markAsRead(notification.id)}
@@ -175,7 +175,7 @@ export default function AdminNotifications() {
                       <div className="mt-2">
                         <a 
                           href={notification.action_url} 
-                          className="btn btn-sm btn-outline-primary"
+                          className="btn btn-sm btn-outline-danger"
                         >
                           View Details
                         </a>

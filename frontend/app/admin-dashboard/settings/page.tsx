@@ -215,7 +215,7 @@ export default function SettingsPage() {
                     </Form.Text>
                   </Form.Group>
 
-                  <Button variant="primary" type="submit" disabled={isSaving}>
+                  <Button variant="danger" type="submit" disabled={isSaving}>
                     {isSaving ? (
                       <>
                         <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" />
@@ -259,7 +259,7 @@ export default function SettingsPage() {
                     />
                   </Form.Group>
 
-                  <Button variant="primary" type="submit" disabled={isUploading}>
+                  <Button variant="danger" type="submit" disabled={isUploading}>
                     {isUploading ? (
                       <>
                         <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" />
@@ -384,7 +384,7 @@ export default function SettingsPage() {
           ) : (
             <div className="text-center py-4">
               <p>Document preview not available for this file type.</p>
-              <a href={previewUrl} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
+              <a href={previewUrl} target="_blank" rel="noopener noreferrer" className="btn btn-danger">
                 Download File
               </a>
             </div>

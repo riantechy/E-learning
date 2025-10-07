@@ -130,7 +130,7 @@ export default function NotificationBell() {
                   {notification.action_url && (
                     <a
                         href={notification.action_url.replace('/api/courses', '/dashboard/learn')}
-                        className="btn btn-sm btn-outline-primary"
+                        className="btn btn-sm btn-outline-danger"
                         onClick={() => setIsOpen(false)}
                     >
                         View

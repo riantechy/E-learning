@@ -94,7 +94,7 @@ export default function AdminSurveyResponses() {
             <h2>{survey.title}</h2>
             <p className="text-muted mb-0">{survey.description}</p>
           </div>
-          <Button variant="primary" onClick={() => fetchData()}>
+          <Button variant="danger" onClick={() => fetchData()}>
             Refresh
           </Button>
         </div>
@@ -102,7 +102,7 @@ export default function AdminSurveyResponses() {
         <Card className="mb-4">
           <Card.Header className="d-flex justify-content-between align-items-center">
             <h5 className="mb-0">Survey Responses</h5>
-            <span className="badge bg-primary">
+            <span className="badge bg-danger">
               {responses.length} {responses.length === 1 ? 'Response' : 'Responses'}
             </span>
           </Card.Header>
@@ -133,7 +133,7 @@ export default function AdminSurveyResponses() {
                         <td>
                           <Link 
                             href={`/admin-dashboard/surveys/${surveyId}/responses/${response.id}`}
-                            className="btn btn-sm btn-outline-primary"
+                            className="btn btn-sm btn-outline-danger"
                           >
                             View Details
                           </Link>

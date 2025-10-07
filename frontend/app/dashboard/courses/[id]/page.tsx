@@ -197,7 +197,7 @@ export default function CourseDetailPage() {
             }}
           >
             {/* Hero Section */}
-            <div className="bg-primary text-white">
+            <div className="bg-danger text-white">
               <div className="container py-5">
                 <nav aria-label="breadcrumb" className="mb-4">
                   <ol className="breadcrumb breadcrumb-dark">
@@ -216,7 +216,7 @@ export default function CourseDetailPage() {
                 <div className="row align-items-center">
                   <div className="col-lg-8">
                     <div className="d-flex align-items-center mb-3">
-                      <span className="badge bg-white text-primary me-3">
+                      <span className="badge bg-white text-danger me-3">
                         {categoryName} 
                       </span>
                       <div className="d-flex align-items-center text-white-50">
@@ -241,7 +241,7 @@ export default function CourseDetailPage() {
                             <PlayCircle size={10} className="me-2" />
                             Continue Learning
                             {progress && (
-                              <span className="badge bg-primary ms-2">
+                              <span className="badge bg-danger ms-2">
                                 {Math.round(progress.percentage)}%
                               </span>
                             )}
@@ -309,7 +309,7 @@ export default function CourseDetailPage() {
                                       data-bs-target={`#module-${module.id}`}
                                     >
                                       <span>
-                                        <span className="badge bg-primary me-3">
+                                        <span className="badge bg-danger me-3">
                                           Module {index + 1}
                                         </span>
                                         {module.title}
@@ -333,7 +333,7 @@ export default function CourseDetailPage() {
                                           <div key={lesson.id} className="list-group-item border-0 px-0">
                                             <div className="d-flex justify-content-between align-items-center">
                                               <div className="d-flex align-items-center">
-                                                <PlayCircle size={16} className="text-primary me-3" />
+                                                <PlayCircle size={16} className="text-danger me-3" />
                                                 <span>{lesson.title}</span>
                                               </div>
                                               <div className="d-flex align-items-center">
@@ -458,7 +458,7 @@ export default function CourseDetailPage() {
                             </button>
                             <Link 
                               href={`/dashboard/learn/${id}`}
-                              className="btn btn-outline-primary w-100"
+                              className="btn btn-outline-danger w-100"
                             >
                               Course Overview
                             </Link>
@@ -468,7 +468,7 @@ export default function CourseDetailPage() {
                             <h5 className="mb-3">Start Learning Today</h5>
                             <button 
                               onClick={handleEnroll}
-                              className="btn btn-primary w-100 btn-lg mb-3"
+                              className="btn btn-danger w-100 btn-lg mb-3"
                             >
                               Enroll in Course
                             </button>

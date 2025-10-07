@@ -204,6 +204,7 @@ export default function ModuleCoverageTab() {
         key="prev"
         onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
         disabled={currentPage === 1}
+        className="btn-danger"
       />
     );
 
@@ -214,6 +215,7 @@ export default function ModuleCoverageTab() {
           key={i}
           active={i === currentPage}
           onClick={() => setCurrentPage(i)}
+          className={i === currentPage ? "btn-danger" : "btn-outline-danger"}
         >
           {i}
         </Pagination.Item>
@@ -226,6 +228,7 @@ export default function ModuleCoverageTab() {
         key="next"
         onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
         disabled={currentPage === totalPages}
+        className="btn-danger"
       />
     );
 
@@ -263,7 +266,7 @@ export default function ModuleCoverageTab() {
         <Col md={6} className="d-flex align-items-end">
           {moduleCoverage && (
             <Dropdown>
-              <Dropdown.Toggle variant="success" disabled={exporting}>
+              <Dropdown.Toggle variant="danger" disabled={exporting}>
                 {exporting ? 'Exporting...' : 'Download Reports'}
               </Dropdown.Toggle>
               <Dropdown.Menu>
@@ -290,7 +293,7 @@ export default function ModuleCoverageTab() {
 
       {loading && selectedCourse ? (
         <div className="text-center py-5">
-          <Spinner animation="border" />
+          <Spinner animation="border" variant="danger" />
         </div>
       ) : error ? (
         <Alert variant="danger">{error}</Alert>
@@ -298,7 +301,7 @@ export default function ModuleCoverageTab() {
         <>
           <Row className="mb-4">
             <Col md={12} className="d-flex justify-content-end mb-3">
-              <Button variant="primary" onClick={handlePrint}>
+              <Button variant="danger" onClick={handlePrint}>
                 Print Report
               </Button>
             </Col>
@@ -338,9 +341,10 @@ export default function ModuleCoverageTab() {
                         {paginatedLearners.map((learner: any) => (
                           <tr key={learner.user_id}>
                             <td>
-                              <Link href={`/admin-dashboard/users/${learner.user_id}`}>
+                              {/* <Link href={`/admin-dashboard/users/${learner.user_id}`}>
                                 {learner.name}
-                              </Link>
+                              </Link> */}
+                              <span>{learner.name}</span>
                             </td>
                             {learner.module_progress.map((progress: any, idx: number) => (
                               <td key={idx} className="text-center">

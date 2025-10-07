@@ -222,7 +222,7 @@ export default function ModulePage() {
                   // REMOVED: handleLessonCompleted(lesson.id) - Don't complete when clicking Take Quiz
                   router.push(`/dashboard/learn/${courseId}/${moduleId}/${lesson.id}`)
                 }}
-                className="btn btn-sm btn-primary"
+                className="btn btn-sm btn-danger"
               >
                 Take Quiz
               </button>
@@ -284,7 +284,7 @@ export default function ModulePage() {
                   href={pdfUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="btn btn-sm btn-primary"
+                  className="btn btn-sm btn-danger"
                   onClick={() => handlePdfLoaded(lesson.id)}
                 >
                   View 
@@ -292,7 +292,7 @@ export default function ModulePage() {
                 <a 
                   href={pdfUrl}
                   download
-                  className="btn btn-sm btn-outline-primary"
+                  className="btn btn-sm btn-outline-danger"
                   onClick={() => handlePdfLoaded(lesson.id)}
                 >
                   Download 
@@ -544,7 +544,7 @@ export default function ModulePage() {
                         <div className="mt-3">
                           <Link 
                             href={`/dashboard/learn/${courseId}/${moduleId}/survey`}
-                            className={`btn ${surveyCompleted ? 'btn-outline-primary' : 'btn-primary'}`}
+                            className={`btn ${surveyCompleted ? 'btn-outline-danger' : 'btn-danger'}`}
                           >
                             {surveyCompleted ? 'Retake Survey' : 'Take Module Survey'}
                           </Link>
@@ -559,7 +559,7 @@ export default function ModulePage() {
                         {getPreviousModule() && (
                           <Link
                             href={`/dashboard/learn/${courseId}/${getPreviousModule().id}`}
-                            className="btn btn-outline-primary flex-grow-1 flex-sm-grow-0"
+                            className="btn btn-outline-danger flex-grow-1 flex-sm-grow-0"
                           >
                             <ChevronLeft className="me-1" />
                             Previous Module
@@ -570,7 +570,7 @@ export default function ModulePage() {
                         {!isLastModule ? (
                           <Link
                             href={`/dashboard/learn/${courseId}/${getNextModule()?.id}`}
-                            className="btn btn-outline-primary"
+                            className="btn btn-outline-danger"
                           >
                             Next Module
                             <ChevronRight className="ms-1" />

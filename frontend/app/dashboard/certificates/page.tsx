@@ -111,7 +111,7 @@ export default function CertificatesPage() {
                           <div className="flex gap-2">
                             <button
                               onClick={() => window.open(certificate.pdf_file, '_blank')}
-                              className="btn btn-primary"
+                              className="btn btn-danger"
                             >
                               Download
                             </button>
@@ -134,7 +134,7 @@ export default function CertificatesPage() {
                   <p className="lead">
                     Complete courses to earn certificates that showcase your achievements.
                   </p>
-                  <Link href="/dashboard/courses" className="btn btn-primary btn-lg">
+                  <Link href="/dashboard/courses" className="btn btn-danger btn-lg">
                     Browse Courses
                   </Link>
                 </div>

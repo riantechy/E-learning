@@ -66,7 +66,7 @@ export default function LessonsPage() {
           </div>
           <div className="d-flex gap-1"> {/* Tighter gap for better fit */}
             <Button 
-              variant="primary" 
+              variant="danger" 
               size="sm" 
               onClick={() => handleNewItem('lesson')}
             >

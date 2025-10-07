@@ -18,19 +18,30 @@ from users.models import User
 class CourseCategoryViewSet(viewsets.ModelViewSet):
     queryset = CourseCategory.objects.all()
     serializer_class = CourseCategorySerializer
-    permission_classes = [permissions.IsAuthenticated]  
+    
+    def get_permissions(self):
+        # Allow unauthenticated access for list and retrieve actions
+        if self.action in ['list', 'retrieve']:
+            return [permissions.AllowAny()]
+        return [permissions.IsAuthenticated()]
+    
 
 
 class CourseViewSet(viewsets.ModelViewSet):
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
     parser_classes = [MultiPartParser, FormParser]
-    permission_classes = [permissions.IsAuthenticated]  
+   
 
     def get_permissions(self):
+        # Allow unauthenticated access for list and retrieve actions
+        if self.action in ['list', 'retrieve']:
+            return [permissions.AllowAny()]
+        
+        # For other actions, use the original logic
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
             return [permissions.IsAuthenticated()]
-        return super().get_permissions()
+        return [permissions.AllowAny()]
     
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)

@@ -163,7 +163,7 @@ export default function ModulesPage() {
             {course && <p className="text-muted mb-0">Course: {course.title}</p>}
           </div>
           <div className="d-flex gap-2">
-            <Button variant="primary" onClick={handleNewModule}>
+            <Button variant="danger" onClick={handleNewModule}>
               Add Module
             </Button>
             <Link href={`/admin-dashboard/courses`} className="btn btn-secondary">
@@ -202,7 +202,7 @@ export default function ModulesPage() {
                       <div className="d-flex gap-2">
                         <Link
                           href={`/admin-dashboard/courses/${courseId}/modules/${module.id}/lessons`}
-                          className="btn btn-primary btn-sm"
+                          className="btn btn-danger btn-sm"
                           title="Manage Lessons"
                         >
                           Manage Lessons
@@ -215,7 +215,7 @@ export default function ModulesPage() {
                           📝 Survey
                         </Link>
                         <Button
-                          variant="outline-primary"
+                          variant="outline-danger"
                           size="sm"
                           onClick={() => handleEdit(module)}
                           title="Edit"
@@ -282,7 +282,7 @@ export default function ModulesPage() {
               <Button variant="secondary" onClick={() => setShowModal(false)}>
                 Cancel
               </Button>
-              <Button variant="primary" type="submit" disabled={loading}>
+              <Button variant="danger" type="submit" disabled={loading}>
                 {loading ? 'Saving...' : 'Save'}
               </Button>
             </Modal.Footer>

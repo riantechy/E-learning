@@ -179,7 +179,7 @@ export default function ExportSection({
           </Col>
           <Col md={3} className="d-flex align-items-end">
             <Button 
-              variant="primary" 
+              variant="danger" 
               onClick={handleExport}
               disabled={isLoading}
             >

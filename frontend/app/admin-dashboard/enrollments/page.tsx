@@ -204,7 +204,7 @@ export default function EnrollmentStats() {
             <h1 className="h4 mb-0">Course Enrollment Statistics</h1>
             <p className="text-muted mb-0">View and analyze course enrollment data</p>
           </div>
-          <Button variant="primary" onClick={fetchEnrollmentData} disabled={loading}>
+          <Button variant="danger" onClick={fetchEnrollmentData} disabled={loading}>
             {loading ? 'Refreshing...' : 'Refresh Data'}
           </Button>
         </div>
@@ -368,7 +368,7 @@ export default function EnrollmentStats() {
                             <div>
                               <strong>{index + 1}. {course.course_title}</strong>
                             </div>
-                            <Badge bg="primary">{course.enrollment_count} enrollments</Badge>
+                            <Badge bg="danger">{course.enrollment_count} enrollments</Badge>
                           </div>
                           <div className="progress mt-2" style={{ height: '8px' }}>
                             <div

@@ -2,6 +2,8 @@
 .sidebar {
   transition: width 0.3s ease-in-out;
   overflow: hidden;
+  background: #ffffff;
+  border-right: 1px solid #e5e7eb;
 }
 
 .userProfile {
@@ -15,7 +17,7 @@
   margin: 0 auto 1rem;
   border-radius: 50%;
   overflow: hidden;
-  background: #e2e8f0;
+  background: #fecaca;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -30,17 +32,18 @@
 .avatar-initials {
   font-size: 1.5rem;
   font-weight: 600;
-  color: #4a5568;
+  color: #dc2626;
 }
 
 .user-info h5 {
   margin-bottom: 0.25rem;
   font-size: 1.1rem;
+  color: #1f2937;
 }
 
 .user-role {
   font-size: 0.875rem;
-  color: #718096;
+  color: #6b7280;
 }
 
 .progress-container {
@@ -53,20 +56,20 @@
 
 .progress-label {
   font-size: 0.875rem;
-  color: #718096;
+  color: #6b7280;
   margin-bottom: 0.5rem;
 }
 
 .progress-bar {
   height: 10px;
-  background: #edf2f7;
+  background: #f3f4f6;
   border-radius: 5px;
   overflow: hidden;
 }
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #48bb78 0%, #38a169 100%);
+  background: linear-gradient(90deg, #dc2626 0%, #b91c1c 100%);
   color: white;
   font-size: 0.6rem;
   display: flex;
@@ -88,13 +91,15 @@
 }
 
 .badge.courses {
-  background: #ebf8ff;
-  color: #3182ce;
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
 }
 
 .badge.certificates {
-  background: #f0fff4;
-  color: #38a169;
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
 }
 
 .sidebar-nav {
@@ -108,27 +113,38 @@
   align-items: center;
   padding: 0.75rem 1rem;
   border-radius: 0.5rem;
-  color: #4a5568;
+  color: #4b5563;
   text-decoration: none;
   transition: all 0.2s;
   white-space: nowrap;
+  border: none;
+  background: transparent;
 }
 
 .nav-item i {
   margin-right: 0.75rem;
   font-size: 1.1rem;
   flex-shrink: 0;
+  color: #6b7280;
 }
 
 .nav-item:hover {
-  background: #edf2f7;
-  color: #2d3748;
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.nav-item:hover i {
+  color: #dc2626;
 }
 
 .nav-item.active {
-  background: #ebf8ff;
-  color: #3182ce;
+  background: #dc2626;
+  color: #ffffff;
   font-weight: 500;
+}
+
+.nav-item.active i {
+  color: #ffffff;
 }
 
 /* Collapsed state styles */

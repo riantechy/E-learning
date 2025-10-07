@@ -291,7 +291,7 @@ export default function CourseOverviewPage() {
                     
                     <div className="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3 mb-4">
                       <div className="d-flex flex-wrap gap-2">
-                        <span className="badge bg-primary">
+                        <span className="badge bg-danger">
                            {course.actual_duration_hours || course.duration_hours || 0} hours
                         </span>
                         <span className="badge bg-secondary">
@@ -300,7 +300,7 @@ export default function CourseOverviewPage() {
                       </div>
                       <button 
                         onClick={handleStartCourse}
-                        className="btn btn-primary btn-lg flex-shrink-0"
+                        className="btn btn-danger btn-md flex-shrink-0"
                         disabled={!modules.length}
                         style={{ minWidth: '180px' }}
                       >
@@ -360,7 +360,7 @@ export default function CourseOverviewPage() {
                                 <div className="d-flex gap-2">
                                   <Link
                                     href={`/dashboard/learn/${courseId}/${module.id}`}
-                                    className="btn btn-outline-primary btn-sm"
+                                    className="btn btn-outline-danger btn-sm"
                                   >
                                     Review
                                   </Link>
@@ -369,7 +369,7 @@ export default function CourseOverviewPage() {
                               ) : (
                                 <Link
                                   href={`/dashboard/learn/${courseId}/${module.id}`}
-                                  className="btn btn-primary btn-sm"
+                                  className="btn btn-danger btn-sm"
                                 >
                                   {completedLessons > 0 ? 'Continue' : 'Start'}
                                 </Link>
@@ -392,7 +392,7 @@ export default function CourseOverviewPage() {
                     <ul className="list-group list-group-flush">
                     <li className="list-group-item d-flex justify-content-between align-items-center">
                         <span>Category</span>
-                        <span className="badge bg-primary">
+                        <span className="badge bg-danger">
                           {categoryName} 
                         </span>
                       </li>
@@ -422,7 +422,7 @@ export default function CourseOverviewPage() {
                     <div className="d-grid gap-2">
                       <button 
                         onClick={handleStartCourse}
-                        className="btn btn-primary"
+                        className="btn btn-danger"
                         disabled={!modules.length}
                       >
                         {progress?.percentage === 0 ? 'Start Course' : 'Continue Learning'}

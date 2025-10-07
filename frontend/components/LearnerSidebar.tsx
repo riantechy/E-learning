@@ -127,7 +127,7 @@ export default function LearnerSidebar({
               />
             ) : (
               <div
-                className="rounded-circle bg-primary d-flex align-items-center justify-content-center text-white fw-bold"
+                className="rounded-circle bg-danger d-flex align-items-center justify-content-center text-white fw-bold"
                 style={{ 
                   width: isExpandedView ? '60px' : '40px', 
                   height: isExpandedView ? '60px' : '40px',
@@ -149,22 +149,12 @@ export default function LearnerSidebar({
         {/* Progress Section */}
         {isExpandedView && (
           <div className="mb-4 px-3">
-            {/* <div className="d-flex justify-content-between align-items-center mb-2">
-              <span className="text-muted small">Learning Progress</span>
-              <span className="small fw-bold">{progress}%</span>
-            </div>
-            <div className="progress mb-2" style={{ height: '8px' }}>
-              <div
-                className="progress-bar bg-success"
-                style={{ width: `${progress}%` }}
-                role="progressbar"
-              />
-            </div> */}
+            {/* Progress bar removed as per original code */}
             <div className="d-flex justify-content-between">
-              <span className="badge bg-primary bg-opacity-10 text-primary small">
+              <span className="badge bg-danger bg-opacity-10 text-danger small">
                 Courses: {enrolledCoursesCount}
               </span>
-              <span className="badge bg-success bg-opacity-10 text-success small">
+              <span className="badge bg-danger bg-opacity-10 text-danger small">
                 Certs: {certCount}
               </span>
             </div>
@@ -180,14 +170,15 @@ export default function LearnerSidebar({
               { href: '/dashboard/learn', icon: 'bi-collection', label: 'My Courses' },
               { href: '/dashboard/my-score', icon: 'bi-graph-up', label: 'My Score' },
               { href: '/dashboard/certificates', icon: 'bi-award', label: 'My Certificates' },
+              { href: '/dashboard/notifications', icon: 'bi-bell', label: 'Notifications' },
               { href: '/dashboard/profile', icon: 'bi-person', label: 'Profile' },
             ].map((item) => (
               <li key={item.href} className="nav-item">
                 <Link
                   href={item.href}
                   className={`nav-link d-flex align-items-center rounded ${
-                    isActive(item.href) ? 'active bg-primary text-white' : 'text-dark'
-                  }`}
+                    isActive(item.href) ? 'active bg-secondary text-white' : 'text-dark'
+                  }`}                  
                   title={!isExpandedView ? item.label : ''}
                 >
                   <i className={`${item.icon} ${isExpandedView ? 'me-3' : ''}`} style={{ minWidth: '20px' }}></i>

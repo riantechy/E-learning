@@ -85,7 +85,7 @@ export default function EnrollmentsTab({ timeRange }: { timeRange: string }) {
                         className="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
                       >
                         {course.title}
-                        <span className="badge bg-primary rounded-pill">
+                        <span className="badge bg-danger rounded-pill">
                           {course.enrollment_count}
                         </span>
                       </Link>

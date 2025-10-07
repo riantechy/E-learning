@@ -152,13 +152,13 @@ export default function DashboardPage() {
           {/* Stats Cards */}
           <div className="row g-4 mb-4">
         <div className="col-12 col-md-4">
-          <div className="card bg-primary text-white">
+          <div className="card bg-danger text-white">
             <div className="card-body">
               <h5 className="card-title">Enrolled Courses</h5>
               <p className="card-text display-4">
                 {renderStatValue(stats.enrolledCourses)}
               </p>
-            </div>
+            </div> 
           </div>
         </div>
         <div className="col-12 col-md-4">

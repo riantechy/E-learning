@@ -120,7 +120,7 @@ export default function AdminSurveysPage() {
       <div className="container py-4">
         <div className="d-flex justify-content-between align-items-center mb-4">
           <h1 className="h4 mb-0">Surveys</h1>
-          <Button variant="primary" onClick={fetchSurveys}>
+          <Button variant="danger" onClick={fetchSurveys}>
             Refresh
           </Button>
         </div>
@@ -157,7 +157,7 @@ export default function AdminSurveysPage() {
                 : 'All Surveys'
               }
             </h5>
-            <span className="badge bg-primary">
+            <span className="badge bg-danger">
               {filteredSurveys.length} {filteredSurveys.length === 1 ? 'Survey' : 'Surveys'}
             </span>
           </Card.Header>
@@ -200,7 +200,7 @@ export default function AdminSurveysPage() {
                         <td>
                           <Link
                             href={`/admin-dashboard/surveys/${survey.id}`}
-                            className="btn btn-sm btn-outline-primary"
+                            className="btn btn-sm btn-outline-danger"
                           >
                             View Responses
                           </Link>

@@ -177,7 +177,7 @@ export default function CategoriesPage() {
       <div className="container-fluid">
         <div className="d-flex justify-content-between align-items-center mb-4">
           <h1 className="h4 mb-0">Manage Categories</h1>
-          <Button variant="primary" onClick={handleNewCategory}>
+          <Button variant="danger" onClick={handleNewCategory}>
             Add New Category
           </Button>
         </div>
@@ -300,7 +300,7 @@ export default function CategoriesPage() {
               <Button variant="secondary" onClick={() => setShowModal(false)}>
                 Cancel
               </Button>
-              <Button variant="primary" type="submit" disabled={loading}>
+              <Button variant="danger" type="submit" disabled={loading}>
                 {loading ? 'Saving...' : 'Save'}
               </Button>
             </Modal.Footer>

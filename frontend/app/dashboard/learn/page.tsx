@@ -123,7 +123,7 @@ export default function MyCoursesPage() {
             }}
           >
             {/* Header Section */}
-            <div className="bg-primary text-white">
+            <div className="bg-danger text-white">
               <div className="container py-5">
                 <div className="row align-items-center">
                   <div className="col-lg-8">
@@ -186,7 +186,7 @@ export default function MyCoursesPage() {
             <div className="container py-5">
               {loading ? (
                 <div className="d-flex justify-content-center py-5">
-                  <div className="spinner-border text-primary" role="status">
+                  <div className="spinner-border text-danger" role="status">
                     <span className="visually-hidden">Loading...</span>
                   </div>
                 </div>
@@ -210,7 +210,7 @@ export default function MyCoursesPage() {
                           />
                           {/* Progress Badge */}
                           <div className="position-absolute top-0 end-0 m-2">
-                            <span className={`badge ${enrollment.progress?.percentage === 100 ? 'bg-success' : 'bg-primary'}`}>
+                            <span className={`badge ${enrollment.progress?.percentage === 100 ? 'bg-success' : 'bg-danger'}`}>
                               {Math.round(enrollment.progress?.percentage || 0)}% Complete
                             </span>
                           </div>
@@ -294,8 +294,8 @@ export default function MyCoursesPage() {
                                 enrollment.progress?.percentage === 100 
                                   ? 'btn-outline-success' 
                                   : enrollment.progress?.percentage === 0 
-                                    ? 'btn-primary' 
-                                    : 'btn-primary'
+                                    ? 'btn-danger' 
+                                    : 'btn-danger'
                               }`}
                             >
                               <PlayCircle size={18} className="me-2" />
@@ -329,7 +329,7 @@ export default function MyCoursesPage() {
                     <p className="lead text-muted mb-4">
                       You haven't enrolled in any courses yet. Start your learning journey today!
                     </p>
-                    <Link href="/dashboard/courses" className="btn btn-primary btn-lg px-4">
+                    <Link href="/dashboard/courses" className="btn btn-danger btn-lg px-4">
                       <BookOpen size={18} className="me-2" />
                       Browse All Courses
                     </Link>

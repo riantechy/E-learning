@@ -14,6 +14,7 @@ export default function NotificationsPage() {
   const [loading, setLoading] = useState(true)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -87,17 +88,20 @@ export default function NotificationsPage() {
         </button>
 
         {/* Sidebar */}
-        <div
+        <div 
           className={`d-flex flex-column flex-shrink-0 p-3 bg-white shadow-sm h-100 
             ${mobileSidebarOpen ? 'd-block position-fixed' : 'd-none d-lg-block'}`}
           style={{
-            width: '280px',
+            width: sidebarCollapsed ? '80px' : '280px',
             zIndex: 999,
-            left: mobileSidebarOpen ? '0' : '-280px',
-            transition: 'left 0.3s ease',
+            left: mobileSidebarOpen ? '0' : sidebarCollapsed ? '-80px' : '-280px',
+            transition: 'left 0.3s ease, width 0.3s ease'
           }}
         >
-          <LearnerSidebar />
+          <LearnerSidebar 
+            isCollapsed={sidebarCollapsed}
+            onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+          />
         </div>
 
         {/* Overlay for mobile */}
@@ -142,7 +146,7 @@ export default function NotificationsPage() {
                 </button>
                 
                 {unreadCount > 0 && (
-                  <button className="btn btn-primary" onClick={markAllAsRead}>
+                  <button className="btn btn-danger" onClick={markAllAsRead}>
                     Mark All as Read
                   </button>
                 )}
@@ -170,14 +174,14 @@ export default function NotificationsPage() {
                     <div className="d-flex justify-content-between align-items-center mt-2">
                       {notification.action_url && (
                         <a href={notification.action_url.replace('/api/courses', '/dashboard/learn')}
-                        className="btn btn-sm btn-outline-primary">
+                        className="btn btn-sm btn-outline-danger">
                           View Details
                         </a>
                       )}
                        {/* {notification.action_url && (
                     <a
                         href={notification.action_url.replace('/api/courses', '/dashboard/learn')}
-                        className="btn btn-sm btn-outline-primary"
+                        className="btn btn-sm btn-outline-danger"
                         onClick={() => setIsOpen(false)}
                     >
                         View

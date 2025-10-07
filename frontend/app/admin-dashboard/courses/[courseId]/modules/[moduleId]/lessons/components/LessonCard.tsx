@@ -70,7 +70,7 @@ const LessonCard = ({ lesson, onEdit, onDelete, onManageQuestions }: LessonCardP
             <div className="add-section-form mb-4 p-3 border rounded">
               <h5 className="mb-3">Add New Section</h5>
               <Button
-                variant="primary"
+                variant="danger"
                 size="sm"
                 onClick={() => onEdit({ lesson: { id: lesson.id }, is_subsection: false }, 'section')}
               >

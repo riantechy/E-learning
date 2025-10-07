@@ -179,7 +179,7 @@ export default function MyScoresPage() {
 
               {loading ? (
                 <div className="text-center py-5">
-                  <Spinner animation="border" variant="primary" />
+                  <Spinner animation="border" variant="danger" />
                   <p className="mt-2">Loading your scores...</p>
                 </div>
               ) : error ? (

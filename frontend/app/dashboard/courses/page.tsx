@@ -158,7 +158,7 @@ export default function CourseListPage() {
             }}
           >
             {/* Header Section */}
-            <div className="bg-primary text-white">
+            <div className="bg-danger text-white">
               <div className="container py-5">
                 <nav aria-label="breadcrumb" className="mb-4">
                   <ol className="breadcrumb breadcrumb-dark">
@@ -221,7 +221,7 @@ export default function CourseListPage() {
                 <div className="mb-5">
                   <div className="d-flex justify-content-between align-items-center mb-4">
                     <h3 className="h4 mb-0">Your Enrolled Courses</h3>
-                    <Link href="/dashboard/learn" className="btn btn-outline-primary btn-sm">
+                    <Link href="/dashboard/learn" className="btn btn-outline-danger btn-sm">
                       View All
                     </Link>
                   </div>
@@ -245,7 +245,7 @@ export default function CourseListPage() {
                             />
                             {/* Progress Badge */}
                             <div className="position-absolute top-0 end-0 m-2">
-                              <span className={`badge ${enrollment.progress?.percentage === 100 ? 'bg-success' : 'bg-primary'}`}>
+                              <span className={`badge ${enrollment.progress?.percentage === 100 ? 'bg-success' : 'bg-danger'}`}>
                                 {Math.round(enrollment.progress?.percentage || 0)}% Complete
                               </span>
                             </div>
@@ -264,7 +264,7 @@ export default function CourseListPage() {
                           <div className="card-body d-flex flex-column">
                             {/* Category Badge */}
                             <div className="mb-2">
-                              <span className="badge bg-primary bg-opacity-10 text-primary">
+                              <span className="badge bg-danger bg-opacity-10 text-danger">
                                 {getCategoryName(enrollment.course_details?.category)}
                               </span>
                             </div>
@@ -305,8 +305,8 @@ export default function CourseListPage() {
                                   enrollment.progress?.percentage === 100 
                                     ? 'btn-outline-success' 
                                     : enrollment.progress?.percentage === 0 
-                                      ? 'btn-primary' 
-                                      : 'btn-primary'
+                                      ? 'btn-danger' 
+                                      : 'btn-danger'
                                 }`}
                               >
                                 <PlayCircle size={18} className="me-2" />
@@ -326,7 +326,7 @@ export default function CourseListPage() {
 
                   {enrolledCourses.length > 3 && (
                     <div className="text-center mt-4">
-                      <Link href="/dashboard/learn" className="btn btn-outline-primary">
+                      <Link href="/dashboard/learn" className="btn btn-outline-danger">
                         View All {enrolledCourses.length} Enrolled Courses
                       </Link>
                     </div>
@@ -342,7 +342,7 @@ export default function CourseListPage() {
                 
                 {loading ? (
                   <div className="d-flex justify-content-center py-5">
-                    <div className="spinner-border text-primary" role="status">
+                    <div className="spinner-border text-danger" role="status">
                       <span className="visually-hidden">Loading...</span>
                     </div>
                   </div>
@@ -377,7 +377,7 @@ export default function CourseListPage() {
                           <div className="card-body d-flex flex-column">
                             {/* Category Badge */}
                             <div className="mb-2">
-                              <span className="badge bg-primary bg-opacity-10 text-primary">
+                              <span className="badge bg-danger bg-opacity-10 text-danger">
                                 {getCategoryName(course.category)}
                               </span>
                             </div>
@@ -425,7 +425,7 @@ export default function CourseListPage() {
                             <div className="mt-auto">
                               <Link 
                                 href={`/dashboard/courses/${course.id}`} 
-                                className="btn btn-primary w-100"
+                                className="btn btn-danger w-100"
                               >
                                 View Course Details
                               </Link>

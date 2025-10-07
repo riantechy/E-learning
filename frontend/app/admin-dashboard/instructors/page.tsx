@@ -222,7 +222,7 @@ export default function UsersPage() {
       <div className="container-fluid">
         <div className="d-flex justify-content-between align-items-center mb-4">
           <h1 className="h4 mb-0">Manage Administrators</h1>
-          <Button variant="primary" onClick={handleNewUser}>
+          <Button variant="danger" onClick={handleNewUser}>
             Add New Instractor
           </Button>
         </div>
@@ -404,7 +404,7 @@ export default function UsersPage() {
               <Button variant="secondary" onClick={() => setShowModal(false)}>
                 Cancel
               </Button>
-              <Button variant="primary" type="submit" disabled={loading}>
+              <Button variant="danger" type="submit" disabled={loading}>
                 {loading ? 'Saving...' : 'Save'}
               </Button>
             </Modal.Footer>
