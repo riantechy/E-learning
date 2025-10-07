@@ -168,9 +168,15 @@ export default function LandingPage() {
             </div>
             
             <div className="hidden md:flex items-center space-x-8">
-              <a href="#features" className="text-gray-700 hover:text-red-600 transition-colors">Features</a>
-              <a href="#courses" className="text-gray-700 hover:text-red-600 transition-colors">Courses</a>
-              <a href="#testimonials" className="text-gray-700 hover:text-red-600 transition-colors">Testimonials</a>
+              <a href="#features" className="text-gray-700 font-semibold hover:text-red-600 transition-colors">Features</a>
+              <a href="#courses" className="text-gray-700 font-semibold hover:text-red-600 transition-colors">Courses</a>
+              <a href="#testimonials" className="text-gray-700 font-semibold hover:text-red-600 transition-colors">Testimonials</a>
+              <a 
+                href="http://10.241.18.19/whitebox/index.php" 
+                className="text-gray-700 font-semibold hover:text-red-600 transition-colors"
+              >
+                WhiteBox
+              </a>
             </div>
             
             <div className="flex items-center space-x-4">
