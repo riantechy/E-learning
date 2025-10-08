@@ -164,7 +164,7 @@ export default function LandingPage() {
                   className="h-10 w-10 object-contain" 
                 />
               </div>
-              <span className="text-xl font-bold text-gray-900 hidden sm:block">ICTA e-Learning</span>
+              {/* <span className="text-xl font-bold text-gray-900 hidden sm:block">ICTA e-Learning</span> */}
             </div>
             
             <div className="hidden md:flex items-center space-x-8">
@@ -174,6 +174,13 @@ export default function LandingPage() {
               <a 
                 href="http://10.241.18.19/whitebox/index.php" 
                 className="text-gray-700 font-semibold hover:text-red-600 transition-colors"
+                onClick={(e) => {
+                  if (confirm("You are being redirected to the WhiteBox platform. Do you want to proceed?")) {
+                    // Allow default navigation to proceed in the same window
+                  } else {
+                    e.preventDefault();
+                  }
+                }}
               >
                 WhiteBox
               </a>
@@ -198,8 +205,36 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-red-600 to-red-800 text-white py-20 lg:py-32">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="relative text-white py-20 lg:py-32 overflow-hidden">
+        {/* Background Images Container */}
+        <div className="absolute inset-0">
+          {/* First Background Image */}
+          <div 
+            className="absolute inset-0 bg-cover bg-center animate-fadeInOut"
+            style={{ 
+              backgroundImage: "url('/images/background.jpg')",
+              animationDelay: '3s'
+            }}
+          ></div>
+          
+          {/* Second Background Image */}
+          <div 
+            className="absolute inset-0 bg-cover bg-center animate-fadeInOut"
+            style={{ 
+              backgroundImage: "url('/images/share.jpeg')",
+              animationDelay: '5s'
+            }}
+          ></div>
+          
+          {/* Overlay for better text readability */}
+          <div className="absolute inset-0 bg-black opacity-50"></div>
+          
+          {/* Red tint overlay to maintain brand colors */}
+          <div className="absolute inset-0 bg-red-600 opacity-10"></div>
+        </div>
+        
+        {/* Content */}
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-8">
               <div>
@@ -243,6 +278,17 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
+
+        {/* Add CSS for animation */}
+        <style jsx>{`
+          @keyframes fadeInOut {
+            0%, 100% { opacity: 0; }
+            25%, 75% { opacity: 1; }
+          }
+          .animate-fadeInOut {
+            animation: fadeInOut 10s infinite;
+          }
+        `}</style>
       </section>
 
       {/* Features Section */}
