@@ -40,6 +40,7 @@ export default function LandingPage() {
   const [categories, setCategories] = useState<Record<string, string>>({});
   const [featuredCourses, setFeaturedCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeLink, setActiveLink] = useState("#features");
   const [stats, setStats] = useState([
     { value: '98%', label: 'Completion Rate' },
     { value: '24/7', label: 'Support Available' }
@@ -84,6 +85,13 @@ export default function LandingPage() {
 
     fetchData();
   }, []);
+
+  const navItems = [
+    { name: "Features", href: "#features" },
+    { name: "Courses", href: "#courses" },
+    { name: "Testimonials", href: "#testimonials" },
+    { name: "WhiteBox", href: "http://10.241.18.19/whitebox/index.php", external: true },
+  ];
 
   const getCategoryName = (category: string | { id: string; name: string }) => {
     if (typeof category === 'string') {
@@ -153,56 +161,65 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Navigation */}
-      <nav className="bg-white shadow-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 flex items-center justify-center">
-                <img 
-                  src="/images/download.png" 
-                  alt="ICTA Logo" 
-                  className="h-10 w-10 object-contain" 
-                />
-              </div>
-              {/* <span className="text-xl font-bold text-gray-900 hidden sm:block">ICTA e-Learning</span> */}
-            </div>
-            
-            <div className="hidden md:flex items-center space-x-8">
-              <a href="#features" className="text-gray-700 font-semibold hover:text-red-600 transition-colors">Features</a>
-              <a href="#courses" className="text-gray-700 font-semibold hover:text-red-600 transition-colors">Courses</a>
-              <a href="#testimonials" className="text-gray-700 font-semibold hover:text-red-600 transition-colors">Testimonials</a>
-              <a 
-                href="http://10.241.18.19/whitebox/index.php" 
-                className="text-gray-700 font-semibold hover:text-red-600 transition-colors"
-                onClick={(e) => {
-                  if (confirm("You are being redirected to the WhiteBox platform. Do you want to proceed?")) {
-                    // Allow default navigation to proceed in the same window
-                  } else {
-                    e.preventDefault();
-                  }
-                }}
-              >
-                WhiteBox
-              </a>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <Link 
-                href="/login" 
-                className="text-gray-700 hover:text-red-600 transition-colors hidden sm:block"
-              >
-                Sign In
-              </Link>
-              <Link 
-                href="/register" 
-                className="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition-colors font-medium"
-              >
-                Get Started
-              </Link>
+      <nav className="bg-gray-100 shadow-sm sticky top-0 z-50">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center">
+          {/* Logo */}
+          <div className="flex items-center space-x-3">
+            <div className="w-30 h-20 flex items-center justify-center">
+              <img
+                src="/images/download.png"
+                alt="ICTA Logo"
+                className="h-20 w-30 object-contain"
+              />
             </div>
           </div>
+
+          {/* Nav Links */}
+          <div className="hidden md:flex items-center space-x-2">
+            {navItems.map((item) => (
+              <a
+                key={item.name}
+                href={item.href}
+                onClick={(e) => {
+                  if (item.external) {
+                    if (!confirm("You are being redirected to the WhiteBox platform. Do you want to proceed?")) {
+                      e.preventDefault();
+                    }
+                  } else {
+                    setActiveLink(item.href);
+                  }
+                }}
+                className={`no-underline font-bold text-black px-4 py-3 rounded-lg uppercase text-sm tracking-wide transition-all duration-300 ${
+                  activeLink === item.href
+                    ? "bg-red-600 text-white"
+                    : "hover:text-red-600 hover:bg-gray-200"
+                }`}
+              >
+                {item.name}
+              </a>
+            ))}
+          </div>
+
+          {/* Auth Buttons */}
+          <div className="flex items-center space-x-4">
+            <Link
+              href="/login"
+              className="no-underline font-bold text-black hover:text-red-600 hover:bg-gray-200 transition-all duration-300 uppercase text-sm tracking-wide px-4 py-3 rounded-lg hidden sm:block"
+            >
+              Sign In
+            </Link>
+            <Link
+              href="/register"
+              className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-all duration-300 font-bold uppercase text-sm tracking-wide"
+            >
+              Get Started
+            </Link>
+          </div>
         </div>
-      </nav>
+      </div>
+    </nav>
+
 
       {/* Hero Section */}
       <section className="relative text-white py-20 lg:py-32 overflow-hidden">
