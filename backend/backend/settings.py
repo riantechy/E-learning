@@ -84,7 +84,7 @@ ROOT_URLCONF = 'backend.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -173,10 +173,42 @@ AUTH_USER_MODEL = 'users.User'
 
 # Email Configuration
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='wajirtest@gmail.com')
-EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='dtrn kucq lxeo qgng')
-DEFAULT_FROM_EMAIL = config('EMAIL_HOST_USER', default='wajirtest@gmail.com')
-SERVER_EMAIL = config('EMAIL_HOST_USER', default='wajirtest@gmail.com')
+# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_HOST = config('EMAIL_HOST', default='mail.govmail.ke')
+EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
+EMAIL_USE_SSL = False
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='whitebox@icta.go.ke')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='QUDCZBQVSBXBOBHN')
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='whitebox@icta.go.ke')
+SERVER_EMAIL = DEFAULT_FROM_EMAIL
+
+
+# settings.py - Add better logging
+# LOGGING = {
+#     'version': 1,
+#     'disable_existing_loggers': False,
+#     'handlers': {
+#         'file': {
+#             'level': 'DEBUG',
+#             'class': 'logging.FileHandler',
+#             'filename': 'django_debug.log',
+#         },
+#         'console': {
+#             'level': 'DEBUG',
+#             'class': 'logging.StreamHandler',
+#         },
+#     },
+#     'loggers': {
+#         'django': {
+#             'handlers': ['file', 'console'],
+#             'level': 'DEBUG',
+#             'propagate': True,
+#         },
+#         'yourapp': {  # Replace with your app name
+#             'handlers': ['file', 'console'],
+#             'level': 'DEBUG',
+#             'propagate': True,
+#         },
+#     },
+# }

@@ -20,10 +20,14 @@ from django.contrib.auth import authenticate
 from rest_framework.exceptions import ValidationError
 from django.contrib.auth.password_validation import validate_password
 import jwt
+from django.core.mail import send_mail
 from django.conf import settings
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from django.shortcuts import get_object_or_404
+
+import logging
+logger = logging.getLogger(__name__)
 
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -316,12 +320,12 @@ class ResendVerificationEmailView(APIView):
         send_verification_email(user, verification_url)
         
         return Response({'message': 'Verification email resent'}, status=status.HTTP_200_OK)
-
 class PasswordResetRequestView(APIView):
     permission_classes = [AllowAny]
     
     def post(self, request):
         email = request.data.get('email')
+        logger.info(f"Password reset requested for email: {email}")
         try:
             user = User.objects.get(email=email)
             reset_token = uuid.uuid4()
@@ -330,11 +334,25 @@ class PasswordResetRequestView(APIView):
             user.save()
             
             reset_url = f"{settings.FRONTEND_URL}/reset-password/{reset_token}"
-            send_password_reset_email(user, reset_url)
+            logger.info(f"Sending password reset email to {user.email}")
+            logger.info(f"Reset URL: {reset_url}")
+            logger.info(f"Email settings - Host: {settings.EMAIL_HOST}, Port: {settings.EMAIL_PORT}, User: {settings.EMAIL_HOST_USER}")
+            
+            try:
+                from .email_utils import send_password_reset_email
+                send_password_reset_email(user, reset_url)
+                logger.info("Password reset email function called successfully")
+            except Exception as e:
+                logger.error(f"Password reset email failed: {str(e)}")
+                return Response(
+                    {'error': 'Failed to send password reset email'}, 
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
             
             return Response({'message': 'Password reset email sent'}, status=status.HTTP_200_OK)
             
         except User.DoesNotExist:
+            logger.error(f"No user found for email: {email}")
             return Response({'error': 'User with this email does not exist'}, status=status.HTTP_400_BAD_REQUEST)
 
 class PasswordResetConfirmView(APIView):
