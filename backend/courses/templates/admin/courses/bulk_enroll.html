@@ -1,0 +1,40 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+<div id="content-main">
+    <h1>{{ title }}</h1>
+    
+    <div class="module">
+        <h2>Selected Courses</h2>
+        <ul>
+            {% for course in courses %}
+            <li>{{ course.title }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        
+        <div class="module">
+            <h2>Select Users to Enroll</h2>
+            <div style="max-height: 400px; overflow-y: auto; border: 1px solid #ccc; padding: 10px;">
+                {% for user in users %}
+                <div>
+                    <input type="checkbox" name="users" value="{{ user.id }}" id="user_{{ user.id }}">
+                    <label for="user_{{ user.id }}">{{ user.email }} - {{ user.get_full_name }}</label>
+                </div>
+                {% empty %}
+                <p>No users available for enrollment (all might already be enrolled).</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="submit-row">
+            <input type="submit" name="apply" value="Enroll Selected Users" class="default">
+            <a href="{% url 'admin:courses_course_changelist' %}" class="button">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

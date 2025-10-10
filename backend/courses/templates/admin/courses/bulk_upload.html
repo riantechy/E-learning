@@ -1,0 +1,51 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+<div id="content-main">
+    <h1>{{ title }}</h1>
+    
+    {% if request.session.bulk_operation_errors %}
+    <div class="errornote">
+        <h3>Errors occurred during processing:</h3>
+        <ul>
+            {% for error in request.session.bulk_operation_errors %}
+            <li>{{ error }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <div class="module">
+        <h2>Upload Excel File</h2>
+        <p>Please upload an Excel file (.xlsx) with the required columns.</p>
+        
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            <div class="form-row">
+                <label for="excel_file">Excel File:</label>
+                <input type="file" name="excel_file" accept=".xlsx" required>
+            </div>
+
+            <div class="submit-row">
+                <input type="submit" name="apply" value="Process File" class="default">
+                <a href="{% url 'admin:courses_course_changelist' %}" class="button">Cancel</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="module">
+        <h2>Template Format</h2>
+        <p>Download the template file to see the required format, then fill in your data and upload.</p>
+    </div>
+</div>
+
+<script>
+// Clear errors from session when page loads
+window.addEventListener('load', function() {
+    // Errors are displayed, we can't clear them from client-side
+    // They will be cleared on next page load if not set again
+});
+</script>
+{% endblock %}

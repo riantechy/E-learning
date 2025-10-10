@@ -90,7 +90,7 @@ export default function LandingPage() {
     { name: "Features", href: "#features" },
     { name: "Courses", href: "#courses" },
     { name: "Testimonials", href: "#testimonials" },
-    { name: "WhiteBox", href: "http://10.241.18.19/whitebox/index.php", external: true },
+    { name: "WhiteBox", href: "https://whitebox.go.ke/", external: true },
   ];
 
   const getCategoryName = (category: string | { id: string; name: string }) => {
@@ -230,7 +230,7 @@ export default function LandingPage() {
             className="absolute inset-0 bg-cover bg-center animate-fadeInOut"
             style={{ 
               backgroundImage: "url('/images/background.jpg')",
-              animationDelay: '3s'
+              animationDelay: '0s'
             }}
           ></div>
           

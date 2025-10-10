@@ -1,0 +1,71 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+<div id="content-main">
+    <h1>{% trans "Bulk Update Module Progress" %}</h1>
+    
+    {% if request.session.bulk_operation_errors %}
+    <div class="errornote">
+        <h3>{% trans "Errors occurred during processing:" %}</h3>
+        <ul>
+            {% for error in request.session.bulk_operation_errors %}
+            <li>{{ error }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <div class="module">
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            <div class="form-row">
+                <label for="excel_file">{% trans "Excel File:" %}</label>
+                <input type="file" name="excel_file" accept=".xlsx, .xls" required>
+                <p class="help">{% trans "Upload an Excel file with columns: user_email, module_id, is_completed" %}</p>
+            </div>
+
+            <div class="submit-row">
+                <input type="submit" value="{% trans 'Update Module Progress' %}" class="default">
+                <a href="{% url 'admin:courses_moduleprogress_changelist' %}" class="button">{% trans 'Cancel' %}</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="module">
+        <h2>{% trans "Template Format" %}</h2>
+        <p>{% trans "Your Excel file should have these columns:" %}</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>{% trans "Column" %}</th>
+                    <th>{% trans "Description" %}</th>
+                    <th>{% trans "Required" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>user_email</code></td>
+                    <td>{% trans "User's email address" %}</td>
+                    <td>{% trans "Yes" %}</td>
+                </tr>
+                <tr>
+                    <td><code>module_id</code></td>
+                    <td>{% trans "Module UUID" %}</td>
+                    <td>{% trans "Yes" %}</td>
+                </tr>
+                <tr>
+                    <td><code>is_completed</code></td>
+                    <td>{% trans "TRUE or FALSE" %}</td>
+                    <td>{% trans "Yes" %}</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <div style="margin-top: 20px;">
+            <a href="{% url 'admin:courses_moduleprogress_export_template' %}" class="button">📤 {% trans "Download Template" %}</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
