@@ -326,34 +326,59 @@ class PasswordResetRequestView(APIView):
     def post(self, request):
         email = request.data.get('email')
         logger.info(f"Password reset requested for email: {email}")
+        
+        if not email:
+            return Response(
+                {'error': 'Email is required'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
         try:
-            user = User.objects.get(email=email)
-            reset_token = uuid.uuid4()
-            user.password_reset_token = reset_token
-            user.password_reset_token_expires = timezone.now() + timedelta(hours=24)
-            user.save()
+            user = User.objects.get(email=email.lower())
             
-            reset_url = f"{settings.FRONTEND_URL}/reset-password/{reset_token}"
+            # Check if there's an existing valid token
+            if (user.password_reset_token and 
+                user.password_reset_token_expires and 
+                user.password_reset_token_expires > timezone.now()):
+                
+                logger.info(f"Reusing existing valid reset token for {user.email}")
+            else:
+                # Generate new token only if none exists or expired
+                reset_token = uuid.uuid4()
+                user.password_reset_token = reset_token
+                user.password_reset_token_expires = timezone.now() + timedelta(hours=24)
+                user.save()
+                logger.info(f"Generated new reset token for {user.email}")
+            
+            reset_url = f"{settings.FRONTEND_URL}/reset-password/{user.password_reset_token}"
             logger.info(f"Sending password reset email to {user.email}")
             logger.info(f"Reset URL: {reset_url}")
-            logger.info(f"Email settings - Host: {settings.EMAIL_HOST}, Port: {settings.EMAIL_PORT}, User: {settings.EMAIL_HOST_USER}")
             
             try:
                 from .email_utils import send_password_reset_email
                 send_password_reset_email(user, reset_url)
                 logger.info("Password reset email function called successfully")
+                
+                # Return success even if we don't reveal whether user exists
+                return Response(
+                    {'message': 'If an account with this email exists, a password reset link has been sent'}, 
+                    status=status.HTTP_200_OK
+                )
+                
             except Exception as e:
-                logger.error(f"Password reset email failed: {str(e)}")
+                logger.error(f"Password reset email failed: {str(e)}", exc_info=True)
                 return Response(
                     {'error': 'Failed to send password reset email'}, 
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
             
-            return Response({'message': 'Password reset email sent'}, status=status.HTTP_200_OK)
-            
         except User.DoesNotExist:
-            logger.error(f"No user found for email: {email}")
-            return Response({'error': 'User with this email does not exist'}, status=status.HTTP_400_BAD_REQUEST)
+            # Don't reveal whether user exists for security
+            logger.info(f"No user found for email: {email}")
+            return Response(
+                {'message': 'If an account with this email exists, a password reset link has been sent'}, 
+                status=status.HTTP_200_OK
+            )
 
 class PasswordResetConfirmView(APIView):
     permission_classes = [AllowAny]
