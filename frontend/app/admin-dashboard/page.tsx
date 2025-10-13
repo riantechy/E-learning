@@ -44,11 +44,11 @@ export default function AdminDashboard() {
             router.push('/dashboard');
             break;
           default:
-            router.push('/login');
+            router.push('/');
         }
       }
     } else if (!authLoading && !user) {
-      router.push('/login');
+      router.push('/');
     }
   }, [user, authLoading, router]);
 

@@ -102,8 +102,8 @@ export default function ForgotPasswordPage() {
               </form>
 
               <div className="text-center">
-                <Link href="/login" className="text-danger text-decoration-none">
-                  Back to login
+                <Link href="/" className="text-danger text-decoration-none">
+                  Back to Home
                 </Link>
               </div>
             </div>

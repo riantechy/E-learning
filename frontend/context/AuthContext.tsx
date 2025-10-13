@@ -230,7 +230,7 @@ const login = async (email: string, password: string) => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     setUser(null);
-    router.push('/login');
+    router.push('/');
   };
 
   const value = {

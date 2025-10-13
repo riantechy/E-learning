@@ -16,7 +16,7 @@ export default function ProfileDropdown({ user }: { user: User }) {
   const handleLogout = async () => {
     try {
       logout(); // Call logout from AuthContext
-      router.push('/login');
+      router.push('/');
     } catch (error) {
       console.error('Logout failed:', error);
     }

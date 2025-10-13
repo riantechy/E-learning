@@ -60,7 +60,7 @@ export default function AdminTopbar({ onMenuToggle }) {
   const handleLogout = () => {
     if (confirm('Are you sure you want to logout?')) {
       logout();
-      router.push('/login');
+      router.push('/');
     }
   };
 
