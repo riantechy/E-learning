@@ -1,9 +1,10 @@
-// app/page.tsx
+// app/page.tsx - Complete updated version
 'use client'
 
 import { useState, useEffect } from 'react';
 import LoginModal from '@/components/Modal/LoginModal';
 import RegisterModal from '@/components/Modal/RegisterModal';
+import ForgotPasswordModal from '@/components/Modal/ForgotPasswordModal'; // Make sure this import path is correct
 import Link from 'next/link';
 import { 
   PlayCircle, 
@@ -46,8 +47,12 @@ export default function LandingPage() {
   const [loading, setLoading] = useState(true);
   const [activeLink, setActiveLink] = useState("#features");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  
+  // Modal states - ADD ALL THREE STATES
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
+  const [isForgotPasswordModalOpen, setIsForgotPasswordModalOpen] = useState(false);
+
   const [stats, setStats] = useState([
     { value: '98%', label: 'Completion Rate' },
     { value: '24/7', label: 'Support Available' }
@@ -190,18 +195,23 @@ export default function LandingPage() {
                   href={item.href}
                   onClick={(e) => {
                     if (item.external) {
-                      if (!confirm("You are being redirected to the WhiteBox platform. Do you want to proceed?")) {
+                      if (
+                        !confirm(
+                          'You are being redirected to the WhiteBox platform. Do you want to proceed?'
+                        )
+                      ) {
                         e.preventDefault();
                       }
                     } else {
                       setActiveLink(item.href);
                     }
                   }}
-                  className={`no-underline font-bold text-black px-4 py-3 rounded-lg uppercase text-sm tracking-wide transition-all duration-300 ${
+                  className={`font-bold text-black px-4 py-3 rounded-lg uppercase text-sm tracking-wide transition-all duration-300 no-underline ${
                     activeLink === item.href
-                      ? "bg-red-600 text-white"
-                      : "hover:text-red-600 hover:bg-gray-200"
+                      ? 'bg-red-600 text-white'
+                      : 'hover:text-red-600 hover:bg-gray-200'
                   }`}
+                  style={{ textDecoration: 'none' }} // <-- Ensures no underline, even if global styles override
                 >
                   {item.name}
                 </a>
@@ -222,13 +232,15 @@ export default function LandingPage() {
             <div className="hidden md:flex items-center space-x-4">
               <button
                 onClick={() => setIsLoginModalOpen(true)}
-                className="no-underline font-bold text-black hover:text-red-600 hover:bg-gray-200 transition-all duration-300 uppercase text-sm tracking-wide px-4 py-3 rounded-lg"
+                className="font-bold text-black hover:text-red-600 hover:bg-gray-200 transition-all duration-300 uppercase text-sm tracking-wide px-4 py-3 rounded-lg no-underline"
+                style={{ textDecoration: 'none' }}
               >
                 Sign In
               </button>
               <button
                 onClick={() => setIsRegisterModalOpen(true)}
-                className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-all duration-300 font-bold uppercase text-sm tracking-wide"
+                className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-all duration-300 font-bold uppercase text-sm tracking-wide no-underline"
+                style={{ textDecoration: 'none' }}
               >
                 Get Started
               </button>
@@ -245,7 +257,11 @@ export default function LandingPage() {
                     href={item.href}
                     onClick={(e) => {
                       if (item.external) {
-                        if (!confirm("You are being redirected to the WhiteBox platform. Do you want to proceed?")) {
+                        if (
+                          !confirm(
+                            'You are being redirected to the WhiteBox platform. Do you want to proceed?'
+                          )
+                        ) {
                           e.preventDefault();
                         }
                       } else {
@@ -253,11 +269,12 @@ export default function LandingPage() {
                         setMobileMenuOpen(false);
                       }
                     }}
-                    className={`no-underline font-bold text-black px-4 py-3 rounded-lg uppercase text-sm tracking-wide transition-all duration-300 ${
+                    className={`font-bold text-black px-4 py-3 rounded-lg uppercase text-sm tracking-wide transition-all duration-300 no-underline ${
                       activeLink === item.href
-                        ? "bg-red-600 text-white"
-                        : "hover:text-red-600 hover:bg-gray-200"
+                        ? 'bg-red-600 text-white'
+                        : 'hover:text-red-600 hover:bg-gray-200'
                     }`}
+                    style={{ textDecoration: 'none' }}
                   >
                     {item.name}
                   </a>
@@ -268,7 +285,8 @@ export default function LandingPage() {
                       setMobileMenuOpen(false);
                       setIsLoginModalOpen(true);
                     }}
-                    className="no-underline font-bold text-black hover:text-red-600 hover:bg-gray-200 transition-all duration-300 uppercase text-sm tracking-wide px-4 py-3 rounded-lg text-center"
+                    className="font-bold text-black hover:text-red-600 hover:bg-gray-200 transition-all duration-300 uppercase text-sm tracking-wide px-4 py-3 rounded-lg text-center no-underline"
+                    style={{ textDecoration: 'none' }}
                   >
                     Sign In
                   </button>
@@ -277,7 +295,8 @@ export default function LandingPage() {
                       setMobileMenuOpen(false);
                       setIsRegisterModalOpen(true);
                     }}
-                    className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-all duration-300 font-bold uppercase text-sm tracking-wide text-center"
+                    className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-all duration-300 font-bold uppercase text-sm tracking-wide text-center no-underline"
+                    style={{ textDecoration: 'none' }}
                   >
                     Get Started
                   </button>
@@ -287,7 +306,7 @@ export default function LandingPage() {
           )}
         </div>
       </nav>
-
+      
       {/* Hero Section */}
       <section className="relative text-white py-12 lg:py-32 overflow-hidden">
         {/* Background Images Container */}
@@ -492,12 +511,6 @@ export default function LandingPage() {
                         >
                           Enroll Now →
                         </button>
-                        {/* <Link 
-                          href="/register" 
-                          className="text-red-600 hover:text-red-700 font-medium text-xs sm:text-sm"
-                        >
-                          Enroll Now →
-                        </Link> */}
                       </div>
                     </div>
                   </div>
@@ -576,23 +589,15 @@ export default function LandingPage() {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
               <button 
                 onClick={() => setIsRegisterModalOpen(true)}
                 className="bg-white text-red-600 px-6 py-3 sm:px-8 sm:py-4 rounded-md hover:bg-gray-100 transition-colors font-bold text-base sm:text-lg text-center"
               >
                 Create Free Account
               </button>
-            </div>
-              {/* <Link 
-                href="/register" 
-                className="bg-white text-red-600 px-6 py-3 sm:px-8 sm:py-4 rounded-lg hover:bg-gray-100 transition-colors font-bold text-base sm:text-lg"
-              >
-                Create Free Account
-              </Link> */}
               <Link 
                 href="/dashboard/courses" 
-                className="border-2 border-white text-white px-6 py-3 sm:px-8 sm:py-4 rounded-lg hover:bg-white hover:text-red-600 transition-colors font-bold text-base sm:text-lg"
+                className="border-2 border-white text-white px-6 py-3 sm:px-8 sm:py-4 rounded-lg hover:bg-white hover:text-red-600 transition-colors font-bold text-base sm:text-lg text-center"
               >
                 Browse Courses
               </Link>
@@ -631,7 +636,7 @@ export default function LandingPage() {
                 <li><a href="#features" className="text-gray-400 hover:text-white transition-colors text-sm sm:text-base">Features</a></li>
                 <li><a href="#courses" className="text-gray-400 hover:text-white transition-colors text-sm sm:text-base">Courses</a></li>
                 <li><a href="#testimonials" className="text-gray-400 hover:text-white transition-colors text-sm sm:text-base">Testimonials</a></li>
-                <li><Link href="/login" className="text-gray-400 hover:text-white transition-colors text-sm sm:text-base">Sign In</Link></li>
+                <li><button onClick={() => setIsLoginModalOpen(true)} className="text-gray-400 hover:text-white transition-colors text-sm sm:text-base border-0 bg-transparent">Sign In</button></li>
               </ul>
             </div>
             
@@ -652,12 +657,17 @@ export default function LandingPage() {
         </div>
       </footer>
           
+      {/* MODALS - MAKE SURE ALL THREE ARE INCLUDED WITH CORRECT PROPS */}
       <LoginModal
         isOpen={isLoginModalOpen}
         onClose={() => setIsLoginModalOpen(false)}
         onSwitchToRegister={() => {
           setIsLoginModalOpen(false);
           setIsRegisterModalOpen(true);
+        }}
+        onOpenForgotPassword={() => {
+          setIsLoginModalOpen(false);
+          setIsForgotPasswordModalOpen(true);
         }}
       />
 
@@ -666,6 +676,15 @@ export default function LandingPage() {
         onClose={() => setIsRegisterModalOpen(false)}
         onSwitchToLogin={() => {
           setIsRegisterModalOpen(false);
+          setIsLoginModalOpen(true);
+        }}
+      />
+
+      <ForgotPasswordModal
+        isOpen={isForgotPasswordModalOpen}
+        onClose={() => setIsForgotPasswordModalOpen(false)}
+        onSwitchToLogin={() => {
+          setIsForgotPasswordModalOpen(false);
           setIsLoginModalOpen(true);
         }}
       />

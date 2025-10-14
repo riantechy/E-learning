@@ -5,6 +5,7 @@ import { usersApi } from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
 import AdminSidebar from '@/components/AdminSidebar';
 import Modal from 'react-bootstrap/Modal';
+import { kenyaCounties, educationLevels } from '@/components/data/counties';
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
 import Table from 'react-bootstrap/Table';
@@ -54,26 +55,8 @@ const defaultForm: UserFormData = {
 };
 
 // Education options
-const educationOptions = [
-  'Primary',
-  'Secondary',
-  'Diploma',
-  'Bachelor',
-  'Master',
-  'PhD',
-  'Other'
-];
-
-// County options (Kenyan counties)
-const countyOptions = [
-  'Nairobi', 'Mombasa', 'Kisumu', 'Nakuru', 'Eldoret', 'Thika', 'Malindi', 'Kitale',
-  'Garissa', 'Kakamega', 'Nyeri', 'Meru', 'Embu', 'Nanyuki', 'Machakos', 'Kitui',
-  'Lamu', 'Wajir', 'Mandera', 'Marsabit', 'Isiolo', 'Narok', 'Kajiado', 'Kericho',
-  'Bomet', 'Sotik', 'Bungoma', 'Busia', 'Siaya', 'Homa Bay', 'Migori', 'Kisii',
-  'Nyamira', 'Muranga', 'Kiambu', 'Turkana', 'West Pokot', 'Samburu', 'Trans Nzoia',
-  'Uasin Gishu', 'Elgeyo Marakwet', 'Nandi', 'Laikipia', 'Nyandarua', 'Kirinyaga',
-  'Makueni', 'Taita Taveta', 'Kwale', 'Kilifi', 'Tana River', 'Lamu'
-];
+const educationOptions = educationLevels;
+const countyOptions = kenyaCounties;
 
 export default function UsersPage() {
   const [users, setUsers] = useState<any[]>([]); 

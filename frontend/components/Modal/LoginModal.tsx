@@ -1,12 +1,11 @@
-// components/LoginModal.tsx
+// components/Modal/LoginModal.tsx
 'use client'
 
 import { useState, useEffect, Suspense } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useSearchParams } from 'next/navigation';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { X } from 'lucide-react';
+import { X, Eye, EyeOff } from 'lucide-react';
 
 // Component to handle useSearchParams
 function LoginContent() {
@@ -22,11 +21,13 @@ function LoginContent() {
   return (
     <>
       {successMessage && (
-        <div className="alert alert-success d-flex align-items-center mb-4" role="alert">
-          <svg className="bi flex-shrink-0 me-2" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
-            <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
-          </svg>
-          <div>{successMessage}</div>
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+          <div className="flex items-center">
+            <svg className="w-5 h-5 text-green-600 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+            <span className="text-green-800 text-sm sm:text-base">{successMessage}</span>
+          </div>
         </div>
       )}
     </>
@@ -37,9 +38,10 @@ interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSwitchToRegister: () => void;
+  onOpenForgotPassword: () => void;
 }
 
-export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: LoginModalProps) {
+export default function LoginModal({ isOpen, onClose, onSwitchToRegister, onOpenForgotPassword }: LoginModalProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -87,40 +89,66 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
     };
   }, [isOpen, onClose]);
 
+  // Reset form when modal opens/closes
+  useEffect(() => {
+    if (isOpen) {
+      setEmail('');
+      setPassword('');
+      setError('');
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-xl h4 text-align-center  font-bold text-gray-900">Sign in</h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black bg-opacity-50">
+      {/* Backdrop click handler */}
+      <div 
+        className="absolute inset-0" 
+        onClick={onClose}
+      />
+      
+      {/* Modal Container */}
+      <div className="relative bg-white rounded-lg sm:rounded-xl w-full max-w-sm sm:max-w-md lg:max-w-lg mx-auto max-h-[90vh] overflow-y-auto shadow-2xl transform transition-all">
+        
+        {/* Header - Updated to green gradient */}
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b sticky top-0 bg-gradient-to-b from-green-200 to-white rounded-t-lg sm:rounded-t-xl z-10">
+          <h2 className="text-xl h4 sm:text-2xl font-bold text-green-800">Sign in</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="p-1 sm:p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-full hover:bg-gray-100"
+            aria-label="Close modal"
           >
-            <X className="h-6 w-6" />
+            <X className="h-5 w-5 sm:h-6 sm:w-6" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-6">
-          <Suspense fallback={<div className="text-center text-muted">Loading...</div>}>
+        <div className="p-4 sm:p-6 lg:p-8">
+          <Suspense fallback={
+            <div className="text-center py-4 text-gray-500">
+              <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-red-600 mr-2"></div>
+              Loading...
+            </div>
+          }>
             <LoginContent />
           </Suspense>
 
           {error && (
-            <div className="alert alert-danger d-flex align-items-center mb-4" role="alert">
-              <svg className="bi flex-shrink-0 me-2" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/>
-              </svg>
-              <div>{error}</div>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
+              <div className="flex items-center">
+                <svg className="w-5 h-5 text-red-600 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+                <span className="text-red-800 text-sm sm:text-base">{error}</span>
+              </div>
             </div>
           )}
 
-          <form onSubmit={handleSubmit}>
-            <div className="mb-4">
-              <label htmlFor="email-address" className="form-label">
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+            {/* Email Field */}
+            <div>
+              <label htmlFor="email-address" className="block text-sm sm:text-base font-medium text-gray-700 mb-2">
                 Email address
               </label>
               <input
@@ -129,18 +157,19 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
                 type="email"
                 autoComplete="email"
                 required
-                className="form-control"
+                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors text-sm sm:text-base"
                 placeholder="Enter your email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
             
-            <div className="mb-4">
-              <label htmlFor="password" className="form-label">
+            {/* Password Field */}
+            <div>
+              <label htmlFor="password" className="block text-sm sm:text-base font-medium text-gray-700 mb-2">
                 Password
               </label>
-              <div className="input-group">
+              <div className="relative">
                 <input
                   id="password"
                   name="password"
@@ -148,58 +177,68 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
                   autoComplete="current-password"
                   required
                   minLength={6}
-                  className="form-control"
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors text-sm sm:text-base pr-12"
                   placeholder="Enter your password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
                 <button
                   type="button"
-                  className="btn btn-outline-secondary"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors p-1"
                   onClick={() => setShowPassword(!showPassword)}
                 >
-                  {showPassword ? 'Hide' : 'Show'}
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4 sm:h-5 sm:w-5" />
+                  ) : (
+                    <Eye className="h-4 w-4 sm:h-5 sm:w-5" />
+                  )}
                 </button>
               </div>
               {password && password.length < 6 && (
-                <div className="form-text text-danger">
+                <p className="mt-1 text-red-600 text-xs sm:text-sm">
                   Password must be at least 6 characters
-                </div>
+                </p>
               )}
             </div>
 
-            <div className="d-flex justify-content-between align-items-center mb-4">
-              <div className="form-check">
+            {/* Remember me and Forgot password */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
+              <label className="flex items-center">
                 <input
                   id="remember-me"
                   name="remember-me"
                   type="checkbox"
-                  className="form-check-input"
+                  className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
                 />
-                <label htmlFor="remember-me" className="form-check-label">
-                  Remember me
-                </label>
-              </div>
-              <div>
-              <Link
-                href="/forgot-password"
-                className="text-primary text-decoration-none"
-                onClick={onClose} 
-                >
+                <span className="ml-2 text-sm sm:text-base text-gray-700">Remember me</span>
+              </label>
+              
+              {/* Updated to red color */}
+              <button
+                type="button"
+                className="text-red-600 hover:text-red-700 text-sm sm:text-base font-medium transition-colors text-left sm:text-right"
+                onClick={() => {
+                  onClose();
+                  onOpenForgotPassword();
+                }}
+              >
                 Forgot your password?
-                </Link>
-              </div>
+              </button>
             </div>
 
-            <div className="mb-4">
+            {/* Submit Button */}
+            <div>
               <button
                 type="submit"
                 disabled={loading}
-                className="btn btn-danger w-100 py-2 position-relative"
+                className="w-full bg-red-600 text-white py-3 sm:py-4 px-4 rounded-lg sm:rounded-xl hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors font-medium text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
               >
                 {loading ? (
                   <>
-                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 sm:h-5 sm:w-5 text-white" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
                     Signing in...
                   </>
                 ) : (
@@ -209,12 +248,13 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
             </div>
           </form>
 
-          <div className="text-center">
-            <p className="text-muted">
+          {/* Sign up link - Updated to red color */}
+          <div className="mt-6 sm:mt-8 text-center">
+            <p className="text-gray-600 text-sm sm:text-base">
               Don't have an account?{' '}
               <button
                 type="button"
-                className="text-primary text-decoration-none fw-medium border-0 bg-transparent"
+                className="text-red-600 hover:text-red-700 font-medium transition-colors"
                 onClick={() => {
                   onClose();
                   onSwitchToRegister();
@@ -224,8 +264,33 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
               </button>
             </p>
           </div>
+
+          {/* Additional responsive spacing for very small screens */}
+          <div className="mt-4 sm:mt-6 lg:mt-8"></div>
         </div>
       </div>
+
+      {/* Mobile-specific styles */}
+      <style jsx>{`
+        @media (max-width: 640px) {
+          .modal-container {
+            margin: 0.5rem;
+          }
+        }
+        
+        @media (max-width: 480px) {
+          .modal-container {
+            margin: 0.25rem;
+          }
+        }
+        
+        /* Prevent zoom on input focus for iOS */
+        @media (max-width: 768px) {
+          input, textarea, select {
+            font-size: 16px !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }
