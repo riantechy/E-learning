@@ -87,16 +87,16 @@ export default function ModuleSurveyPage() {
       setSubmitting(true);
       setError('');
       setSuccess('');
-  
+
       // Validate required questions
       const requiredQuestions = questions.filter(q => q.is_required);
       const missingAnswers = requiredQuestions.filter(q => !answers[q.id]);
-  
+
       if (missingAnswers.length > 0) {
         setError(`Please answer all required questions (${missingAnswers.length} remaining)`);
         return;
       }
-  
+
       // Prepare submission data
       const submissionData = {
         survey_id: survey.id,
@@ -112,9 +112,9 @@ export default function ModuleSurveyPage() {
           };
         }).filter(Boolean)
       };
-  
+
       const response = await assessmentsApi.submitSurveyResponse(submissionData);
-  
+
       if (response.error) {
         setError(response.error || 'Failed to submit survey');
       } else {
@@ -197,6 +197,7 @@ export default function ModuleSurveyPage() {
           <LearnerSidebar 
             isCollapsed={sidebarCollapsed}
             onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+            isMobileOpen={mobileSidebarOpen}
           />
         </div>
 
@@ -209,10 +210,11 @@ export default function ModuleSurveyPage() {
           />
         )}
         
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <TopNavbar toggleSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)} />   
-         <main 
-            className="flex-grow-1 p-4 overflow-auto"
+        <div className="flex-1 d-flex flex-column overflow-hidden w-100">
+          <TopNavbar toggleSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)} />   
+          
+          <main 
+            className="flex-grow-1 overflow-auto"
             style={{
               marginLeft: mobileSidebarOpen 
                 ? (sidebarCollapsed ? '80px' : '280px') 
@@ -220,121 +222,148 @@ export default function ModuleSurveyPage() {
               transition: 'margin-left 0.3s ease'
             }}
           >
-          <div className="container py-5">
-            <nav aria-label="breadcrumb" className="mb-4">
-              <ol className="breadcrumb">
-                <li className="breadcrumb-item">
-                  <Link href="/dashboard">Dashboard</Link>
-                </li>
-                <li className="breadcrumb-item">
-                  <Link href="/dashboard/learn">My Courses</Link>
-                </li>
-                <li className="breadcrumb-item">
-                  <Link href={`/dashboard/learn/${courseId}`}>{survey.course_title}</Link>
-                </li>
-                <li className="breadcrumb-item active" aria-current="page">
-                  Module Survey
-                </li>
-              </ol>
-            </nav>
+            <div className="container-fluid px-3 px-md-4 px-lg-5 py-4">
+              {/* Breadcrumb - Responsive */}
+              <nav aria-label="breadcrumb" className="mb-4">
+                <ol className="breadcrumb mb-0">
+                  <li className="breadcrumb-item d-none d-sm-inline">
+                    <Link href="/dashboard" className="text-decoration-none">Dashboard</Link>
+                  </li>
+                  <li className="breadcrumb-item d-none d-md-inline">
+                    <Link href="/dashboard/learn" className="text-decoration-none">My Courses</Link>
+                  </li>
+                  <li className="breadcrumb-item">
+                    <Link href={`/dashboard/learn/${courseId}`} className="text-decoration-none">
+                      <span className="d-none d-lg-inline">{survey.course_title}</span>
+                      <span className="d-lg-none">Course</span>
+                    </Link>
+                  </li>
+                  <li className="breadcrumb-item active text-truncate" aria-current="page" style={{maxWidth: '150px'}}>
+                    Survey
+                  </li>
+                </ol>
+              </nav>
 
-            <div className="card">
-              <div className="card-header bg-danger text-white">
-                <h4 className="mb-0">{survey.title}</h4>
-              </div>
-              <div className="card-body">
-                <p className="lead">{survey.description}</p>
-                
-                {error && <Alert variant="danger" onClose={() => setError('')} dismissible>{error}</Alert>}
-                {success && <Alert variant="success">{success}</Alert>}
+              {/* Survey Card */}
+              <div className="card shadow-sm">
+                <div className="card-header bg-danger text-white py-3">
+                  <h4 className="mb-0 h5 h4-md">{survey.title}</h4>
+                </div>
+                <div className="card-body p-3 p-md-4">
+                  <p className="lead mb-4 fs-6 fs-md-5">{survey.description}</p>
+                  
+                  {error && (
+                    <Alert variant="danger" onClose={() => setError('')} dismissible className="mb-4">
+                      {error}
+                    </Alert>
+                  )}
+                  {success && (
+                    <Alert variant="success" className="mb-4">
+                      {success}
+                    </Alert>
+                  )}
 
-                <Form onSubmit={handleSubmit}>
-                  {questions.map((question) => (
-                    <Form.Group key={question.id} className="mb-4">
-                      <Form.Label className="d-flex align-items-center gap-2">
-                        {question.question_text}
-                        {question.is_required && (
-                          <span className="text-danger">*</span>
+                  <Form onSubmit={handleSubmit}>
+                    {questions.map((question) => (
+                      <Form.Group key={question.id} className="mb-4 p-2 p-md-3 border rounded">
+                        <Form.Label className="d-flex align-items-center gap-2 fw-semibold mb-3 fs-6">
+                          {question.question_text}
+                          {question.is_required && (
+                            <span className="text-danger">*</span>
+                          )}
+                        </Form.Label>
+                        
+                        {question.question_type === 'MCQ' && question.choices && (
+                          <div className="ps-0 ps-md-3">
+                            {question.choices.sort((a, b) => a.order - b.order).map((choice) => (
+                              <Form.Check
+                                key={choice.id}
+                                type="radio"
+                                id={`${question.id}-${choice.id}`}
+                                name={question.id}
+                                label={choice.choice_text}
+                                required={question.is_required}
+                                onChange={() => handleAnswerChange(question.id, choice.id)}
+                                checked={answers[question.id] === choice.id}
+                                className="mb-2"
+                              />
+                            ))}
+                          </div>
                         )}
-                      </Form.Label>
-                      
-                      {question.question_type === 'MCQ' && question.choices && (
-                        <div className="ps-3">
-                          {question.choices.sort((a, b) => a.order - b.order).map((choice) => (
-                            <Form.Check
-                              key={choice.id}
-                              type="radio"
-                              id={`${question.id}-${choice.id}`}
-                              name={question.id}
-                              label={choice.choice_text}
-                              required={question.is_required}
-                              onChange={() => handleAnswerChange(question.id, choice.id)}
-                              checked={answers[question.id] === choice.id}
-                            />
-                          ))}
-                        </div>
-                      )}
 
-                      {question.question_type === 'TEXT' && (
-                        <Form.Control
-                          as="textarea"
-                          rows={3}
-                          required={question.is_required}
-                          value={answers[question.id] as string || ''}
-                          onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                        />
-                      )}
+                        {question.question_type === 'TEXT' && (
+                          <Form.Control
+                            as="textarea"
+                            rows={3}
+                            required={question.is_required}
+                            value={answers[question.id] as string || ''}
+                            onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                            className="w-100"
+                          />
+                        )}
 
-                      {question.question_type === 'SCALE' && (
-                        <div className="d-flex align-items-center gap-3 ps-3">
-                          {[1, 2, 3, 4, 5].map((num) => (
-                            <Form.Check
-                              key={num}
-                              type="radio"
-                              id={`${question.id}-${num}`}
-                              name={question.id}
-                              label={num}
-                              inline
-                              required={question.is_required}
-                              onChange={() => handleAnswerChange(question.id, num)}
-                              checked={answers[question.id] === num}
-                            />
-                          ))}
-                          <small className="text-muted">(1 = Strongly Disagree, 5 = Strongly Agree)</small>
-                        </div>
-                      )}
-                    </Form.Group>
-                  ))}
+                        {question.question_type === 'SCALE' && (
+                          <div className="d-flex flex-column flex-md-row align-items-start align-items-md-center gap-2 gap-md-3 ps-0 ps-md-3">
+                            <div className="d-flex flex-wrap gap-2 gap-md-3">
+                              {[1, 2, 3, 4, 5].map((num) => (
+                                <Form.Check
+                                  key={num}
+                                  type="radio"
+                                  id={`${question.id}-${num}`}
+                                  name={question.id}
+                                  label={num}
+                                  inline
+                                  required={question.is_required}
+                                  onChange={() => handleAnswerChange(question.id, num)}
+                                  checked={answers[question.id] === num}
+                                />
+                              ))}
+                            </div>
+                            <small className="text-muted mt-1 mt-md-0 fs-7">
+                              (1 = Strongly Disagree, 5 = Strongly Agree)
+                            </small>
+                          </div>
+                        )}
+                      </Form.Group>
+                    ))}
 
-                  <div className="d-flex justify-content-end gap-3 mt-4">
-                    <Button 
-                      variant="secondary" 
-                      onClick={() => router.push(`/dashboard/learn/${courseId}`)}
-                      disabled={submitting}
-                    >
-                      Skip Survey
-                    </Button>
-                    <Button 
-                      variant="danger" 
-                      type="submit"
-                      disabled={submitting}
-                    >
-                      {submitting ? (
-                        <>
-                          <Spinner animation="border" size="sm" className="me-2" />
-                          Submitting...
-                        </>
-                      ) : (
-                        'Submit Survey'
-                      )}
-                    </Button>
-                  </div>
-                </Form>
+                    {/* Action Buttons - Responsive */}
+                    <div className="d-flex flex-column flex-sm-row justify-content-end gap-2 gap-sm-3 mt-4 pt-3 border-top">
+                      <Button 
+                        variant="outline-secondary" 
+                        onClick={() => router.push(`/dashboard/learn/${courseId}`)}
+                        disabled={submitting}
+                        className="order-2 order-sm-1"
+                      >
+                        <span className="d-none d-sm-inline">Skip Survey</span>
+                        <span className="d-sm-none">Skip</span>
+                      </Button>
+                      <Button 
+                        variant="danger" 
+                        type="submit"
+                        disabled={submitting}
+                        className="order-1 order-sm-2"
+                      >
+                        {submitting ? (
+                          <>
+                            <Spinner animation="border" size="sm" className="me-2" />
+                            <span className="d-none d-sm-inline">Submitting...</span>
+                            <span className="d-sm-none">Submitting</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="d-none d-sm-inline">Submit Survey</span>
+                            <span className="d-sm-none">Submit</span>
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </Form>
+                </div>
               </div>
             </div>
-          </div>
-        </main>
-      </div>
+          </main>
+        </div>
       </div>
     </ProtectedRoute>
   )

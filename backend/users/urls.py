@@ -1,7 +1,8 @@
 from django.urls import path
 from .views import (
     RegisterView, LoginView, UserProfileView, ForceChangePasswordView,
-    UserListView, UserDetailView, UserUpdateView, UserDeleteView, UserDistributionView,
+    UserListView, UserDetailView, UserUpdateView, UserDeleteView, 
+    UserDistributionView, BulkEmailView, UserSelectionListView,
     ChangePasswordView, LogoutView, LearnerListView, NonLearnerListView, 
     UserCreateView, LearnerCountView, ProfileImageView, PasswordResetConfirmView,
     VerifyEmailView, ResendVerificationEmailView, PasswordResetRequestView
@@ -36,4 +37,7 @@ urlpatterns = [
     path('request-password-reset/', PasswordResetRequestView.as_view(), name='request-password-reset'),
     path('reset-password/<uuid:token>/', PasswordResetConfirmView.as_view(), name='reset-password-confirm'),
     path('force-change-password/', ForceChangePasswordView.as_view(), name='force-change-password'),
+
+    path('bulk-email/', BulkEmailView.as_view(), name='bulk-email'),
+    path('users/selection/', UserSelectionListView.as_view(), name='user-selection-list'),
 ]

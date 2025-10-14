@@ -256,10 +256,10 @@ export default function CourseOverviewPage() {
         </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden"> 
         <TopNavbar toggleSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)} />
           <main 
-            className="flex-grow-1 p-4 overflow-auto"
+            className="flex-grow-1 overflow-auto" 
             style={{
               marginLeft: mobileSidebarOpen 
                 ? (sidebarCollapsed ? '80px' : '280px') 
@@ -268,24 +268,29 @@ export default function CourseOverviewPage() {
             }}
           >
           <div className="container py-3 py-md-5">
-            <nav aria-label="breadcrumb" style={{ overflowX: 'auto', whiteSpace: 'nowrap' }}>
-              <ol className="breadcrumb" style={{ display: 'inline-flex', minWidth: '100%' }}>
-                <li className="breadcrumb-item">
-                  <Link href="/dashboard">Dashboard</Link>
-                </li>
-                <li className="breadcrumb-item">
-                  <Link href="/dashboard/learn">My Courses</Link>
-                </li>
-                <li className="breadcrumb-item active" aria-current="page">
-                  {course.title}
-                </li>
-              </ol>
-            </nav>
+          <nav aria-label="breadcrumb">
+            <ol className="breadcrumb flex-nowrap text-nowrap overflow-auto pb-2" style={{scrollbarWidth: 'none', msOverflowStyle: 'none'}}>
+              <li className="breadcrumb-item">
+                <Link href="/dashboard">Dashboard</Link>
+              </li>
+              <li className="breadcrumb-item">
+                <Link href="/dashboard/learn">My Courses</Link>
+              </li>
+              <li className="breadcrumb-item active text-truncate" aria-current="page" style={{maxWidth: '120px'}}>
+                {course.title}
+              </li>
+            </ol>
+            <style jsx>{`
+              .breadcrumb::-webkit-scrollbar {
+                display: none;
+              }
+            `}</style>
+          </nav>
 
             <div className="row">
               <div className="col-12 col-md-8 mb-4 mb-md-0">
                 <div className="card mb-4">
-                  <div className="card-body">
+                  <div className="card-body p-2 p-md-3">
                     <h5 className="mb-3">{course.title}</h5>
                     <p className="text-sm">{course.description}</p>
                     
@@ -332,7 +337,7 @@ export default function CourseOverviewPage() {
                 </div>
 
                 <div className="card">
-                  <div className="card-header">
+                  <div className="card-header p-0 p-md-0">
                     <h5>Course Modules</h5>
                   </div>
                   <div className="list-group list-group-flush"> 
@@ -385,10 +390,10 @@ export default function CourseOverviewPage() {
 
               <div className="col-12 col-md-4">
                 <div className="card mb-4">
-                  <div className="card-header">
+                  <div className="card-header p-2 p-md-3">
                     <h6>Course Details</h6>
                   </div>
-                  <div className="card-body">
+                  <div className="card-body p-2 p-md-3">
                     <ul className="list-group list-group-flush">
                     <li className="list-group-item d-flex justify-content-between align-items-center">
                         <span>Category</span>
@@ -415,10 +420,10 @@ export default function CourseOverviewPage() {
                 </div>
 
                 <div className="card">
-                  <div className="card-header">
+                  <div className="card-header p-2 p-md-3">
                     <h6>Quick Actions</h6>
                   </div>
-                  <div className="card-body">
+                  <div className="card-body p-2 p-md-3">
                     <div className="d-grid gap-2">
                       <button 
                         onClick={handleStartCourse}

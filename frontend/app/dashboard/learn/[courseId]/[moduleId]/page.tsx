@@ -239,7 +239,7 @@ export default function ModulePage() {
       return (
         <>
           {lesson.description && (          
-            <div className="card-body">
+            <div className="card-body p-2 p-md-3">
               <p className="card-text">{lesson.description}</p>
             </div>         
           )}
@@ -272,10 +272,10 @@ export default function ModulePage() {
       return (
         <div className="mb-3">
           <div className="card">
-            <div className="card-body">
+            <div className="card-body p-0 p-md-0">
               <h6>PDF Document: {lesson.title}</h6>
               {lesson.description && (
-                <div className="card-body">
+                <div className="card-body p-2 p-md-3">
                   <p className="card-text">{lesson.description}</p>
                 </div>
               )}
@@ -476,7 +476,7 @@ export default function ModulePage() {
         <div className="flex-1 flex flex-col overflow-hidden">
           <TopNavbar toggleSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)} />
           <main 
-            className="flex-grow-1 p-4 overflow-auto"
+            className="flex-grow-1 overflow-auto"
             style={{
               marginLeft: mobileSidebarOpen 
                 ? (sidebarCollapsed ? '80px' : '280px') 
@@ -484,7 +484,7 @@ export default function ModulePage() {
               transition: 'margin-left 0.3s ease'
             }}
           >
-            <div className="container py-5">
+            <div className="container py-2 py-md-3 py-lg-5">
               <nav aria-label="breadcrumb">
                 <ol className="breadcrumb">
                   <li className="breadcrumb-item">
@@ -505,11 +505,11 @@ export default function ModulePage() {
               <div className="row">
                 <div className="col-md-8">
                   <div className="card mb-4">
-                    <div className="card-header">
+                    <div className="card-header p-2 p-md-3">
                       <h5>{module.title}</h5>
                       <p className="mb-0">{module.description}</p>
                     </div>
-                    <div className="card-body">
+                    <div className="card-body p-2 p-md-3">
                       <div className="accordion" id="lessonsAccordion" style={{ maxWidth: '100%', overflowX: 'hidden' }}>
                         {lessons.map((lesson) => (
                           <div key={lesson.id} className="lesson-section" style={{ wordBreak: 'break-word' }}>
@@ -593,10 +593,10 @@ export default function ModulePage() {
 
                 <div className="col-md-4">
                   <div className="card mb-4">
-                    <div className="card-header">
+                    <div className="card-header p-2 p-md-3">
                       <h6>Module Progress</h6>
                     </div>
-                    <div className="card-body">
+                    <div className="card-body p-2 p-md-3">
                       <div className="progress mb-3">
                         <div 
                           className="progress-bar" 
@@ -618,7 +618,7 @@ export default function ModulePage() {
                   </div>
 
                   <div className="card">
-                    <div className="card-header">
+                    <div className="card-header p-2 p-md-3">
                       <h6>Module Navigation</h6>
                     </div>
                     <div className="list-group list-group-flush">

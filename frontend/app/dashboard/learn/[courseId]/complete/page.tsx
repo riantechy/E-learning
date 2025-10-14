@@ -239,13 +239,13 @@ export default function CourseCompletionPage() {
           
           {/* Main Content */}
           <main 
-            className="flex-grow-1 p-4 overflow-auto"
+            className="flex-grow-1 overflow-auto"
             style={{
               width: 'calc(100%)',
               transition: 'margin-left 0.3s ease'
             }}
           >
-            <div className="container py-5">
+            <div className="container py-2 py-md-3 py-lg-5">
               <div className="row justify-content-center">
                 <div className="col-md-10">
                   {/* Course Not Completed Warning - Only show warning, not blocking */}

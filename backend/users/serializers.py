@@ -136,3 +136,18 @@ class ChangePasswordSerializer(serializers.Serializer):
         required=True,
         validators=[validate_password_complexity]
     )
+class BulkEmailSerializer(serializers.Serializer):
+    user_ids = serializers.ListField(
+        child=serializers.UUIDField(),
+        required=False,
+        allow_empty=True
+    )
+    send_to_all = serializers.BooleanField(default=False)
+    subject = serializers.CharField(required=True, max_length=255)
+    message = serializers.CharField(required=True)
+    is_html = serializers.BooleanField(default=False)
+    
+    def validate(self, data):
+        if not data.get('send_to_all') and not data.get('user_ids'):
+            raise serializers.ValidationError("Either select users or send to all users")
+        return data

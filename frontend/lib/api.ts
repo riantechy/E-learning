@@ -156,6 +156,29 @@ export const usersApi = {
   },
   resetPassword: (data: { token: string; new_password: string }) => 
     apiRequest(`/auth/reset-password/${data.token}/`, 'POST', { new_password: data.new_password }),
+
+  bulkEmail: (data: {
+    user_ids: string[];
+    send_to_all: boolean;
+    subject: string;
+    message: string;
+    is_html?: boolean;
+  }) => apiRequest<{
+    message: string;
+    results: {
+      total_sent: number;
+      total_failed: number;
+      details: Array<{
+        user_id: string;
+        email: string;
+        name: string;
+        status: 'sent' | 'failed';
+        error?: string;
+      }>;
+    };
+  }>('/auth/bulk-email/', 'POST', data),
+
+  getUsersForSelection: () => apiRequest<User[]>('/auth/users/selection/'),
 };
 
 // Courses API

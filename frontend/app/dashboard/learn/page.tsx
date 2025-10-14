@@ -124,7 +124,7 @@ export default function MyCoursesPage() {
           >
             {/* Header Section */}
             <div className="bg-danger text-white">
-              <div className="container py-5">
+             <div className="container py-2 py-md-3 py-lg-5">
                 <div className="row align-items-center">
                   <div className="col-lg-8">
                     <nav aria-label="breadcrumb" className="mb-4">
@@ -183,7 +183,7 @@ export default function MyCoursesPage() {
             </div>
 
             {/* Courses Section */}
-            <div className="container py-5">
+            <div className="container py-2 py-md-3 py-lg-5">
               {loading ? (
                 <div className="d-flex justify-content-center py-5">
                   <div className="spinner-border text-danger" role="status">

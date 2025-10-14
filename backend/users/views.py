@@ -15,7 +15,7 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework import filters
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import User
-from .serializers import UserSerializer, RegisterSerializer, LoginSerializer, ChangePasswordSerializer, AdminUserCreateSerializer
+from .serializers import UserSerializer, RegisterSerializer, LoginSerializer, ChangePasswordSerializer, AdminUserCreateSerializer, BulkEmailSerializer
 from django.contrib.auth import authenticate
 from rest_framework.exceptions import ValidationError
 from django.contrib.auth.password_validation import validate_password
@@ -481,3 +481,106 @@ class UserDistributionView(APIView):
         } for item in distribution]
         
         return Response(data)
+
+class BulkEmailView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        serializer = BulkEmailSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            data = serializer.validated_data
+            user_ids = data.get('user_ids', [])
+            send_to_all = data.get('send_to_all', False)
+            subject = data['subject']
+            message = data['message']
+            is_html = data.get('is_html', False)
+            
+            # Get users based on selection
+            if send_to_all:
+                users = User.objects.filter(is_active=True)
+            else:
+                users = User.objects.filter(id__in=user_ids, is_active=True)
+            
+            if not users.exists():
+                return Response(
+                    {'error': 'No valid users found to send email to'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Send emails
+            results = {
+                'total_sent': 0,
+                'total_failed': 0,
+                'details': []
+            }
+            
+            for user in users:
+                try:
+                    if is_html:
+                        # Send HTML email
+                        from .email_utils import send_email_with_fallback
+                        plain_message = strip_tags(message)  # Create plain text version
+                        send_email_with_fallback(
+                            subject=subject,
+                            plain_message=plain_message,
+                            recipient_list=[user.email],
+                            html_message=message
+                        )
+                    else:
+                        # Send plain text email
+                        send_mail(
+                            subject=subject,
+                            message=message,
+                            from_email=settings.DEFAULT_FROM_EMAIL,
+                            recipient_list=[user.email],
+                            fail_silently=False
+                        )
+                    
+                    results['total_sent'] += 1
+                    results['details'].append({
+                        'user_id': str(user.id),
+                        'email': user.email,
+                        'name': f"{user.first_name} {user.last_name}",
+                        'status': 'sent',
+                        'error': None
+                    })
+                    
+                except Exception as e:
+                    logger.error(f"Failed to send email to {user.email}: {str(e)}")
+                    results['total_failed'] += 1
+                    results['details'].append({
+                        'user_id': str(user.id),
+                        'email': user.email,
+                        'name': f"{user.first_name} {user.last_name}",
+                        'status': 'failed',
+                        'error': str(e)
+                    })
+            
+            # Log the bulk email operation
+            logger.info(f"Bulk email sent by {request.user.email}. Total: {results['total_sent']}, Failed: {results['total_failed']}")
+            
+            return Response({
+                'message': f'Emails sent successfully. {results["total_sent"]} delivered, {results["total_failed"]} failed.',
+                'results': results
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Bulk email error: {str(e)}")
+            return Response(
+                {'error': 'Failed to send bulk emails'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+class UserSelectionListView(generics.ListAPIView):
+    """
+    API to get users for selection in bulk email
+    """
+    serializer_class = UserSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = None
+    
+    def get_queryset(self):
+        return User.objects.filter(is_active=True).order_by('email')

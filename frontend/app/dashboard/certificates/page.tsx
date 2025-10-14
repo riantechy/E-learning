@@ -73,7 +73,7 @@ export default function CertificatesPage() {
         <div className="flex-1 flex flex-col overflow-hidden">
           <TopNavbar toggleSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)} />
           <main 
-            className="flex-grow-1 p-4 overflow-auto"
+            className="flex-grow-1 overflow-auto"
             style={{
               marginLeft: mobileSidebarOpen 
                 ? (sidebarCollapsed ? '80px' : '280px') 

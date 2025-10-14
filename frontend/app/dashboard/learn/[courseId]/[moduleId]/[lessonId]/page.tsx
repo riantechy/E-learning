@@ -292,7 +292,7 @@ export default function LessonPage() {
         )}
 
         <main 
-          className="flex-grow-1 p-4 overflow-auto"
+          className="flex-grow-1 overflow-auto"
           style={{
             width: 'calc(100%)',
             transition: 'margin-left 0.3s ease'

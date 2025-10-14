@@ -25,6 +25,7 @@ export default function TopNavbar({ toggleSidebar }: TopNavbarProps) {
   return (
     <nav className="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top">
       <div className="container-fluid">
+        {/* Left Section: Menu Button and Brand */}
         <div className="d-flex align-items-center">
           {/* Mobile menu button */}
           <button 
@@ -34,26 +35,50 @@ export default function TopNavbar({ toggleSidebar }: TopNavbarProps) {
           >
             <Menu size={24} />
           </button>
-          <span className="navbar-brand mb-0 h1">Learning Platform</span>
+          <span className="navbar-brand mb-0 h1 d-none d-sm-block">Learning Platform</span>
+          <span className="navbar-brand mb-0 h5 d-block d-sm-none">Learning Platform</span>
         </div>
         
+        {/* Right Section: Notification and User Info */}
         <div className="d-flex align-items-center">
           {/* Notification Bell */}
-          {user && <NotificationBell />}
+          {user && (
+            <div className="me-2 me-md-3">
+              <NotificationBell />
+            </div>
+          )}
           
           {user && (
-            <>
-              <div className="me-3 d-none d-md-block">
-                <span className="text-muted">Welcome, {user.first_name}</span>
+            <div className="d-flex align-items-center">
+              {/* Welcome message - hidden on extra small screens */}
+              <div className="me-2 me-md-3 d-none d-sm-block">
+                <span className="text-muted small">Welcome, {user.first_name}</span>
               </div>
+              
+              {/* User avatar for small screens */}
+              <div className="d-block d-md-none me-2">
+                <div 
+                  className="rounded-circle bg-danger d-flex align-items-center justify-content-center text-white fw-bold"
+                  style={{ 
+                    width: '32px', 
+                    height: '32px',
+                    fontSize: '0.8rem'
+                  }}
+                >
+                  {user?.first_name?.charAt(0)}{user?.last_name?.charAt(0)}
+                </div>
+              </div>
+
+              {/* Logout Button */}
               <button 
                 onClick={handleLogout}
                 className="btn btn-outline-danger btn-sm"
               >
-                <i className="bi bi-box-arrow-right me-1"></i>
-                Logout
+                <i className="bi bi-box-arrow-right d-none d-md-inline me-1"></i>
+                <i className="bi bi-box-arrow-right d-md-none"></i>
+                <span className="d-none d-md-inline">Logout</span>
               </button>
-            </>
+            </div>
           )}
         </div>
       </div>

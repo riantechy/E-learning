@@ -63,6 +63,7 @@ export default function AdminSidebar() {
     { href: '/admin-dashboard/surveys', label: 'Surveys', icon: '📝' },
     { href: '/admin-dashboard/analytics', label: 'Analytics', icon: '📈' },
     { href: '/admin-dashboard/notifications', label: 'Notifications', icon: '🔔' },
+    { href: '/admin-dashboard/emails', label: 'Emails', icon: '📧' },
     { href: '/admin-dashboard/profile', label: 'Profile', icon: '👤' },
     { href: '/admin-dashboard/settings', label: 'Settings', icon: '⚙️' },
   ];

@@ -158,7 +158,7 @@ export default function MyScoresPage() {
         <div className="flex-1 flex flex-col overflow-hidden">
           <TopNavbar toggleSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)} />
           
-          <main className="flex-grow-1 p-4 overflow-auto">
+          <main className="flex-grow-1 overflow-auto">
             <div className="container-fluid">
               <div className="d-flex justify-content-between align-items-center mb-4">
                 <h6 className="h4 mb-0">My Quiz Scores</h6>
