@@ -607,10 +607,7 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
               />
               <label htmlFor="agreed_to_terms" className="text-sm text-gray-700">
                 I agree to the{' '}
-                <Link href="/terms" className="text-red-600 hover:text-red-700 font-medium">
-                  Terms and Conditions
-                </Link>{' '}
-                and{' '}
+                  {' '}
                 <Link href="/privacy" className="text-red-600 hover:text-red-700 font-medium">
                   Privacy Policy
                 </Link>

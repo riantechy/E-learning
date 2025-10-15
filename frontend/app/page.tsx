@@ -645,14 +645,14 @@ export default function LandingPage() {
               <ul className="space-y-2">
                 <li><a href="#" className="text-gray-400 hover:text-white transition-colors text-sm sm:text-base">Help Center</a></li>
                 <li><a href="#" className="text-gray-400 hover:text-white transition-colors text-sm sm:text-base">Contact Us</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors text-sm sm:text-base">Privacy Policy</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors text-sm sm:text-base">Terms of Service</a></li>
+                <li><a href="privacy" className="text-gray-400 hover:text-white transition-colors text-sm sm:text-base">Privacy Policy</a></li>
+                {/* <li><a href="#" className="text-gray-400 hover:text-white transition-colors text-sm sm:text-base">Terms of Service</a></li> */}
               </ul>
             </div>
           </div>
           
           <div className="border-t border-gray-800 mt-8 lg:mt-12 pt-6 lg:pt-8 text-center text-gray-400 text-sm sm:text-base">
-            <p>&copy; {new Date().getFullYear()} ICTA e-Learning Platform. All rights reserved.</p>
+            <p>&copy; {new Date().getFullYear()} e-Learning Platform. All rights reserved.</p>
           </div>
         </div>
       </footer>
