@@ -284,7 +284,10 @@ class CompletionRateAnalyticsView(APIView):
             completed_enrollments = user_completed.count()
             total_completions_all += completed_enrollments
             
-            completion_rate = round((completed_enrollments / enrollments_count) * 100, 2) if enrollments_count > 0 else 0.0
+            try:
+                completion_rate = round((completed_enrollments / enrollments_count) * 100, 2) if enrollments_count > 0 else 0.0
+            except (ZeroDivisionError, TypeError):
+                completion_rate = 0.0
             
             completion_data.append({
                 'course_id': str(course.id),
@@ -294,7 +297,10 @@ class CompletionRateAnalyticsView(APIView):
                 'completed_enrollments': completed_enrollments
             })
         
-        overall_rate = round((total_completions_all / total_enrollments_all) * 100, 2) if total_enrollments_all > 0 else 0.0
+        try:
+            overall_rate = round((total_completions_all / total_enrollments_all) * 100, 2) if total_enrollments_all > 0 else 0.0
+        except (ZeroDivisionError, TypeError):
+            overall_rate = 0.0
         
         return Response({
             'overall_completion_rate': overall_rate,

@@ -6,6 +6,14 @@ import { Card, Spinner, Alert, Row, Col } from 'react-bootstrap';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { analyticsApi } from '@/lib/api';
 
+// Helper function to safely handle completion rates
+const safeCompletionRate = (rate: any): number => {
+  if (rate === null || rate === undefined || isNaN(rate)) {
+    return 0;
+  }
+  return Math.max(0, Math.min(100, Number(rate))); // Ensure between 0-100
+};
+
 export default function CompletionRatesTab() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -18,14 +26,19 @@ export default function CompletionRatesTab() {
         setError('');
         const response = await analyticsApi.getCompletionRates();
         if (response.error) throw new Error(response.error);
-        console.log('Completion Rates Data:', response.data); // Debug
-        // Filter out invalid completion rates
+        
+        console.log('Completion Rates Data:', response.data);
+        
+        // Safely process all completion rates
         const sanitizedData = {
           ...response.data,
-          completion_rates: response.data.completion_rates.filter(
-            (item: any) => !isNaN(item.completion_rate) && item.completion_rate != null
-          ),
+          overall_completion_rate: safeCompletionRate(response.data.overall_completion_rate),
+          completion_rates: (response.data.completion_rates || []).map((item: any) => ({
+            ...item,
+            completion_rate: safeCompletionRate(item.completion_rate)
+          }))
         };
+        
         setCompletionData(sanitizedData);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch data');
@@ -55,9 +68,7 @@ export default function CompletionRatesTab() {
                 <Card.Body>
                   <Card.Title>Overall Completion Rate</Card.Title>
                   <Card.Text className="display-6">
-                    {isNaN(completionData.overall_completion_rate) 
-                      ? '0%' 
-                      : `${completionData.overall_completion_rate}%`}
+                    {completionData.overall_completion_rate}%
                   </Card.Text>
                   <div>
                     <small>
@@ -74,18 +85,34 @@ export default function CompletionRatesTab() {
               <Card>
                 <Card.Body>
                   <Card.Title>Course Completion Rates</Card.Title>
-                  <div style={{ height: '200px' }}>
+                  <div style={{ height: '400px' }}>
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart
                         data={completionData.completion_rates || []}
+                        layout="vertical"
                         margin={{ top: 20, right: 30, left: 100, bottom: 5 }}
                       >
                         <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis type="number" domain={[0, 100]} />
-                        <YAxis dataKey="course_title" type="category" width={150} />
-                        <Tooltip />
+                        <XAxis 
+                          type="number" 
+                          domain={[0, 100]}
+                          tickFormatter={(value) => `${value}%`}
+                        />
+                        <YAxis 
+                          dataKey="course_title" 
+                          type="category" 
+                          width={150}
+                          tick={{ fontSize: 12 }}
+                        />
+                        <Tooltip 
+                          formatter={(value) => [`${value}%`, 'Completion Rate']}
+                        />
                         <Legend />
-                        <Bar dataKey="completion_rate" fill="#8884d8" name="Completion Rate (%)" />
+                        <Bar 
+                          dataKey="completion_rate" 
+                          fill="#8884d8" 
+                          name="Completion Rate (%)" 
+                        />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>

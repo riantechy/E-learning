@@ -1,27 +1,29 @@
-// app/privacy/page.tsx
-'use client'
+"use client"; // add this line at the very top of your file
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { ArrowLeft, Shield, FileText, Users, Cookie, Eye, Trash2, Download } from 'lucide-react';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { ArrowLeft, Shield, FileText, Users, Cookie, Eye, Trash2, Download } from "lucide-react";
 
 export default function PrivacyPolicy() {
-  const [activeSection, setActiveSection] = useState('overview');
+  const [activeSection, setActiveSection] = useState("overview");
+  const router = useRouter();
 
   const sections = [
-    { id: 'overview', title: 'Overview' },
-    { id: 'definitions', title: 'Definitions' },
-    { id: 'data-collection', title: 'Data We Collect' },
-    { id: 'data-usage', title: 'How We Use Data' },
-    { id: 'legal-basis', title: 'Legal Basis' },
-    { id: 'sharing', title: 'Sharing & Disclosure' },
-    { id: 'retention', title: 'Data Retention' },
-    { id: 'security', title: 'Security' },
-    { id: 'cookies', title: 'Cookies & Tracking' },
-    { id: 'rights', title: 'Your Rights' },
-    { id: 'children', title: 'Children' },
-    { id: 'changes', title: 'Policy Changes' },
-    { id: 'contact', title: 'Contact Us' }
+    { id: "who-we-are", title: "Who We Are" },
+    { id: "overview", title: "Overview" },
+    { id: "definitions", title: "Definitions" },
+    { id: "data-collection", title: "Data We Collect" },
+    { id: "data-usage", title: "How We Use Data" },
+    { id: "legal-basis", title: "Legal Basis" },
+    { id: "sharing", title: "Sharing & Disclosure" },
+    { id: "retention", title: "Data Retention" },
+    { id: "security", title: "Security" },
+    { id: "cookies", title: "Cookies & Tracking" },
+    { id: "rights", title: "Your Rights" },
+    { id: "children", title: "Children" },
+    { id: "changes", title: "Policy Changes" },
+    { id: "contact", title: "Contact Us" },
   ];
 
   return (
@@ -30,17 +32,18 @@ export default function PrivacyPolicy() {
       <header className="bg-white shadow-sm border-b">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between py-4">
-          <div className="flex items-center space-x-3">
-            <Link
-                href="/"
-                className="flex items-center space-x-2 text-red-600 hover:text-red-800 transition-colors no-underline"
-            >
-                <ArrowLeft className="h-5 w-5" />
+            <div className="flex items-center space-x-3">
+              <button
+                type="button"
+                onClick={() => router.push("/")}
+                className="inline-flex items-center space-x-2 bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors focus:outline-none focus:ring-2 focus:ring-red-300"
+                aria-label="Back to Home"
+              >
+                <ArrowLeft className="h-5 w-5 text-white" />
                 <span className="font-medium">Back to Home</span>
-            </Link>
-           </div>
+              </button>
+            </div>
 
-            
             <div className="flex items-center space-x-3">
               <div className="w-16 h-12 flex items-center justify-center">
                 <img
@@ -53,8 +56,8 @@ export default function PrivacyPolicy() {
           </div>
         </div>
       </header>
-
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  
+      <div className="container mx-auto px-4 sm:px-2 lg:px-8 py-8">
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
             {/* Sidebar Navigation */}
@@ -94,7 +97,7 @@ export default function PrivacyPolicy() {
                 </nav>
 
                 {/* Download Button */}
-                <div className="p-4 border-t border-gray-200">
+                {/* <div className="p-4 border-t border-gray-200">
                   <button
                     onClick={() => {
                       // In a real implementation, this would download the actual document
@@ -108,76 +111,182 @@ export default function PrivacyPolicy() {
                     <Download className="h-4 w-4" />
                     <span>Download PDF</span>
                   </button>
-                </div>
+                </div> */}
               </div>
             </div>
 
             {/* Main Content */}
             <div className="lg:col-span-3">
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                <div className="p-6 sm:p-8 lg:p-10">
-                  {/* Header */}
-                  <div className="text-center mb-8">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div className="p-6 sm:p-2 lg:p-10">
+                {/* Header */}
+                <div className="text-center mb-8">
                     <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-                      Privacy Policy
+                    Privacy Policy
                     </h1>
                     <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-                      Welcome to <strong>Whitebox E-learning</strong>. We are committed to protecting 
-                      your privacy and handling your personal data responsibly.
+                    Welcome to <strong>Whitebox E-learning</strong>. We are committed to protecting
+                    your privacy and handling your personal data responsibly.
                     </p>
-                  </div>
+                </div>
 
-                  {/* Overview Section */}
-                  {(activeSection === 'overview' || !activeSection) && (
-                    <section id="overview" className="space-y-6">
-                      <div className="prose prose-lg max-w-none">
-                        <p>
-                          This Privacy Policy explains how we collect, use, disclose, and safeguard 
-                          your information when you visit and use our platform at{' '}
-                          <a 
-                            href="https://e-learning.whitebox.go.ke" 
-                            className="text-red-600 hover:text-red-700 font-medium"
-                          >
-                            https://e-learning.whitebox.go.ke
-                          </a>{' '}
-                          (the "Service").
+                {/* Who We Are Section Content */}
+                {/* {(activeSection === 'who-we-are' || !activeSection) && (
+                    <section id="who-we-are" className="space-y-6">
+                    <div className="space-y-6">
+                        <div className="bg-gradient-to-r from-red-50 to-white border border-red-200 rounded-lg p-6">
+                        <div className="flex items-center space-x-3 mb-4">
+                            <h3 className="text-2xl font-bold text-gray-900">WhiteBox Initiative</h3>
+                        </div>
+                        <p className="text-gray-700 mb-4">
+                            WhiteBox is an initiative of the Government of Kenya through the Ministry of Information,
+                            Communications and Technology and the ICT Authority, geared towards catalyzing the
+                            successful growth of local ventures to global, world-class status.
                         </p>
-                        
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="bg-white border border-gray-200 rounded-lg p-6">
+                            <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                            <FileText className="h-5 w-5 text-red-600 mr-2" />
+                            Main Objective
+                            </h3>
+                            <p className="text-gray-700">
+                            The main objective of this initiative is to create a channel for anyone who wants to
+                            sell/suggest a product/idea to Government. Priority will be given to products that
+                            focus on the Bottom-Up Economic Transformation Agenda (BETA) and address Government
+                            priorities and challenges.
+                            </p>
+                        </div>
+
+                        <div className="bg-white border border-gray-200 rounded-lg p-6">
+                            <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                            <Users className="h-5 w-5 text-red-600 mr-2" />
+                            One-Stop-Shop
+                            </h3>
+                            <p className="text-gray-700">
+                            The program is a one-stop-shop for anyone who wants to present/share/sell an idea,
+                            innovation, invention or solution. The WhiteBox facility will address submissions on
+                            a need, and case by case basis.
+                            </p>
+                        </div>
+                        </div>
+
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                        <h3 className="text-xl font-semibold text-blue-900 mb-4">Opportunities Provided</h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <ul className="space-y-2 text-blue-800">
+                            <li className="flex items-start">
+                                <div className="w-2 h-2 bg-blue-600 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                                <span>Financial support</span>
+                            </li>
+                            <li className="flex items-start">
+                                <div className="w-2 h-2 bg-blue-600 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                                <span>Office facilities</span>
+                            </li>
+                            <li className="flex items-start">
+                                <div className="w-2 h-2 bg-blue-600 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                                <span>Technical support</span>
+                            </li>
+                            <li className="flex items-start">
+                                <div className="w-2 h-2 bg-blue-600 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                                <span>Advisory services</span>
+                            </li>
+                            </ul>
+                            <ul className="space-y-2 text-blue-800">
+                            <li className="flex items-start">
+                                <div className="w-2 h-2 bg-blue-600 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                                <span>Access to market</span>
+                            </li>
+                            <li className="flex items-start">
+                                <div className="w-2 h-2 bg-blue-600 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                                <span>Networking opportunities</span>
+                            </li>
+                            <li className="flex items-start">
+                                <div className="w-2 h-2 bg-blue-600 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                                <span>Access to incubation facilities</span>
+                            </li>
+                            <li className="flex items-start">
+                                <div className="w-2 h-2 bg-blue-600 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                                <span>Access to accelerator programs</span>
+                            </li>
+                            </ul>
+                        </div>
+                        </div>
+
+                        <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+                        <h3 className="text-xl font-semibold text-green-900 mb-4">Government Window & Community</h3>
+                        <div className="space-y-4">
+                            <p className="text-green-800">
+                            The WhiteBox initiative offers a window into Government wide initiatives; staffed with
+                            subject matter Government officers who will offer guidance on the program activities,
+                            selection criteria as well as insights into Government programs that the public can
+                            leverage on to grow their businesses.
+                            </p>
+                            <p className="text-green-800">
+                            We welcome entrepreneurs and businesses at all stages of growth, from ideation to scale
+                            and aim to build a collaborative community of entrepreneurs and innovators who will
+                            mutually benefit from sharing knowledge and establishing necessary partnerships for success.
+                            </p>
+                        </div>
+                        </div>
+                    </div>
+                    </section>
+                )} */}
+
+                {/* Overview Section */}
+                {(activeSection === 'overview' || !activeSection) && (
+                    <section id="overview" className="space-y-6">
+                    <div className="prose prose-lg max-w-none">
+                        <p>
+                        This Privacy Policy explains how we collect, use, disclose, and safeguard
+                        your information when you visit and use our platform at{' '}
+                        <a
+                            href="https://e-learning.whitebox.go.ke"
+                            className="text-red-600 hover:text-red-700 font-medium"
+                        >
+                            https://e-learning.whitebox.go.ke
+                        </a>{' '}
+                        (the "Service").
+                        </p>
+
                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 my-6">
-                          <p className="text-blue-800 text-sm">
-                            <strong>Important:</strong> By accessing or using our Service, you agree 
+                        <p className="text-blue-800 text-sm">
+                            <strong>Important:</strong> By accessing or using our Service, you agree
                             to the collection and use of information in accordance with this policy.
-                          </p>
+                        </p>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 my-8">
-                          <div className="text-center p-4 bg-gray-50 rounded-lg">
+                        <div className="text-center p-4 bg-gray-50 rounded-lg">
                             <FileText className="h-8 w-8 text-red-600 mx-auto mb-3" />
                             <h3 className="font-semibold text-gray-900 mb-2">Data Collection</h3>
                             <p className="text-sm text-gray-600">
-                              We collect information you provide and usage data to improve our services.
+                            We collect information you provide and usage data to improve our services.
                             </p>
-                          </div>
-                          
-                          <div className="text-center p-4 bg-gray-50 rounded-lg">
+                        </div>
+
+                        <div className="text-center p-4 bg-gray-50 rounded-lg">
                             <Shield className="h-8 w-8 text-red-600 mx-auto mb-3" />
                             <h3 className="font-semibold text-gray-900 mb-2">Your Security</h3>
                             <p className="text-sm text-gray-600">
-                              We implement security measures to protect your personal information.
+                            We implement security measures to protect your personal information.
                             </p>
-                          </div>
-                          
-                          <div className="text-center p-4 bg-gray-50 rounded-lg">
+                        </div>
+
+                        <div className="text-center p-4 bg-gray-50 rounded-lg">
                             <Users className="h-8 w-8 text-red-600 mx-auto mb-3" />
                             <h3 className="font-semibold text-gray-900 mb-2">Your Rights</h3>
                             <p className="text-sm text-gray-600">
-                              You have rights to access, correct, and delete your personal data.
+                            You have rights to access, correct, and delete your personal data.
                             </p>
-                          </div>
                         </div>
-                      </div>
+                        </div>
+                    </div>
                     </section>
-                  )}
+                )}
+  
+
 
                   {/* Definitions Section */}
                   {activeSection === 'definitions' && (
