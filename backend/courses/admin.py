@@ -14,6 +14,13 @@ from .models import (
     ModuleProgress
 )
 from users.models import User
+import random
+import string
+
+def generate_random_password(length=12):
+    """Generate a random password"""
+    characters = string.ascii_letters + string.digits + string.punctuation
+    return ''.join(random.choice(characters) for i in range(length))
 
 @admin.register(CourseCategory)
 class CourseCategoryAdmin(admin.ModelAdmin):
@@ -326,53 +333,164 @@ class ModuleProgressAdmin(admin.ModelAdmin):
         return custom_urls + urls
 
     def bulk_update_module_progress_view(self, request):
-        """Handle bulk module progress update from Excel"""
+        """Handle bulk module progress update from Excel in the new format"""
         if request.method == 'POST' and request.FILES.get('excel_file'):
             excel_file = request.FILES['excel_file']
             
             try:
                 df = pd.read_excel(excel_file)
                 updated_count = 0
+                user_created_count = 0
+                enrollment_count = 0
                 errors = []
+                
+                # Get the target course for enrollment
+                target_course_id = '8960c8009c79401ba38ce11b9eced6e9'
+                try:
+                    target_course = Course.objects.get(id=target_course_id)
+                except Course.DoesNotExist:
+                    errors.append(f"Target course with ID {target_course_id} not found")
+                    self.message_user(request, f"Error: {errors[0]}", level='error')
+                    return redirect('admin:courses_moduleprogress_changelist')
+                
+                # Get all module IDs from columns (skip first 4 columns: No, NAME, EMAIL ADDRESS, PHONE NUMBER)
+                module_columns = df.columns[4:]  # Skip first 4 columns (No., NAME, EMAIL ADDRESS, PHONE NUMBER)
                 
                 for index, row in df.iterrows():
                     try:
-                        user_email = row.get('user_email', '').strip()
-                        module_id = row.get('module_id', '')
-                        is_completed = row.get('is_completed', False)
+                        user_email = str(row.iloc[2]).strip().lower()  # EMAIL ADDRESS is 3rd column (index 2)
+                        user_name = str(row.iloc[1]).strip()  # NAME is 2nd column (index 1)
+                        phone_number = str(row.iloc[3]).strip()  # PHONE NUMBER is 4th column (index 3)
                         
-                        if not user_email or not module_id:
-                            errors.append(f"Row {index+1}: Missing required fields")
-                            continue
+                        if not user_email or user_email.lower() == 'nan' or user_email == 'email address':
+                            continue  # Skip header rows or empty emails
                         
-                        user = User.objects.get(email=user_email)
-                        module = Module.objects.get(id=module_id)
+                        # Try to find user by email
+                        try:
+                            user = User.objects.get(email__iexact=user_email)
+                        except User.DoesNotExist:
+                            # Create new user
+                            try:
+                                # Split name into first and last name
+                                name_parts = user_name.split(' ', 1)
+                                first_name = name_parts[0] if name_parts else user_name
+                                last_name = name_parts[1] if len(name_parts) > 1 else 'User'
+                                
+                                # Generate random password
+                                temp_password = generate_random_password()
+                                
+                                # Create user with minimal required fields
+                                user = User.objects.create_user(
+                                    email=user_email,
+                                    password=temp_password,
+                                    first_name=first_name,
+                                    last_name=last_name,
+                                    phone=phone_number,
+                                    gender='Other',  # Default value
+                                    date_of_birth='1900-01-01',  # Default value
+                                    county='Unknown',  # Default value
+                                    education='Not specified',  # Default value
+                                    role='LEARNER',
+                                    is_verified=True,  # Auto-verify since we're creating via admin
+                                    force_password_change=True  # Force password change on first login
+                                )
+                                
+                                user_created_count += 1
+                                errors.append(f"Row {index+1}: Created new user '{user_email}' with temporary password")
+                                
+                            except Exception as e:
+                                errors.append(f"Row {index+1}: Failed to create user '{user_email}' - {str(e)}")
+                                continue
                         
-                        progress, created = ModuleProgress.objects.update_or_create(
-                            user=user,
-                            module=module,
-                            defaults={'is_completed': bool(is_completed)}
-                        )
-                        updated_count += 1
+                        # Enroll user in the target course if not already enrolled
+                        try:
+                            enrollment, created = Enrollment.objects.get_or_create(
+                                user=user,
+                                course=target_course
+                            )
+                            if created:
+                                enrollment_count += 1
+                        except Exception as e:
+                            errors.append(f"Row {index+1}: Failed to enroll user '{user_email}' in course - {str(e)}")
                         
-                    except User.DoesNotExist:
-                        errors.append(f"Row {index+1}: User not found")
-                    except Module.DoesNotExist:
-                        errors.append(f"Row {index+1}: Module not found")
+                        # Process each module column
+                        for module_id_col in module_columns:
+                            cell_value = str(row[module_id_col])
+                            
+                            # Skip empty cells
+                            if pd.isna(row[module_id_col]) or cell_value.lower() == 'nan' or not cell_value.strip():
+                                continue
+                            
+                            # Check if cell contains completion data
+                            if 'completed' in cell_value.lower():
+                                try:
+                                    # Clean the module ID - remove any non-alphanumeric characters except hyphens
+                                    clean_module_id = str(module_id_col).strip()
+                                    
+                                    # Fix common UUID formatting issues
+                                    # Remove any whitespace
+                                    clean_module_id = clean_module_id.replace(' ', '')
+                                    
+                                    # If UUID is missing characters, try to pad it (this is a workaround)
+                                    if len(clean_module_id) == 31 and '-' not in clean_module_id:
+                                        # Try adding a character at the end (this might not be accurate)
+                                        clean_module_id = clean_module_id + '0'
+                                    
+                                    # Extract date from "completed YYYY-MM-DD"
+                                    date_str = cell_value.lower().replace('completed', '').strip()
+                                    try:
+                                        completed_date = pd.to_datetime(date_str)
+                                    except:
+                                        # If date parsing fails, use current date
+                                        completed_date = timezone.now()
+                                    
+                                    try:
+                                        module = Module.objects.get(id=clean_module_id)
+                                        
+                                        progress, created = ModuleProgress.objects.update_or_create(
+                                            user=user,
+                                            module=module,
+                                            defaults={
+                                                'is_completed': True,
+                                                'completed_at': completed_date
+                                            }
+                                        )
+                                        updated_count += 1
+                                        
+                                    except Module.DoesNotExist:
+                                        errors.append(f"Row {index+1}: Module '{clean_module_id}' not found in database")
+                                    except ValueError as e:
+                                        if 'invalid UUID' in str(e):
+                                            errors.append(f"Row {index+1}: Invalid UUID format '{clean_module_id}' - {str(e)}")
+                                        else:
+                                            errors.append(f"Row {index+1}: Error with module '{clean_module_id}' - {str(e)}")
+                                    
+                                except Exception as e:
+                                    errors.append(f"Row {index+1}: Error processing module '{module_id_col}' - {str(e)}")
+                            
                     except Exception as e:
-                        errors.append(f"Row {index+1}: {str(e)}")
+                        errors.append(f"Row {index+1}: General error - {str(e)}")
+                
+                # Show success message with summary
+                success_message = f"""
+                Bulk update completed:
+                - Created {user_created_count} new users
+                - Enrolled {enrollment_count} users in course
+                - Updated {updated_count} module progress records
+                """
                 
                 if errors:
                     self.message_user(
                         request,
-                        f'Updated {updated_count} module progress records. Errors: {len(errors)}',
+                        f'{success_message} {len(errors)} errors occurred.',
                         level='warning'
                     )
-                    request.session['bulk_operation_errors'] = errors[:10]
+                    # Store only first 20 errors to avoid session size issues
+                    request.session['bulk_operation_errors'] = errors[:20]
                 else:
                     self.message_user(
                         request,
-                        f'Successfully updated {updated_count} module progress records'
+                        success_message
                     )
                 
                 return redirect('admin:courses_moduleprogress_changelist')
@@ -391,26 +509,33 @@ class ModuleProgressAdmin(admin.ModelAdmin):
         return render(request, 'admin/courses/bulk_module_progress_upload.html', context)
 
     def export_module_progress_template_view(self, request):
-        """Export Excel template for bulk module progress update"""
-        modules = Module.objects.all()[:3]
+        """Export Excel template for bulk module progress update in the new format"""
+        # Get some example modules
+        modules = Module.objects.all()[:5]
         
-        df = pd.DataFrame(columns=[
-            'user_email',
-            'module_id',
-            'is_completed',
-            'notes'
-        ])
+        # Create DataFrame with the required column structure
+        columns = ['No.', 'NAME', 'EMAIL ADDRESS', 'PHONE NUMBER']
         
-        for i, module in enumerate(modules):
-            df.loc[i] = [
-                'student@example.com',
-                str(module.id),
-                'TRUE',
-                f'Module: {module.title}'
-            ]
+        # Add module IDs as additional columns
+        for module in modules:
+            columns.append(str(module.id))
+        
+        df = pd.DataFrame(columns=columns)
+        
+        # Add example rows
+        df.loc[0] = {
+            'No.': 1,
+            'NAME': 'John Doe',
+            'EMAIL ADDRESS': 'student@example.com',
+            'PHONE NUMBER': '1234567890'
+        }
+        
+        # Fill module columns with example completion data
+        for module in modules:
+            df.loc[0][str(module.id)] = 'completed 2024-01-15'
         
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        response['Content-Disposition'] = 'attachment; filename="module_progress_template.xlsx"'
+        response['Content-Disposition'] = 'attachment; filename="module_progress_template_new_format.xlsx"'
         
         df.to_excel(response, index=False)
         return response

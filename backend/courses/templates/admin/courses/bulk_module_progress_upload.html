@@ -23,7 +23,7 @@
             <div class="form-row">
                 <label for="excel_file">{% trans "Excel File:" %}</label>
                 <input type="file" name="excel_file" accept=".xlsx, .xls" required>
-                <p class="help">{% trans "Upload an Excel file with columns: user_email, module_id, is_completed" %}</p>
+                <p class="help">{% trans "Upload an Excel file with the specific format: columns for No., NAME, EMAIL ADDRESS, PHONE NUMBER, followed by module ID columns" %}</p>
             </div>
 
             <div class="submit-row">
@@ -34,8 +34,8 @@
     </div>
 
     <div class="module">
-        <h2>{% trans "Template Format" %}</h2>
-        <p>{% trans "Your Excel file should have these columns:" %}</p>
+        <h2>{% trans "Excel File Format" %}</h2>
+        <p>{% trans "Your Excel file should have this structure:" %}</p>
         <table>
             <thead>
                 <tr>
@@ -46,22 +46,34 @@
             </thead>
             <tbody>
                 <tr>
-                    <td><code>user_email</code></td>
+                    <td><code>No.</code></td>
+                    <td>{% trans "Serial number" %}</td>
+                    <td>{% trans "Yes" %}</td>
+                </tr>
+                <tr>
+                    <td><code>NAME</code></td>
+                    <td>{% trans "User's full name" %}</td>
+                    <td>{% trans "Yes" %}</td>
+                </tr>
+                <tr>
+                    <td><code>EMAIL ADDRESS</code></td>
                     <td>{% trans "User's email address" %}</td>
                     <td>{% trans "Yes" %}</td>
                 </tr>
                 <tr>
-                    <td><code>module_id</code></td>
-                    <td>{% trans "Module UUID" %}</td>
+                    <td><code>PHONE NUMBER</code></td>
+                    <td>{% trans "User's phone number" %}</td>
                     <td>{% trans "Yes" %}</td>
                 </tr>
                 <tr>
-                    <td><code>is_completed</code></td>
-                    <td>{% trans "TRUE or FALSE" %}</td>
-                    <td>{% trans "Yes" %}</td>
+                    <td><code>[Module UUID]</code></td>
+                    <td>{% trans "Module ID columns with values like 'completed YYYY-MM-DD'" %}</td>
+                    <td>{% trans "Conditional" %}</td>
                 </tr>
             </tbody>
         </table>
+        
+        <p><strong>{% trans "Note:" %}</strong> {% trans "The system will look for cells containing 'completed' followed by a date to mark modules as completed." %}</p>
         
         <div style="margin-top: 20px;">
             <a href="{% url 'admin:courses_moduleprogress_export_template' %}" class="button">📤 {% trans "Download Template" %}</a>
