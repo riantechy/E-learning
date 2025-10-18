@@ -351,7 +351,7 @@ class ExportAnalyticsReportView(APIView):
         report_type = request.query_params.get('type', 'user_activity')
         time_filter = request.query_params.get('time_filter', '7d')
         export_format = request.query_params.get('format', 'csv')
-        print(f"Export endpoint hit: type={report_type}, time_filter={time_filter}, format={export_format}")  # Debug
+        print(f"Export endpoint hit: type={report_type}, time_filter={time_filter}, format={export_format}")
 
         # Calculate time range
         now = timezone.now()

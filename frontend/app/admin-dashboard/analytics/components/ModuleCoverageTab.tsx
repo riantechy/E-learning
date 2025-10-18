@@ -67,9 +67,21 @@ export default function ModuleCoverageTab() {
           'Learner Name': learner.name,
         };
         
-        // Add module completion status for each module
+        // Add module completion status AND date completed for each module
         moduleCoverage.modules.forEach((module: string, index: number) => {
-          row[module] = learner.module_progress[index]?.completed ? 'Completed' : 'Not Completed';
+          const moduleProgress = learner.module_progress[index];
+          const moduleId = moduleProgress?.module_id;
+          
+          // Find the module title from the modules array using the index
+          const moduleTitle = moduleCoverage.modules[index];
+          
+          // Add status column
+          row[`${moduleTitle} - Status`] = moduleProgress?.completed ? 'Completed' : 'Not Completed';
+          
+          // Add date completed column
+          row[`${moduleTitle} - Date Completed`] = moduleProgress?.completed_at 
+            ? new Date(moduleProgress.completed_at).toLocaleDateString() 
+            : 'Not Completed';
         });
         
         return row;
@@ -300,11 +312,6 @@ export default function ModuleCoverageTab() {
       ) : moduleCoverage ? (
         <>
           <Row className="mb-4">
-            <Col md={12} className="d-flex justify-content-end mb-3">
-              <Button variant="danger" onClick={handlePrint}>
-                Print Report
-              </Button>
-            </Col>
             <Col md={12}>
               <Card>
                 <Card.Header>

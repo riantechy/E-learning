@@ -326,7 +326,7 @@ export default function BulkEmailPage() {
                     />
                   </Form.Group>
 
-                  <Form.Group className="mb-4">
+                  {/* <Form.Group className="mb-4">
                     <Form.Check
                       type="checkbox"
                       label="Format as HTML"
@@ -337,7 +337,7 @@ export default function BulkEmailPage() {
                     <Form.Text className="text-muted">
                       Check this if your message contains HTML formatting
                     </Form.Text>
-                  </Form.Group>
+                  </Form.Group> */}
 
                   <div className="d-flex justify-content-between align-items-center">
                     <div>
