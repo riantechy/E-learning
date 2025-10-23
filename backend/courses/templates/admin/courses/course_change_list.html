@@ -1,12 +1,30 @@
 {% extends "admin/change_list.html" %}
 {% load i18n admin_urls %}
 
-{% block object-tools-items %}
-    {{ block.super }}
-    <li>
-        <a href="{% url 'admin:courses_userprogress_bulk_update' %}" class="button">📥 Bulk Update Progress</a>
-    </li>
-    <li>
-        <a href="{% url 'admin:courses_userprogress_export_template' %}" class="button">📤 Export Progress Template</a>
-    </li>
+{% block object-tools %}
+    <ul class="object-tools">
+        {% block object-tools-items %}
+            {{ block.super }}
+            <li>
+                <a href="{% url 'admin:courses_moduleprogress_migrate_lessons' %}" class="addlink" style="background-color: #4CAF50;">
+                    📊 Migrate Lesson Completions
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'admin:courses_moduleprogress_verify_migration' %}" class="addlink" style="background-color: #2196F3;">
+                    🔍 Verify Migration
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'admin:courses_moduleprogress_bulk_update' %}" class="addlink">
+                    📤 Bulk Update Module Progress
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'admin:courses_moduleprogress_export_template' %}" class="addlink">
+                    📥 Export Template
+                </a>
+            </li>
+        {% endblock %}
+    </ul>
 {% endblock %}

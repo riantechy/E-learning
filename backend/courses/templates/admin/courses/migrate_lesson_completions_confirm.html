@@ -1,0 +1,43 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+<div id="content-main">
+    <h1>Migrate Lesson Completions</h1>
+    
+    <div class="module">
+        <div class="alert alert-warning">
+            <h3>⚠️ Action Required</h3>
+            <p>
+                This action will mark all lessons in completed modules as completed for all users.
+                This ensures that your analytics reflect both module and lesson completion data.
+            </p>
+        </div>
+
+        <div class="form-row">
+            <h3>📊 Migration Summary</h3>
+            <ul>
+                <li><strong>Completed modules found:</strong> {{ completed_modules_count }}</li>
+                <li><strong>Action:</strong> All lessons in these completed modules will be marked as completed</li>
+                <li><strong>Users affected:</strong> All users with completed modules</li>
+            </ul>
+        </div>
+
+        <div class="alert alert-info">
+            <h4>💡 Note</h4>
+            <p>
+                This process may take a few minutes depending on the number of modules and lessons.
+                Existing lesson completion records will be updated, new ones will be created.
+            </p>
+        </div>
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="submit-row">
+                <input type="submit" value="🚀 Start Migration" class="default" name="apply">
+                <a href="../" class="button cancel-link">❌ Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

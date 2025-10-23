@@ -2,6 +2,9 @@ from django.contrib import admin
 from django.http import HttpResponse
 from django.urls import path
 from django.shortcuts import render, redirect
+from django.http import HttpResponseRedirect
+from django.contrib import messages
+from django.utils import timezone
 import pandas as pd
 from .models import (
     CourseCategory,
@@ -16,6 +19,62 @@ from .models import (
 from users.models import User
 import random
 import string
+
+def migrate_lesson_completions(modeladmin, request, queryset):
+    """
+    Admin action to migrate lesson completions based on module completions
+    """
+    try:
+        completed_modules = ModuleProgress.objects.filter(is_completed=True)
+        stats = {
+            'total_module_completions': completed_modules.count(),
+            'lessons_processed': 0,
+            'users_processed': 0
+        }
+        
+        user_cache = set()
+        
+        for module_progress in completed_modules:
+            user = module_progress.user
+            module = module_progress.module
+            completed_at = module_progress.completed_at or timezone.now()
+            
+            # Get all lessons in this module
+            lessons = Lesson.objects.filter(module=module)
+            
+            for lesson in lessons:
+                UserProgress.objects.update_or_create(
+                    user=user,
+                    lesson=lesson,
+                    defaults={
+                        'is_completed': True,
+                        'completed_at': completed_at
+                    }
+                )
+                stats['lessons_processed'] += 1
+            
+            if user.id not in user_cache:
+                user_cache.add(user.id)
+                stats['users_processed'] += 1
+        
+        # Show success message
+        modeladmin.message_user(
+            request,
+            f"✅ Successfully migrated lesson completions! "
+            f"Processed {stats['lessons_processed']} lessons for {stats['users_processed']} users "
+            f"based on {stats['total_module_completions']} module completions.",
+            messages.SUCCESS
+        )
+        
+    except Exception as e:
+        modeladmin.message_user(
+            request,
+            f"❌ Error during migration: {str(e)}",
+            messages.ERROR
+        )
+
+# Add description for the admin action
+migrate_lesson_completions.short_description = "📊 Migrate lesson completions from module completions"
 
 def generate_random_password(length=12):
     """Generate a random password"""
@@ -216,6 +275,7 @@ class UserProgressAdmin(admin.ModelAdmin):
         custom_urls = [
             path('bulk-update-progress/', self.admin_site.admin_view(self.bulk_update_progress_view), name='courses_userprogress_bulk_update'),
             path('export-progress-template/', self.admin_site.admin_view(self.export_progress_template_view), name='courses_userprogress_export_template'),
+            path('migrate-lesson-completions/', self.admin_site.admin_view(self.migrate_lesson_completions_view), name='courses_userprogress_migrate_lessons'),
         ]
         return custom_urls + urls
 
@@ -310,6 +370,22 @@ class UserProgressAdmin(admin.ModelAdmin):
         
         df.to_excel(response, index=False)
         return response
+    
+    def migrate_lesson_completions_view(self, request):
+        """
+        Handle the migration via a dedicated admin view
+        """
+        if request.method == 'POST':
+            migrate_lesson_completions(self, request, UserProgress.objects.all())
+            return HttpResponseRedirect('../../')
+        
+        completed_modules_count = ModuleProgress.objects.filter(is_completed=True).count()
+        context = {
+            'title': 'Migrate Lesson Completions',
+            'completed_modules_count': completed_modules_count,
+            'opts': self.model._meta,
+        }
+        return render(request, 'admin/courses/migrate_lesson_completions_confirm.html', context)
 
 @admin.register(Enrollment)
 class EnrollmentAdmin(admin.ModelAdmin):
@@ -329,8 +405,170 @@ class ModuleProgressAdmin(admin.ModelAdmin):
         custom_urls = [
             path('bulk-update-module-progress/', self.admin_site.admin_view(self.bulk_update_module_progress_view), name='courses_moduleprogress_bulk_update'),
             path('export-module-progress-template/', self.admin_site.admin_view(self.export_module_progress_template_view), name='courses_moduleprogress_export_template'),
+            path('migrate-lesson-completions/', self.admin_site.admin_view(self.migrate_lesson_completions_view), name='courses_moduleprogress_migrate_lessons'),
+            path('verify-migration/', self.admin_site.admin_view(self.verify_migration_view), name='courses_moduleprogress_verify_migration'),
         ]
         return custom_urls + urls
+   
+
+    def migrate_lesson_completions_view(self, request):
+        """
+        Handle the migration via a dedicated admin view
+        """
+        if request.method == 'POST':
+            # Call the migration function without queryset parameter
+            self.migrate_lesson_completions_action(request)
+            return HttpResponseRedirect('../../')
+        
+        # Show confirmation page
+        completed_modules_count = ModuleProgress.objects.filter(is_completed=True).count()
+        context = {
+            'title': 'Migrate Lesson Completions',
+            'completed_modules_count': completed_modules_count,
+            'opts': self.model._meta,
+        }
+        return render(request, 'admin/courses/migrate_lesson_completions_confirm.html', context)
+
+    def migrate_lesson_completions_action(self, request):
+        """
+        Separate method for the migration logic that can be called from both actions and views
+        """
+        try:
+            completed_modules = ModuleProgress.objects.filter(is_completed=True)
+            stats = {
+                'total_module_completions': completed_modules.count(),
+                'lessons_processed': 0,
+                'users_processed': 0,
+                'created_count': 0,
+                'updated_count': 0,
+                'errors': []
+            }
+            
+            user_cache = set()
+            
+            for module_progress in completed_modules:
+                try:
+                    user = module_progress.user
+                    module = module_progress.module
+                    completed_at = module_progress.completed_at or timezone.now()
+                    
+                    # Get all lessons in this module
+                    lessons = Lesson.objects.filter(module=module)
+                    
+                    for lesson in lessons:
+                        try:
+                            # Use update_or_create to ensure the record is properly set
+                            user_progress, created = UserProgress.objects.update_or_create(
+                                user=user,
+                                lesson=lesson,
+                                defaults={
+                                    'is_completed': True,
+                                    'completed_at': completed_at
+                                }
+                            )
+                            
+                            if created:
+                                stats['created_count'] += 1
+                            else:
+                                # Check if we actually updated an incomplete record
+                                if not user_progress.is_completed:
+                                    stats['updated_count'] += 1
+                            
+                            stats['lessons_processed'] += 1
+                            
+                        except Exception as e:
+                            stats['errors'].append(f"Error processing lesson {lesson.id} for user {user.email}: {str(e)}")
+                            continue
+                    
+                    if user.id not in user_cache:
+                        user_cache.add(user.id)
+                        stats['users_processed'] += 1
+                        
+                except Exception as e:
+                    stats['errors'].append(f"Error processing module {module_progress.id}: {str(e)}")
+                    continue
+            
+            # Show detailed success message
+            message = (
+                f"✅ Migration completed!\n"
+                f"• Processed {stats['lessons_processed']} lessons\n"
+                f"• Affected {stats['users_processed']} users\n"
+                f"• Based on {stats['total_module_completions']} module completions\n"
+                f"• Created {stats['created_count']} new records\n"
+                f"• Updated {stats['updated_count']} existing records\n"
+            )
+            
+            if stats['errors']:
+                message += f"• {len(stats['errors'])} errors occurred"
+            
+            self.message_user(
+                request,
+                message,
+                messages.SUCCESS if not stats['errors'] else messages.WARNING
+            )
+            
+            # Log errors for debugging
+            for error in stats['errors'][:5]:
+                self.message_user(request, f"Error: {error}", messages.ERROR)
+            
+        except Exception as e:
+            self.message_user(
+                request,
+                f"❌ Critical error during migration: {str(e)}",
+                messages.ERROR
+            )
+
+    def verify_migration_view(self, request):
+        """
+        Verify that lesson completions match module completions
+        """
+        try:
+            # Check a sample of users and modules
+            sample_users = User.objects.filter(
+                moduleprogress__is_completed=True
+            ).distinct()[:5]
+            
+            verification_results = []
+            
+            for user in sample_users:
+                user_modules = ModuleProgress.objects.filter(
+                    user=user, 
+                    is_completed=True
+                )
+                
+                for module_progress in user_modules[:2]:  # Check first 2 modules per user
+                    module = module_progress.module
+                    lessons = Lesson.objects.filter(module=module)
+                    completed_lessons = UserProgress.objects.filter(
+                        user=user,
+                        lesson__in=lessons,
+                        is_completed=True
+                    ).count()
+                    
+                    verification_results.append({
+                        'user': user.email,
+                        'module': module.title,
+                        'total_lessons': lessons.count(),
+                        'completed_lessons': completed_lessons,
+                        'status': '✅ Complete' if completed_lessons == lessons.count() else '❌ Incomplete'
+                    })
+            
+            # Show verification results
+            message = "Verification Results:\n"
+            for result in verification_results:
+                message += (
+                    f"• {result['user']} - {result['module']}: "
+                    f"{result['completed_lessons']}/{result['total_lessons']} lessons - {result['status']}\n"
+                )
+            
+            self.message_user(request, message, messages.INFO)
+            
+        except Exception as e:
+            self.message_user(
+                request,
+                f"❌ Verification error: {str(e)}",
+                messages.ERROR
+            )
 
     def bulk_update_module_progress_view(self, request):
         """Handle bulk module progress update from Excel in the new format"""
