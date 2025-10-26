@@ -138,10 +138,10 @@ export default function AdminDashboard() {
   // ];
 
   const statCards = [
-    { title: 'Total Learners', value: stats.totalLearners, variant: 'success', change: '+8% from last month' },
-    { title: 'Active Courses', value: stats.activeCourses, variant: 'info', change: '+5% from last month' },
-    { title: 'Enrollments', value: stats.enrollments, variant: 'warning', change: '-2% from last month' },
-    { title: 'Completion Rate', value: `${stats.completionRate}%`, variant: 'danger', change: '+3% from last month' },
+    { title: 'Total Learners', value: stats.totalLearners, variant: 'success' },
+    { title: 'Active Courses', value: stats.activeCourses, variant: 'info' },
+    { title: 'Enrollments', value: stats.enrollments, variant: 'warning' },
+    { title: 'Completion Rate', value: `${stats.completionRate}%`, variant: 'danger' },
   ];
 
   // Chart data configurations
