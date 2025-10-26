@@ -231,7 +231,6 @@ export default function AdminDashboard() {
                       card.value
                     )}
                   </div>
-                  <small>{card.change}</small>
                 </Card.Body>
               </Card>
             </div>
