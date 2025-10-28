@@ -128,29 +128,40 @@ export default function ModulePage() {
     checkModuleCompletion()
   }, [lessons, lessonProgress, hasSurvey, surveyCompleted, moduleId, courseId])
 
-  // Auto-complete lessons when they become visible
+  // Improved intersection observer with better configuration
   useEffect(() => {
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
           const lessonId = entry.target.getAttribute('data-lesson-id')
+          const contentType = entry.target.getAttribute('data-content-type')
+          
           if (lessonId && !lessonProgress[lessonId]?.is_completed) {
+            console.log(`Auto-completing lesson ${lessonId} (${contentType})`)
             handleLessonCompleted(lessonId)
           }
         }
       })
-    }, { threshold: 0.3 })
+    }, { 
+      threshold: 0.1, // Reduced from 0.3 to 0.1 (10% visible)
+      rootMargin: '0px 0px -50px 0px' // Trigger when element is 50px from bottom of viewport
+    })
 
-    // Observe all lesson content elements
-    Object.entries(contentRefs.current).forEach(([lessonId, ref]) => {
+    // Observe all content elements (main content, sections, subsections)
+    Object.entries(contentRefs.current).forEach(([key, ref]) => {
       if (ref) {
-        ref.setAttribute('data-lesson-id', lessonId)
         observer.observe(ref)
       }
     })
 
     return () => observer.disconnect()
   }, [lessonProgress])
+
+  // Add debugging
+  useEffect(() => {
+    console.log('Content refs:', Object.keys(contentRefs.current))
+    console.log('Lesson progress:', lessonProgress)
+  }, [contentRefs.current, lessonProgress])
 
   const getCurrentModuleIndex = () => {
     return modules.findIndex((m: any) => m.id === moduleId) || 0
@@ -219,7 +230,6 @@ export default function ModulePage() {
             <div className="d-flex gap-2 align-items-center">
               <button 
                 onClick={() => {
-                  // REMOVED: handleLessonCompleted(lesson.id) - Don't complete when clicking Take Quiz
                   router.push(`/dashboard/learn/${courseId}/${moduleId}/${lesson.id}`)
                 }}
                 className="btn btn-sm btn-danger"
@@ -311,16 +321,23 @@ export default function ModulePage() {
 
     return (
       <>
-        <div 
-          ref={(el) => { contentRefs.current[lesson.id] = el }}
-          className="lesson-content formatted-content" 
-          dangerouslySetInnerHTML={{ __html: lesson.content }}
-          onClick={() => {
-            if (!lessonProgress[lesson.id]?.is_completed) {
-              handleLessonCompleted(lesson.id)
-            }
-          }}
-        />
+        {/* Main lesson content with improved intersection observer */}
+        {lesson.content && lesson.content.trim() && (
+          <div 
+            ref={(el) => { 
+              contentRefs.current[`${lesson.id}-main`] = el 
+            }}
+            className="lesson-content formatted-content" 
+            dangerouslySetInnerHTML={{ __html: lesson.content }}
+            data-lesson-id={lesson.id}
+            data-content-type="main"
+            onClick={() => {
+              if (!lessonProgress[lesson.id]?.is_completed) {
+                handleLessonCompleted(lesson.id)
+              }
+            }}
+          />
+        )}
         
         <style jsx>{`
           .formatted-content {
@@ -337,9 +354,26 @@ export default function ModulePage() {
           }
         `}</style>
         
+        {/* Manual completion button for text lessons */}
+        {!lessonProgress[lesson.id]?.is_completed && (
+          <div className="mt-3 p-3 bg-light rounded">
+            <div className="d-flex justify-content-between align-items-center">
+              <small className="text-muted">
+                Mark this lesson as completed when you're done reading
+              </small>
+              <button
+                onClick={() => handleLessonCompleted(lesson.id)}
+                className="btn btn-sm btn-success"
+              >
+                Mark as Completed
+              </button>
+            </div>
+          </div>
+        )}
+        
         {lesson.sections?.length > 0 && (
           <div className="sections-container mt-3">
-            {lesson.sections.map((section: any) => (
+            {lesson.sections.map((section: any, sectionIndex: number) => (
               <div key={section.id} className="section mb-4">
                 <h5>{section.title}</h5>
                 
@@ -358,8 +392,13 @@ export default function ModulePage() {
                   </div>
                 ) : (
                   <div 
+                    ref={(el) => { 
+                      contentRefs.current[`${lesson.id}-section-${sectionIndex}`] = el 
+                    }}
                     className="formatted-content"
                     dangerouslySetInnerHTML={{ __html: section.content }} 
+                    data-lesson-id={lesson.id}
+                    data-content-type="section"
                     onClick={() => {
                       if (!lessonProgress[lesson.id]?.is_completed) {
                         handleLessonCompleted(lesson.id)
@@ -370,7 +409,7 @@ export default function ModulePage() {
                 
                 {section.subsections?.length > 0 && (
                   <div className="subsections ms-4">
-                    {section.subsections.map((sub: any) => (
+                    {section.subsections.map((sub: any, subIndex: number) => (
                       <div key={sub.id} className="subsection mb-3">
                         <p className="fs-6 mb-1">{sub.title}</p>
                         
@@ -389,8 +428,13 @@ export default function ModulePage() {
                           </div>
                         ) : (
                           <div 
+                            ref={(el) => { 
+                              contentRefs.current[`${lesson.id}-subsection-${sectionIndex}-${subIndex}`] = el 
+                            }}
                             className="formatted-content"
                             dangerouslySetInnerHTML={{ __html: sub.content }} 
+                            data-lesson-id={lesson.id}
+                            data-content-type="subsection"
                             onClick={() => {
                               if (!lessonProgress[lesson.id]?.is_completed) {
                                 handleLessonCompleted(lesson.id)
