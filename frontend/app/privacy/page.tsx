@@ -31,7 +31,7 @@ export default function PrivacyPolicy() {
       {/* Header */}
       <header className="bg-white shadow-sm border-b">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between py-4">
+          <div className="flex items-center justify-between py-2">
             <div className="flex items-center space-x-3">
               <button
                 type="button"
@@ -45,18 +45,18 @@ export default function PrivacyPolicy() {
             </div>
 
             <div className="flex items-center space-x-3">
-              <div className="w-16 h-12 flex items-center justify-center">
+              <div className="w-24 h-16 md:w-30 md:h-20 flex items-center justify-center">
                 <img
-                  src="/images/download.png"
+                  src="/Whitebox.png"
                   alt="ICTA Logo"
-                  className="h-10 w-14 object-contain"
+                  className="h-16 w-24 md:h-20 md:w-30 object-contain"
                 />
               </div>
             </div>
           </div>
         </div>
       </header>
-  
+
       <div className="container mx-auto px-4 sm:px-2 lg:px-8 py-8">
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">

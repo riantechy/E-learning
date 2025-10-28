@@ -180,7 +180,7 @@ export default function LandingPage() {
             <div className="flex items-center space-x-3">
               <div className="w-24 h-16 md:w-30 md:h-20 flex items-center justify-center">
                 <img
-                  src="/images/download.png"
+                  src="/Whitebox.png"
                   alt="ICTA Logo"
                   className="h-16 w-24 md:h-20 md:w-30 object-contain"
                 />
@@ -336,21 +336,21 @@ export default function LandingPage() {
           <div className="absolute inset-0 bg-red-600 opacity-10"></div>
         </div>
         
-        {/* Content */}
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
-            <div className="space-y-6 lg:space-y-8 text-center lg:text-left">
+       {/* Content */}
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 min-h-screen flex items-center justify-center">
+          <div className="w-full max-w-4xl text-center"> {/* Added wrapper with max-width and text-center */}
+            <div className="space-y-6 lg:space-y-8">
               <div>
                 <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
                   Empower Your Future Through
                   <span className="text-green-300 block"> Digital Learning</span>
                 </h1>
-                <p className="text-lg sm:text-xl md:text-2xl mt-4 lg:mt-6 text-red-100 max-w-2xl">
+                <p className="text-lg sm:text-xl md:text-2xl mt-4 lg:mt-6 text-red-100 max-w-2xl mx-auto">
                   Join thousands of learners transforming their careers with our comprehensive online courses and expert-led training programs.
                 </p>
               </div>
               
-              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <button 
                   onClick={() => setIsRegisterModalOpen(true)}
                   className="bg-white text-red-600 px-6 py-3 sm:px-8 sm:py-4 rounded-lg hover:bg-gray-100 transition-colors font-bold text-base sm:text-lg text-center"
@@ -359,24 +359,13 @@ export default function LandingPage() {
                 </button>
               </div>
               
-              <div className="grid grid-cols-2 gap-4 sm:gap-6 pt-6 lg:pt-8">
+              <div className="grid grid-cols-2 gap-4 sm:gap-6 pt-6 lg:pt-8 max-w-md mx-auto"> {/* Added max-w-md and mx-auto to stats */}
                 {stats.map((stat, index) => (
                   <div key={index} className="text-center">
                     <div className="text-xl sm:text-2xl md:text-3xl font-bold">{stat.value}</div>
                     <div className="text-red-200 text-xs sm:text-sm">{stat.label}</div>
                   </div>
                 ))}
-              </div>
-            </div>
-            
-            <div className="relative mt-8 lg:mt-0">
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 sm:p-8 border border-white/20">
-                <div className="w-full h-48 sm:h-64 bg-white/5 rounded-xl flex items-center justify-center">
-                  <BookOpen className="h-16 w-16 sm:h-24 sm:w-24 text-white/20" />
-                </div>
-              </div>
-              <div className="absolute -top-3 -right-3 sm:-top-4 sm:-right-4 bg-green-400 text-red-800 px-3 py-1 sm:px-4 sm:py-2 rounded-full font-bold text-xs sm:text-sm">
-                Trusted by {stats[0]?.value || '0'} Professionals
               </div>
             </div>
           </div>
@@ -395,14 +384,14 @@ export default function LandingPage() {
       </section>
 
       {/* Features Section */}
-      <section id="features" className="py-12 lg:py-20 bg-gray-50">
+      <section id="features" className="py-4 lg:py-6 bg-gray-50">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12 lg:mb-16">
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Why Choose Our Platform?
+              Why Choose The Platform?
             </h2>
             <p className="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto">
-              We provide everything you need to succeed in your learning journey with industry-leading features and support.
+             The platform provides everything you need to succeed in your learning journey with industry-leading features and support.
             </p>
           </div>
           
@@ -428,8 +417,8 @@ export default function LandingPage() {
       </section>
 
       {/* Popular Courses */}
-      <section id="courses" className="py-12 lg:py-20 bg-white">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+      <section id="courses" className="py-4 lg:py-6 bg-white">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-4">
           <div className="text-center mb-12 lg:mb-16">
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-4">
               Popular Courses
@@ -540,11 +529,11 @@ export default function LandingPage() {
       </section>
 
       {/* Testimonials */}
-      <section id="testimonials" className="py-12 lg:py-20 bg-gray-50">
+      <section id="testimonials" className="py-4 lg:py-6 bg-gray-50">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12 lg:mb-16">
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              What Our Learners Say
+              What The Learners Say
             </h2>
             <p className="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto">
               Join thousands of satisfied learners who have transformed their careers with our platform.
@@ -578,14 +567,14 @@ export default function LandingPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-12 lg:py-20 bg-red-600 text-white">
+      <section className="py-4 lg:py-6 bg-red-600 text-white">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6">
               Ready to Start Your Learning Journey?
             </h2>
             <p className="text-lg sm:text-xl text-red-100 mb-8 max-w-2xl mx-auto">
-              Join our community of {stats[0]?.value || '0'} learners and take the first step toward achieving your career goals today.
+              Join the community of {stats[0]?.value || '0'} learners and take the first step toward achieving your career goals today.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -611,51 +600,132 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-8 lg:py-12">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 lg:gap-8">
-            <div className="col-span-1 md:col-span-2">
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center">
-                  <img 
-                    src="/images/download.png" 
-                    alt="ICTA Logo" 
-                    className="h-8 w-8 sm:h-10 sm:w-10 object-contain" 
-                  />
-                </div>
+      <footer className="bg-gray-900 text-white pt-8 pb-2 lg:pt-12 lg:pb-4">
+      <div className="container mx-auto px-2 sm:px-2 lg:px-4">
+       <div className="grid grid-cols-1 md:grid-cols-4 gap-2 lg:gap-4">
+          <div className="col-span-1">
+          <div className="flex items-center space-x-3">
+              <div className="w-24 h-16 md:w-30 md:h-20 flex items-center justify-center">
+                <img
+                  src="/Whitebox.png"
+                  alt="ICTA Logo"
+                  className="h-16 w-24 md:h-20 md:w-30 object-contain"
+                />
               </div>
-              <p className="text-gray-400 mb-6 max-w-md text-sm sm:text-base">
-                Empowering self-paced digital learning through Whitebox training programs. 
-                Join us in transforming education for the digital age.
-              </p>
             </div>
-            
-            <div>
-              <h3 className="font-bold text-base sm:text-lg mb-4">Quick Links</h3>
-              <ul className="space-y-2">
-                <li><a href="#features" className="text-gray-400 hover:text-white transition-colors text-sm sm:text-base">Features</a></li>
-                <li><a href="#courses" className="text-gray-400 hover:text-white transition-colors text-sm sm:text-base">Courses</a></li>
-                <li><a href="#testimonials" className="text-gray-400 hover:text-white transition-colors text-sm sm:text-base">Testimonials</a></li>
-                <li><button onClick={() => setIsLoginModalOpen(true)} className="text-gray-400 hover:text-white transition-colors text-sm sm:text-base border-0 bg-transparent">Sign In</button></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h3 className="font-bold text-base sm:text-lg mb-4">Support</h3>
-              <ul className="space-y-2">
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors text-sm sm:text-base">Help Center</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors text-sm sm:text-base">Contact Us</a></li>
-                <li><a href="privacy" className="text-gray-400 hover:text-white transition-colors text-sm sm:text-base">Privacy Policy</a></li>
-                {/* <li><a href="#" className="text-gray-400 hover:text-white transition-colors text-sm sm:text-base">Terms of Service</a></li> */}
-              </ul>
+            <p className="text-gray-400 mb-6 max-w-xs text-sm sm:text-base">
+              Empowering self-paced digital learning through Whitebox training programs. 
+              Join us in transforming education for the digital age.
+            </p>
+          </div>
+          
+          {/* Combined Quick Links and Important Links */}
+          <div>
+            <h3 className="font-bold text-base sm:text-lg mb-4">Quick Links</h3>
+            <div className="space-y-2 text-sm sm:text-base">
+              {/* Internal Links as buttons */}
+              <div>
+                <button 
+                  onClick={() => document.querySelector('#features')?.scrollIntoView({ behavior: 'smooth' })}
+                  className="text-gray-400 hover:text-white transition-colors border-0 bg-transparent p-0 block"
+                >
+                  Features
+                </button>
+              </div>
+              <div>
+                <button 
+                  onClick={() => document.querySelector('#courses')?.scrollIntoView({ behavior: 'smooth' })}
+                  className="text-gray-400 hover:text-white transition-colors border-0 bg-transparent p-0 block"
+                >
+                  Courses
+                </button>
+              </div>
+              <div>
+                <button 
+                  onClick={() => document.querySelector('#testimonials')?.scrollIntoView({ behavior: 'smooth' })}
+                  className="text-gray-400 hover:text-white transition-colors border-0 bg-transparent p-0 block"
+                >
+                  Testimonials
+                </button>
+              </div>
+              <div>
+                <button 
+                  onClick={() => setIsLoginModalOpen(true)}
+                  className="text-gray-400 hover:text-white transition-colors border-0 bg-transparent p-0 block"
+                >
+                  Sign In
+                </button>
+              </div>
+              
+              <div className="pt-2">
+              <button 
+                  onClick={() => window.open('privacy', '_blank')}
+                  className="text-gray-400 hover:text-white transition-colors border-0 bg-transparent p-0"
+                >
+                  Privacy Policy
+                </button>
+              </div>
+    
             </div>
           </div>
           
-          <div className="border-t border-gray-800 mt-8 lg:mt-12 pt-6 lg:pt-8 text-center text-gray-400 text-sm sm:text-base">
-            <p>&copy; {new Date().getFullYear()} e-Learning Platform. All rights reserved.</p>
+           {/* External Links as buttons that open in new tab */}
+          <div>
+            <h3 className="font-bold text-base sm:text-lg mb-4">External Links</h3>
+            <div className="pt-2">
+                <button 
+                  onClick={() => window.open('https://ict.go.ke/', '_blank')}
+                  className="text-gray-400 hover:text-white transition-colors border-0 bg-transparent p-0 block"
+                >
+                  MICDE
+                </button>
+              </div>
+              <div>
+                <button 
+                  onClick={() => window.open('https://icta.go.ke/', '_blank')}
+                  className="text-gray-400 hover:text-white transition-colors border-0 bg-transparent p-0 block"
+                >
+                  ICTA
+                </button>
+              </div>
+              <div>
+                <button 
+                  onClick={() => window.open('https://digitalent.go.ke/', '_blank')}
+                  className="text-gray-400 hover:text-white transition-colors border-0 bg-transparent p-0 block"
+                >
+                  Digitalent
+                </button>
+              </div>
+              <div>
+                <button 
+                  onClick={() => window.open('https://www.smartacademy.go.ke/', '_blank')}
+                  className="text-gray-400 hover:text-white transition-colors border-0 bg-transparent p-0 block"
+                >
+                  Smart Academy
+                </button>
+              </div>
+          </div>
+          
+          {/* Contact Us Section */}
+          <div>
+            <h3 className="font-bold text-base sm:text-lg mb-4">Contact Us</h3>
+            <div className="text-gray-400 text-sm sm:text-base space-y-2">
+              <p className="leading-tight">ICT Authority,</p>
+              <p className="leading-tight">Teleposta Towers, 12th Floor</p>
+              <p className="leading-tight">Kenyatta Ave., Nairobi, Kenya.</p>
+              <p className="leading-tight">P.O. Box 27150-00100</p>
+              <p className="leading-tight">+254202211960</p>
+              <p className="leading-tight">+254202211961</p>
+              <p className="leading-tight">Email: whitebox@icta.go.ke</p>
+            </div>
           </div>
         </div>
-      </footer>
+        
+        <div className="border-t border-gray-800 mt-8 lg:mt-12 pt-2 lg:pt-2 text-center text-gray-400 text-sm sm:text-base">
+          <p>&copy; {new Date().getFullYear()} ICTA Platform. All rights reserved.</p>
+        </div>
+      </div>
+    </footer>
           
       {/* MODALS - MAKE SURE ALL THREE ARE INCLUDED WITH CORRECT PROPS */}
       <LoginModal

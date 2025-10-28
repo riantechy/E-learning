@@ -117,7 +117,7 @@ export default function NotificationsPage() {
         <div className="flex-1 flex flex-col overflow-hidden">
           <TopNavbar toggleSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)} />
           
-          <div className="container-fluid py-4">
+          <div className="container-fluid py-4 d-flex flex-column" style={{ height: 'calc(100vh - 80px)' }}>
             <div className="d-flex justify-content-between align-items-center mb-4">
               <div>
                 <h4>Notifications</h4>
@@ -153,7 +153,8 @@ export default function NotificationsPage() {
               </div>
             </div>
 
-            <div className="list-group">
+            {/* Scrollable notifications container */}
+            <div className="list-group flex-grow-1 overflow-auto">
               {notifications.length === 0 ? (
                 <div className="alert alert-info text-center py-5">
                   <i className="bi bi-bell-slash fs-1 d-block mb-3"></i>
@@ -178,15 +179,6 @@ export default function NotificationsPage() {
                           View Details
                         </a>
                       )}
-                       {/* {notification.action_url && (
-                    <a
-                        href={notification.action_url.replace('/api/courses', '/dashboard/learn')}
-                        className="btn btn-sm btn-outline-danger"
-                        onClick={() => setIsOpen(false)}
-                    >
-                        View
-                    </a>
-                    )} */}
                       {!notification.is_read && (
                         <button
                           className="btn btn-sm btn-outline-secondary ms-auto"
