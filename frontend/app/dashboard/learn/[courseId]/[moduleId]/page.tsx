@@ -280,42 +280,68 @@ export default function ModulePage() {
         ? lesson.pdf_file 
         : `${baseUrl}${lesson.pdf_file}`
       return (
-        <div className="mb-3">
-          <div className="card">
-            <div className="card-body p-0 p-md-0">
-              <h6>PDF Document: {lesson.title}</h6>
-              {lesson.description && (
-                <div className="card-body p-2 p-md-3">
-                  <p className="card-text">{lesson.description}</p>
+        <>
+          <div 
+            ref={(el) => { 
+              contentRefs.current[`${lesson.id}-pdf`] = el 
+            }}
+            className="mb-3"
+            data-lesson-id={lesson.id}
+            data-content-type="pdf"
+          >
+            <div className="card">
+              <div className="card-body p-0 p-md-0">
+                <h6>PDF Document: {lesson.title}</h6>
+                {lesson.description && (
+                  <div className="card-body p-2 p-md-3">
+                    <p className="card-text">{lesson.description}</p>
+                  </div>
+                )}
+                <div className="d-flex gap-2 p-3">
+                  <a 
+                    href={pdfUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-sm btn-danger"
+                    onClick={() => handlePdfLoaded(lesson.id)}
+                  >
+                    View PDF
+                  </a>
+                  <a 
+                    href={pdfUrl}
+                    download
+                    className="btn btn-sm btn-outline-danger"
+                    onClick={() => handlePdfLoaded(lesson.id)}
+                  >
+                    Download PDF
+                  </a>
                 </div>
-              )}
-              <div className="d-flex gap-2">
-                <a 
-                  href={pdfUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn btn-sm btn-danger"
-                  onClick={() => handlePdfLoaded(lesson.id)}
-                >
-                  View 
-                </a>
-                <a 
-                  href={pdfUrl}
-                  download
-                  className="btn btn-sm btn-outline-danger"
-                  onClick={() => handlePdfLoaded(lesson.id)}
-                >
-                  Download 
-                </a>
+                {!lesson.pdf_file && (
+                  <div className="alert alert-warning m-3">
+                    PDF file is not available.
+                  </div>
+                )}
               </div>
-              {lesson.pdf_file ? null : (
-                <div className="alert alert-warning mt-2">
-                  PDF file is not available.
-                </div>
-              )}
             </div>
           </div>
-        </div>
+
+          {/* Manual completion button for PDF lessons */}
+          {!lessonProgress[lesson.id]?.is_completed && (
+            <div className="mt-3 p-3 bg-light rounded">
+              <div className="d-flex justify-content-between align-items-center">
+                <small className="text-muted">
+                  Mark this lesson as completed after viewing the PDF
+                </small>
+                <button
+                  onClick={() => handleLessonCompleted(lesson.id)}
+                  className="btn btn-sm btn-success"
+                >
+                  Mark as Completed
+                </button>
+              </div>
+            </div>
+          )}
+        </>
       )
     }
 
