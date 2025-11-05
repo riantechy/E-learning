@@ -358,32 +358,40 @@ export default function CourseDetailPage() {
                       </div>
                     </Tab>
                     
-                    <Tab eventKey="details" title={
-                      <span className="d-flex align-items-center">
-                        <User size={16} className="me-2" />
-                        Course Details
-                      </span>
-                    }>
+                    <Tab
+                      eventKey="details"
+                      title={
+                        <span className="d-flex align-items-center">
+                          <User size={16} className="me-2" />
+                          Course Details
+                        </span>
+                      }
+                    >
                       <div className="mt-4">
                         <h4 className="mb-4">About This Course</h4>
-                        <div className="row">
-                          <div className="col-md-6">
-                            <h6>Course Description</h6>
-                            <p className="text-muted">{course.description}</p>
+                        <div className="row align-items-start">
+                          {/* Course Description */}
+                          <div className="col-md-6 mb-3">
+                            <h6 className="fw-semibold">Course Description</h6>
+                            <p className="text-muted mb-0">{course.description}</p>
                           </div>
-                          <div className="col-md-6">
-                            <h6>Learning Objectives</h6>
-                            <ul className="text-muted">
-                              <li>Master key concepts and techniques</li>
-                              <li>Apply knowledge to real-world scenarios</li>
-                              <li>Develop practical skills</li>
-                              <li>Gain industry-relevant expertise</li>
-                            </ul>
+
+                          {/* Learning Objectives */}
+                          <div className="col-md-6 mb-3">
+                            <h6 className="fw-semibold">Learning Objectives</h6>
+                            <ol className="text-muted ps-3 mb-0">
+                              <li>Identify and refine an innovative idea based on real community or market needs.</li>
+                              <li>Validate their market and customer segments using practical research methods.</li>
+                              <li>Develop a clear and sustainable business model that aligns with the problem and solution.</li>
+                              <li>Understand key elements of venture development, including prototyping, testing, and iteration.</li>
+                              <li>Build essential entrepreneurial and problem-solving skills for managing and growing a startup.</li>
+                              <li>Navigate the Kenyan innovation ecosystem, including available support networks, mentorship, funding pathways, and partnerships.</li>
+                            </ol>
                           </div>
                         </div>
                       </div>
                     </Tab>
-                    
+
                     <Tab eventKey="certificate" title="Certificate">
                       <div className="mt-4">
                         <h4 className="mb-4">Course Certificate</h4>

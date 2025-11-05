@@ -342,11 +342,11 @@ export default function LandingPage() {
             <div className="space-y-6 lg:space-y-8">
               <div>
                 <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
-                  Empower Your Future Through
-                  <span className="text-green-300 block"> Digital Learning</span>
+                  Empowering Innovators with the Knowledge
+                  <span className="text-green-300 block">To Develop Viable, Scalable Ventures</span>
                 </h1>
                 <p className="text-lg sm:text-xl md:text-2xl mt-4 lg:mt-6 text-red-100 max-w-2xl mx-auto">
-                  Join thousands of learners transforming their careers with our comprehensive online courses and expert-led training programs.
+                 Join a growing community of innovators advancing their entrepreneurial journey through expert-led courses and practical training.
                 </p>
               </div>
               
@@ -391,7 +391,7 @@ export default function LandingPage() {
               Why Choose The Platform?
             </h2>
             <p className="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto">
-             The platform provides everything you need to succeed in your learning journey with industry-leading features and support.
+               The platform equips innovators with practical knowledge, mentorship, and tools to develop, refine, and scale their ideas into sustainable ventures.
             </p>
           </div>
           
@@ -536,7 +536,7 @@ export default function LandingPage() {
               What The Learners Say
             </h2>
             <p className="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto">
-              Join thousands of satisfied learners who have transformed their careers with our platform.
+            Join thousands of professionals who’ve advanced their careers through our transformative learning platform.
             </p>
           </div>
           
@@ -614,8 +614,8 @@ export default function LandingPage() {
               </div>
             </div>
             <p className="text-gray-400 mb-6 max-w-xs text-sm sm:text-base">
-              Empowering self-paced digital learning through Whitebox training programs. 
-              Join us in transforming education for the digital age.
+              Where ideas grow into  real-world solutions.   
+              The Whitebox e-learning platform equips innovators with practical knowledge and pathways to venture success.
             </p>
           </div>
           
