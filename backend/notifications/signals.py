@@ -140,15 +140,22 @@ def create_certificate_notification(certificate):
 @receiver(post_save, sender=User)
 def send_admin_new_user_notification(sender, instance, created, **kwargs):
     if created:
-        # Notify admins about new user registration
+        # Notify all active admins about a new user registration
         admins = User.objects.filter(role='ADMIN', is_active=True)
         for admin in admins:
             if hasattr(admin, 'notification_preferences') and admin.notification_preferences.user_reports:
+                # Attempt to build action URL
+                try:
+                    action_url = reverse('user-detail', kwargs={'pk': instance.id})
+                except NoReverseMatch:
+                    action_url = ''
+                
+                # Create notification for the admin
                 Notification.objects.create(
                     recipient=admin,
                     title="New User Registration",
                     message=f"New user registered: {instance.email} ({instance.get_role_display()})",
                     notification_type='ADMIN',
                     priority='LOW',
-                    action_url=reverse('admin-user-detail', kwargs={'pk': instance.id})
+                    action_url=action_url
                 )
