@@ -10,38 +10,55 @@ from django.template.exceptions import TemplateDoesNotExist
 
 logger = logging.getLogger(__name__)
 
-def test_smtp_connectivity():
-    """Test if we can connect to the SMTP server"""
+def send_email_with_fallback(subject, plain_message, recipient_list, html_message=None):
+    """Send email using the working SMTP approach"""
+    
     try:
-        # Test basic network connectivity first
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.settimeout(10)
-        result = sock.connect_ex((settings.EMAIL_HOST, settings.EMAIL_PORT))
-        sock.close()
+        # Use the working SMTP approach (same as your test script)
+        import smtplib
+        from email.mime.text import MIMEText
+        from email.mime.multipart import MIMEMultipart
         
-        if result != 0:
-            logger.error(f"Network connectivity test failed to {settings.EMAIL_HOST}:{settings.EMAIL_PORT}")
-            return False
+        # Email configuration
+        EMAIL_HOST = "mail.govmail.ke"
+        EMAIL_PORT = 587
+        EMAIL_USE_TLS = True
+        EMAIL_HOST_USER = "whitebox@icta.go.ke"
+        EMAIL_HOST_PASSWORD = "OWRNYQVJNAHKDAMQ"
+        DEFAULT_FROM_EMAIL = "whitebox@icta.go.ke"
+
+        # Create message
+        if html_message:
+            msg = MIMEMultipart('alternative')
+            msg.attach(MIMEText(plain_message, 'plain'))
+            msg.attach(MIMEText(html_message, 'html'))
+        else:
+            msg = MIMEText(plain_message)
             
-        # Test SMTP connection
-        connection = get_connection()
-        connection.open()
-        connection.close()
-        logger.info("SMTP connection test successful")
-        return True
+        msg["Subject"] = subject
+        msg["From"] = DEFAULT_FROM_EMAIL
+        msg["To"] = ", ".join(recipient_list)
+
+        # Connect to SMTP server
+        server = smtplib.SMTP(EMAIL_HOST, EMAIL_PORT)
+        server.set_debuglevel(0)  # Set to 1 for debugging
+        if EMAIL_USE_TLS:
+            server.starttls()
+        
+        # Login
+        server.login(EMAIL_HOST_USER, EMAIL_HOST_PASSWORD)
+
+        # Send email
+        server.sendmail(DEFAULT_FROM_EMAIL, recipient_list, msg.as_string())
+        server.quit()
+        
+        logger.info(f"✅ Email sent successfully to {recipient_list}")
+        return len(recipient_list)
         
     except Exception as e:
-        logger.error(f"SMTP connectivity test failed: {str(e)}")
-        return False
-
-def send_email_with_fallback(subject, plain_message, recipient_list, html_message=None):
-    """Send email with fallback to console if SMTP fails"""
-    
-    # Test connectivity first
-    if not test_smtp_connectivity():
-        logger.warning("SMTP connection failed, falling back to console output")
+        logger.error(f"❌ Email sending failed: {str(e)}")
         
-        # Log email to console (for development)
+        # Fallback to console
         print("\n" + "="*60)
         print("EMAIL WOULD BE SENT (SMTP UNAVAILABLE):")
         print(f"To: {recipient_list}")
@@ -51,42 +68,10 @@ def send_email_with_fallback(subject, plain_message, recipient_list, html_messag
             print(f"HTML: {html_message}")
         print("="*60 + "\n")
         return 1  # Simulate success for development
-        
-    try:
-        if html_message:
-            from django.core.mail import EmailMultiAlternatives
-            email = EmailMultiAlternatives(
-                subject=subject,
-                body=plain_message,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                to=recipient_list
-            )
-            email.attach_alternative(html_message, "text/html")
-            return email.send()
-        else:
-            return send_mail(
-                subject=subject,
-                message=plain_message,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=recipient_list,
-                fail_silently=False
-            )
-    except Exception as e:
-        logger.error(f"Email sending failed: {str(e)}")
-        # Fallback to console
-        print(f"\nEMAIL FAILED - Would send to {recipient_list}: {subject}\n")
-        print(f"Message: {plain_message}\n")
-        return 0
 
 def send_verification_email(user, verification_url):
     try:
-        logger.info(f"=== EMAIL DEBUG INFO ===")
-        logger.info(f"EMAIL_BACKEND: {settings.EMAIL_BACKEND}")
-        logger.info(f"EMAIL_HOST: {settings.EMAIL_HOST}")
-        logger.info(f"EMAIL_PORT: {settings.EMAIL_PORT}")
-        logger.info(f"EMAIL_USE_TLS: {settings.EMAIL_USE_TLS}")
-        logger.info(f"EMAIL_HOST_USER: {settings.EMAIL_HOST_USER}")
-        logger.info(f"DEFAULT_FROM_EMAIL: {settings.DEFAULT_FROM_EMAIL}")
+        logger.info(f"=== Sending verification email to {user.email} ===")
 
         subject = 'Verify Your Email Address - WhiteBox'
         
@@ -133,7 +118,7 @@ def send_verification_email(user, verification_url):
         
         logger.info(f"Attempting to send verification email to {user.email}")
         
-        # Use the fallback function
+        # Use the working SMTP approach (same as password reset)
         result = send_email_with_fallback(
             subject=subject,
             plain_message=plain_message,

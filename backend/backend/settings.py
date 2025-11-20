@@ -174,16 +174,16 @@ AUTH_USER_MODEL = 'users.User'
 
 # Email Configuration
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 EMAIL_HOST = config('EMAIL_HOST', default='mail.govmail.ke')
 EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
-EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
+MAIL_USE_TLS = True
 EMAIL_USE_SSL = False
 EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='whitebox@icta.go.ke')
-EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='QUDCZBQVSBXBOBHN')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='OWRNYQVJNAHKDAMQ')
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='whitebox@icta.go.ke')
-SERVER_EMAIL = DEFAULT_FROM_EMAIL
+SERVER_EMAIL = 'whitebox@icta.go.ke'
 
+EMAIL_TIMEOUT = 30 
 
 # settings.py - Add better logging
 # LOGGING = {
