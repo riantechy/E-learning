@@ -10,6 +10,9 @@ class CertificateTemplate(models.Model):
     template_file = models.FileField(upload_to='certificate_templates/')
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
     
     def __str__(self):
         return self.name
@@ -23,6 +26,9 @@ class Certificate(models.Model):
     certificate_number = models.CharField(max_length=50, unique=True)
     pdf_file = models.FileField(upload_to='certificates/', null=True, blank=True)
     verification_url = models.URLField(blank=True)
+
+    class Meta:
+        ordering = ['-issued_date']
     
     def __str__(self):
         return f"{self.user.email} - {self.course.title}"

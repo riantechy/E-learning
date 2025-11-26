@@ -5,22 +5,22 @@ from django.utils import timezone
 from .models import User
 from notifications.models import Notification
 
-@receiver(post_save, sender=User)
-def handle_user_signup(sender, instance, created, **kwargs):
-    if created:
+# @receiver(post_save, sender=User)
+# def handle_user_signup(sender, instance, created, **kwargs):
+#     if created:
                 
-        # Create welcome notification
-        Notification.objects.create(
-            recipient=instance,
-            title="Welcome to Our Learning Platform!",
-            message=(
-                "Thank you for joining our learning community! "
-                "Here you'll find courses to enhance your skills, track your progress, "
-                "and earn certificates. Start by exploring our course catalog."
-            ),
-            notification_type='SYSTEM',
-            priority='HIGH',
-        )
+#         # Create welcome notification
+#         Notification.objects.create(
+#             recipient=instance,
+#             title="Welcome to Our Learning Platform!",
+#             message=(
+#                 "Thank you for joining our learning community! "
+#                 "Here you'll find courses to enhance your skills, track your progress, "
+#                 "and earn certificates. Start by exploring our course catalog."
+#             ),
+#             notification_type='SYSTEM',
+#             priority='HIGH',
+#         )
 
 @receiver(post_save, sender=User)
 def handle_first_login(sender, instance, **kwargs):
