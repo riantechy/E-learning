@@ -1,0 +1,18 @@
+{% extends "admin/change_list.html" %}
+{% load i18n admin_urls static %}
+
+{% block object-tools-items %}
+  {{ block.super }}
+  <li>
+    {% url 'admin:student_registrations_report' as report_url %}
+    {% if report_url %}
+      <a href="{{ report_url }}" class="addlink" style="background: #28a745; color: white;">
+        Student Registrations Report
+      </a>
+    {% else %}
+      <a href="student-registrations-report/" class="addlink" style="background: #28a745; color: white;">
+        Student Registrations Report
+      </a>
+    {% endif %}
+  </li>
+{% endblock %}

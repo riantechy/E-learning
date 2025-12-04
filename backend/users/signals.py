@@ -31,12 +31,15 @@ def handle_first_login(sender, instance, **kwargs):
             recipient=instance,
             title="Getting Started Guide",
             message=(
-                "Welcome to your learning journey! Here's how to get started:\n"
-                "1. Browse our course catalog to find interesting topics\n"
-                "2. Enroll in courses that match your interests\n"
-                "3. Track your progress in your dashboard\n"
+                "Welcome! This appears to be your first login.\n"
+                "We're glad to have you on board and thank you for choosing our platform.\n\n"
+                "Here's how to get started:\n"
+                "1. Browse available courses\n"
+                "2. Enroll in the ones that interest you\n"
+                "3. Track your progress via your dashboard\n"
                 "4. Complete assessments to earn certificates\n\n"
-                "Need help? Visit our help center or contact support."
+                "If you need help, visit the help center or contact support.\n\n"
+                "Thank you, and we wish you great success on your learning journey!"
             ),
             notification_type='SYSTEM',
             priority='MEDIUM',
