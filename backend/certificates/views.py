@@ -1,5 +1,7 @@
 from rest_framework import generics, status
 from rest_framework.response import Response
+from django.http import HttpResponse
+from django.views.decorators.clickjacking import xframe_options_exempt
 from reportlab.lib.pagesizes import letter
 from django.http import FileResponse
 from .models import Certificate
@@ -308,3 +310,19 @@ class DownloadCertificateView(generics.GenericAPIView):
                 {"detail": "Certificate not found"},
                 status=status.HTTP_404_NOT_FOUND
             )
+
+
+@xframe_options_exempt
+def preview_template(request, template_id):
+    """Preview certificate template in iframe"""
+    try:
+        template = CertificateTemplate.objects.get(id=template_id)
+        response = HttpResponse(
+            template.template_file.read(), 
+            content_type='application/pdf'
+        )
+        response['Content-Disposition'] = f'inline; filename="{template.name}.pdf"'
+        response['X-Frame-Options'] = 'ALLOWALL'  # Allow embedding in iframe
+        return response
+    except CertificateTemplate.DoesNotExist:
+        return HttpResponse('Template not found', status=404)

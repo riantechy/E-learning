@@ -5,7 +5,7 @@ from .views import (
     UserCertificateListView,
     VerifyCertificateView,
     CertificateTemplateDeleteView,
-    DownloadCertificateView
+    DownloadCertificateView, preview_template
 )
 
 urlpatterns = [
@@ -15,4 +15,5 @@ urlpatterns = [
     path('user/', UserCertificateListView.as_view(), name='user-certificates'),
     path('verify/<str:certificate_number>/', VerifyCertificateView.as_view(), name='verify-certificate'),
     path('download/<uuid:certificate_id>/', DownloadCertificateView.as_view(), name='download-certificate'),
+    path('templates/preview/<uuid:template_id>/', preview_template, name='preview-template'),
 ]

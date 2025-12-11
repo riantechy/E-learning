@@ -142,7 +142,12 @@ export default function SettingsPage() {
   };
 
   const previewTemplate = (template: CertificateTemplate) => {
-    setPreviewUrl(template.template_file);
+    // Use the preview endpoint instead of direct media URL
+    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_HOST || 'http://localhost:8000';
+    const url = `${baseUrl}/api/certificates/templates/preview/${template.id}/`;
+    
+    console.log('Preview URL:', url);
+    setPreviewUrl(url);
     setShowPreview(true);
   };
 

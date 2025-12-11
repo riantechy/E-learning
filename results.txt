@@ -1,0 +1,4 @@
+Final Project Results
+----------------------
+Numbers entered: [20.0, 30.0, 40.0]
+Average value: 30.0
