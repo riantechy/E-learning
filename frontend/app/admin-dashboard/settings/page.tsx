@@ -141,15 +141,15 @@ export default function SettingsPage() {
     }
   };
 
-  const previewTemplate = (template: CertificateTemplate) => {
-    // Use the preview endpoint instead of direct media URL
-    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_HOST || 'http://localhost:8000';
-    const url = `${baseUrl}/api/certificates/templates/preview/${template.id}/`;
-    
-    console.log('Preview URL:', url);
-    setPreviewUrl(url);
-    setShowPreview(true);
-  };
+const previewTemplate = (template: CertificateTemplate) => {
+  // Use the preview endpoint instead of direct media URL
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_HOST || 'http://localhost:8000';
+  const url = `${baseUrl}/api/certificates/templates/preview/${template.id}/`;
+  
+  console.log('Preview URL:', url);
+  setPreviewUrl(url);
+  setShowPreview(true);
+};
 
   return (
     <DashboardLayout sidebar={<AdminSidebar />}>
@@ -378,22 +378,21 @@ export default function SettingsPage() {
           <Modal.Title>Template Preview</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          {previewUrl.endsWith('.pdf') ? (
+          <div style={{ height: '500px', width: '100%', position: 'relative' }}>
             <iframe 
               src={previewUrl} 
               width="100%" 
-              height="500px" 
-              style={{ border: 'none' }}
+              height="100%" 
+              style={{ border: 'none', position: 'absolute', top: 0, left: 0 }}
               title="Certificate Template Preview"
             />
-          ) : (
-            <div className="text-center py-4">
-              <p>Document preview not available for this file type.</p>
-              <a href={previewUrl} target="_blank" rel="noopener noreferrer" className="btn btn-danger">
-                Download File
-              </a>
-            </div>
-          )}
+            {!previewUrl && (
+              <div className="text-center py-4">
+                <Spinner animation="border" variant="secondary" />
+                <p className="mt-2">Loading preview...</p>
+              </div>
+            )}
+          </div>
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={() => setShowPreview(false)}>
